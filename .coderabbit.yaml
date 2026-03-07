@@ -14,8 +14,6 @@ reviews:
       - "Draft"
     drafts: false
   tools:
-    ast-grep:
-      enabled: false
     biome:
       enabled: false
     checkov:
