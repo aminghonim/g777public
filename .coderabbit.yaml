@@ -1,6 +1,7 @@
-# yaml-language-server: $schema=https://coderabbit.ai/export/schema.json
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 language: "ar"
 early_access: false
+
 reviews:
   profile: "chill"
   request_changes_workflow: false
@@ -13,41 +14,52 @@ reviews:
       - "Draft"
     drafts: false
   tools:
-    ast-grep: false
-    biome: false
-    checkov: false
-    golangci-lint: false
-    languagetool: false
-    markdownlint: false
-    hadolint: false
-    shellcheck: false
-    ruff: false
-    eslint: false
-    actionlint: false
-  custom_instructions:
+    ast-grep:
+      enabled: false
+    biome:
+      enabled: false
+    checkov:
+      enabled: false
+    golangci-lint:
+      enabled: false
+    languagetool:
+      enabled: false
+    markdownlint:
+      enabled: false
+    hadolint:
+      enabled: false
+    shellcheck:
+      enabled: false
+    ruff:
+      enabled: false
+    eslint:
+      enabled: false
+    actionlint:
+      enabled: false
+  path_instructions:
     - path: "**/*.py"
       instructions: |
-        أنت الآن "Sentinel" عضو في CNS Squad 🛡️.
-        - تأكد من عدم كسر الكود القديم (Zero-Regression).
-        - أمنع كتابة كلمات مرور أو API Keys كقيمة ثابتة (Hardcoding).
-        - تأكد من وجود Type Hinting في التوابع (Functions).
-        - لا تستخدم `print` أبداً، استخدم `logging` فقط.
-        - تأكد من وجود `tenacity` retry policy عند عمل اتصالات شبكية.
-        - في نهاية كل مراجعة أكتب: "CNS Squad Python Audit Completed."
+        انت الان "Sentinel" عضو في CNS Squad.
+        - تاكد من عدم كسر الكود القديم (Zero-Regression).
+        - امنع كتابة كلمات مرور او API Keys كقيمة ثابتة (Hardcoding).
+        - تاكد من وجود Type Hinting في التوابع (Functions).
+        - لا تستخدم `print` ابدا، استخدم `logging` فقط.
+        - تاكد من وجود `tenacity` retry policy عند عمل اتصالات شبكية.
+        - في نهاية كل مراجعة اكتب: "CNS Squad Python Audit Completed."
 
     - path: "frontend_flutter/**/*.dart"
       instructions: |
-        أنت الآن "Sentinel" عضو في CNS Squad 🛡️.
-        - تأكد من استخدام `flutter_secure_storage` لحفظ البيانات الحساسة بدلاً من SharedPrefs.
+        انت الان "Sentinel" عضو في CNS Squad.
+        - تاكد من استخدام `flutter_secure_storage` لحفظ البيانات الحساسة بدلا من SharedPrefs.
         - لا تستخدم `print()` ولكن استبدلها بـ `debugPrint()`.
-        - حافظ على هيكلة واجهات المستخدم وأداء الـ 16ms للإطار الواحد.
-        - في نهاية كل مراجعة أكتب: "CNS Squad Dart Audit Completed."
+        - حافظ على هيكلة واجهات المستخدم واداء الـ 16ms للاطار الواحد.
+        - في نهاية كل مراجعة اكتب: "CNS Squad Dart Audit Completed."
 
     - path: "**/*"
       instructions: |
-        عليك التحدث بالعربية. 
-        لا تستخدم Emojis في ملفات الأكواد (مسموحة فقط في ملفات الـ md). 
-        حظر أي Filler Comments التي لا توضح "السبب" (Why).
+        عليك التحدث بالعربية.
+        لا تستخدم Emojis في ملفات الاكواد.
+        حظر اي Filler Comments التي لا توضح السبب (Why).
 
 chat:
   auto_reply: true
