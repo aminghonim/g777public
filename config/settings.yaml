@@ -1,0 +1,53 @@
+# ============================================
+# G777 Smart CRM - System Configuration
+# ============================================
+# This file centralizes all system settings
+# for easy modification without code changes
+# ============================================
+
+# System Configuration
+system_config:
+  dev_mode: true  # true = Browser with hot reload, false = Native app
+  native_mode: false  # Overridden by dev_mode
+  auto_reload: true  # Enable hot reload in development
+
+# AI Configuration
+ai_config:
+  api_key: "${GEMINI_API_KEY}"  # Loads from .env
+  model: "gemini-2.0-flash-exp"
+  project_id: "whatsapp-pairing-service"
+  temperature: 0.7
+  max_tokens: 500
+
+# Database Configuration
+database:
+  provider: "supabase"
+  connection_string_env: "DATABASE_URL"  # Read from .env
+  pool_size: 10
+  timeout: 30
+
+# WhatsApp Service
+whatsapp:
+  baileys_url_env: "BAILEYS_API_URL"  # Read from .env
+  webhook_path: "/webhook/whatsapp"
+  
+# Business Configuration (Default)
+business:
+  name: "G777 Smart CRM"
+  type: "general"
+  working_hours: "09:00-18:00"
+  timezone: "Africa/Cairo"
+
+# Security
+security:
+  enable_rate_limiting: true
+  max_requests_per_minute: 60
+  allowed_origins:
+    - "https://whatsapp-pairing-service.run.app"
+    - "http://localhost:8080"
+
+# Logging
+logging:
+  level: "INFO"
+  format: "json"
+  output: "stdout"

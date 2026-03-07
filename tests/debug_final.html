@@ -1,0 +1,776 @@
+<!DOCTYPE html><html dir="ltr" lang="en-US" style="scroll-padding-top: 80px;"><head>
+    <title>G777 Ultimate [DEV]</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="data:image/svg+xml,%0A%20%20%20%20%20%20%20%20%3Csvg%20viewBox%3D%220%200%20128%20128%22%20width%3D%22128%22%20height%3D%22128%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cstyle%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%40supports%20%28-moz-appearance%3Anone%29%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20text%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20font-size%3A%20100px%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20transform%3A%20translateY%280.1em%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20text%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20font-family%3A%20Arial%2C%20sans-serif%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/style%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Ctext%20y%3D%22.9em%22%20font-size%3D%22128%22%20font-family%3D%22Georgia%2C%20sans-serif%22%3E%F0%9F%94%A7%3C/text%3E%0A%20%20%20%20%20%20%20%20%3C/svg%3E%0A%20%20%20%20" rel="shortcut icon">
+    <style>
+      @layer theme, base, quasar, nicegui, components, utilities, overrides, quasar_importants;
+      @import url("/_nicegui/3.5.0/static/fonts.css") layer(base);
+      
+        @import url("/_nicegui/3.5.0/static/quasar.unimportant.prod.css") layer(quasar);
+        @import url("/_nicegui/3.5.0/static/quasar.important.prod.css") layer(quasar_importants);
+      
+      @import url("/_nicegui/3.5.0/static/nicegui.css") layer(nicegui);
+      @layer quasar {
+        blockquote, dd, dl, figure, h1, h2, h3, h4, h5, h6, hr, p, pre {
+          margin: revert-layer; /* HACK: revert Quasar's margin styles */
+        }
+      }
+      @layer overrides {
+        .rotate-45, .rotate-90, .rotate-135, .rotate-180, .rotate-225, .rotate-270, .rotate-315 {
+  rotate: 0deg;
+}
+        .column.inline, .flex.inline, .row.inline {
+          display: inline-flex;  /* HACK: re-apply Quasar's inline styles to override Tailwind */
+        }
+        .nicegui-dialog-open,
+        .nicegui-select-popup-open {
+          scroll-behavior: auto !important; /* HACK: avoid smooth-scrolling when dialogs or select popups close */
+        }
+      }
+    </style>
+    <script type="importmap">
+      {"imports": {"vue":"/_nicegui/3.5.0/static/vue.esm-browser.prod.js","sass":"/_nicegui/3.5.0/static/sass.default.js","immutable":"/_nicegui/3.5.0/static/immutable.es.js","widget":"/_nicegui/3.5.0/libraries/3eecfcfa93abc79c9ac1f88931065865/widget.js","nicegui-aggrid":"/_nicegui/3.5.0/esm/377ce34487043e084f1e948ef2439a96/index.js","nicegui-aggrid/":"/_nicegui/3.5.0/esm/377ce34487043e084f1e948ef2439a96/","nicegui-codemirror":"/_nicegui/3.5.0/esm/01f81a52512d7cba695b370d111567c9/index.js","nicegui-codemirror/":"/_nicegui/3.5.0/esm/01f81a52512d7cba695b370d111567c9/","nicegui-echart":"/_nicegui/3.5.0/esm/a7b9c366d2dcc4d782371528332f56b8/index.js","nicegui-echart/":"/_nicegui/3.5.0/esm/a7b9c366d2dcc4d782371528332f56b8/","nicegui-joystick":"/_nicegui/3.5.0/esm/06468d77cc53d936869065166522e12e/index.js","nicegui-joystick/":"/_nicegui/3.5.0/esm/06468d77cc53d936869065166522e12e/","nicegui-json-editor":"/_nicegui/3.5.0/esm/38964d5e69dbbce8d90e32176dd7d41b/index.js","nicegui-json-editor/":"/_nicegui/3.5.0/esm/38964d5e69dbbce8d90e32176dd7d41b/","nicegui-leaflet":"/_nicegui/3.5.0/esm/35fc52d8e1512b916c088a7db48a3906/index.js","nicegui-leaflet/":"/_nicegui/3.5.0/esm/35fc52d8e1512b916c088a7db48a3906/","nicegui-mermaid":"/_nicegui/3.5.0/esm/a84e55373ec426263e51acde485404c8/index.js","nicegui-mermaid/":"/_nicegui/3.5.0/esm/a84e55373ec426263e51acde485404c8/","nicegui-plotly":"/_nicegui/3.5.0/esm/a206fa6117c1238898de712b13bb79f3/index.js","nicegui-plotly/":"/_nicegui/3.5.0/esm/a206fa6117c1238898de712b13bb79f3/","nicegui-scene":"/_nicegui/3.5.0/esm/7a39eef4a63f1c2bbb26d64a7bbdeaa7/index.js","nicegui-scene/":"/_nicegui/3.5.0/esm/7a39eef4a63f1c2bbb26d64a7bbdeaa7/","nicegui-xterm":"/_nicegui/3.5.0/esm/a36e64f537df0bcea15d84149801d9a2/index.js","nicegui-xterm/":"/_nicegui/3.5.0/esm/a36e64f537df0bcea15d84149801d9a2/"}}
+    </script>
+    <script>
+      addStyle = (c) => document.head.append(Object.assign(document.createElement("style"), { textContent: c }));
+    </script>
+    
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700;800&family=Chakra+Petch:wght@400;600;700&display=swap');
+            /* G777 Ultimate - Cyberpunk Edition */
+/* Import Arabic & Tech Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Orbitron:wght@400;700&display=swap');
+
+:root {
+    /* Cyberpunk Palette from Image */
+    --neon-blue: #00f3ff;
+    --neon-orange: #ff9d00;
+    --neon-purple: #bd00ff;
+    --bg-deep: #050510;
+    --bg-panel: rgba(10, 15, 30, 0.95);
+    --bg-hex: rgba(0, 243, 255, 0.1);
+    --glass-border-blue: 1px solid rgba(0, 243, 255, 0.3);
+    --glass-border-orange: 1px solid rgba(255, 157, 0, 0.3);
+
+    /* Effects */
+    --glow-blue: 0 0 10px rgba(0, 243, 255, 0.5), 0 0 20px rgba(0, 243, 255, 0.2);
+    --glow-orange: 0 0 10px rgba(255, 157, 0, 0.5), 0 0 20px rgba(255, 157, 0, 0.2);
+    --hex-clip: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%);
+}
+
+/* Base resets */
+body {
+    background-color: var(--bg-deep) !important;
+    font-family: 'Cairo', sans-serif !important;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    /* App feel */
+}
+
+/* Background Texture */
+.cyberpunk-bg {
+    background-color: var(--bg-deep);
+    background-image:
+        linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+}
+
+/* Hexagonal Button */
+.hex-btn {
+    width: 60px;
+    height: 60px;
+    clip-path: var(--hex-clip);
+    background: var(--bg-hex);
+    border: none;
+    color: var(--neon-blue);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    margin: 5px;
+    position: relative;
+}
+
+.hex-btn:hover,
+.hex-btn.active {
+    background: rgba(0, 243, 255, 0.25);
+    box-shadow: 0 0 15px var(--neon-blue);
+    transform: scale(1.1);
+    z-index: 10;
+}
+
+.hex-btn i {
+    font-size: 24px;
+    margin-bottom: 2px;
+    text-shadow: 0 0 5px var(--neon-blue);
+}
+
+.hex-btn .label {
+    font-size: 10px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 2px #000;
+}
+
+/* Futuristic Panel */
+.cyber-panel {
+    background: var(--bg-panel);
+    border: var(--glass-border-blue);
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+    padding: 16px;
+    color: white;
+}
+
+.cyber-panel.orange-glow {
+    border: var(--glass-border-orange);
+    box-shadow: var(--glow-orange);
+}
+
+/* Scanline Effect */
+.scanline::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(180deg, transparent 50%, rgba(0, 243, 255, 0.02) 50%);
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Neon Text */
+.neon-text-blue {
+    color: var(--neon-blue);
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.7);
+    font-family: 'Orbitron', 'Cairo', sans-serif;
+}
+
+.neon-text-orange {
+    color: var(--neon-orange);
+    text-shadow: 0 0 10px rgba(255, 157, 0, 0.7);
+    font-family: 'Orbitron', 'Cairo', sans-serif;
+}
+
+/* Top Nav Tab */
+.cyber-tab {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(0, 243, 255, 0.2);
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    padding: 8px 20px;
+    clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+    transition: all 0.3s;
+}
+
+.cyber-tab.active,
+.cyber-tab:hover {
+    background: rgba(0, 243, 255, 0.2);
+    border-color: var(--neon-blue);
+    color: var(--neon-blue);
+    text-shadow: 0 0 8px var(--neon-blue);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-deep);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--neon-blue);
+    border-radius: 4px;
+}
+        </style>
+        
+
+    <!-- prevent Prettier from removing this line -->
+    
+    <link rel="modulepreload" href="/_nicegui/3.5.0/static/vue.esm-browser.prod.js">
+    
+    <link rel="modulepreload" href="/_nicegui/3.5.0/components/9c6755c1d6cf4b466fd2da49fe8ea36b/header.js">
+    
+    <link rel="modulepreload" href="/_nicegui/3.5.0/components/b9093b846f34a71adc16c9db3c63407f/input.js">
+    
+    <link rel="modulepreload" href="/_nicegui/3.5.0/components/0e4cb910c7f9ab4a5051bfce742bf0f5/timer.js">
+    
+    <!-- prevent Prettier from removing this line -->
+    
+    <style type="text/tailwindcss">
+      @custom-variant dark (&:where(body.body--dark, body.body--dark *));
+    </style>
+    
+  <style>/*! tailwindcss v4.1.13 | MIT License | https://tailwindcss.com */
+@layer properties;
+@layer theme, base, components, utilities;
+@layer theme {
+  :root, :host {
+    --font-sans: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+    --color-white: #fff;
+    --spacing: 0.25rem;
+    --text-xs: 0.75rem;
+    --text-xs--line-height: calc(1 / 0.75);
+    --text-sm: 0.875rem;
+    --text-sm--line-height: calc(1.25 / 0.875);
+    --text-base: 1rem;
+    --text-base--line-height: calc(1.5 / 1);
+    --text-xl: 1.25rem;
+    --text-xl--line-height: calc(1.75 / 1.25);
+    --text-3xl: 1.875rem;
+    --text-3xl--line-height: calc(2.25 / 1.875);
+    --text-5xl: 3rem;
+    --text-5xl--line-height: 1;
+    --font-weight-bold: 700;
+    --font-weight-black: 900;
+    --tracking-wider: 0.05em;
+    --tracking-widest: 0.1em;
+    --default-font-family: var(--font-sans);
+    --default-mono-font-family: var(--font-mono);
+  }
+}
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+  }
+  html, :host {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    tab-size: 4;
+    font-family: var(--default-font-family, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji');
+    font-feature-settings: var(--default-font-feature-settings, normal);
+    font-variation-settings: var(--default-font-variation-settings, normal);
+    -webkit-tap-highlight-color: transparent;
+  }
+  hr {
+    height: 0;
+    color: inherit;
+    border-top-width: 1px;
+  }
+  abbr:where([title]) {
+    -webkit-text-decoration: underline dotted;
+    text-decoration: underline dotted;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  a {
+    color: inherit;
+    -webkit-text-decoration: inherit;
+    text-decoration: inherit;
+  }
+  b, strong {
+    font-weight: bolder;
+  }
+  code, kbd, samp, pre {
+    font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace);
+    font-feature-settings: var(--default-mono-font-feature-settings, normal);
+    font-variation-settings: var(--default-mono-font-variation-settings, normal);
+    font-size: 1em;
+  }
+  small {
+    font-size: 80%;
+  }
+  sub, sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+  sub {
+    bottom: -0.25em;
+  }
+  sup {
+    top: -0.5em;
+  }
+  table {
+    text-indent: 0;
+    border-color: inherit;
+    border-collapse: collapse;
+  }
+  :-moz-focusring {
+    outline: auto;
+  }
+  progress {
+    vertical-align: baseline;
+  }
+  summary {
+    display: list-item;
+  }
+  ol, ul, menu {
+    list-style: none;
+  }
+  img, svg, video, canvas, audio, iframe, embed, object {
+    display: block;
+    vertical-align: middle;
+  }
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+  button, input, select, optgroup, textarea, ::file-selector-button {
+    font: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    border-radius: 0;
+    background-color: transparent;
+    opacity: 1;
+  }
+  :where(select:is([multiple], [size])) optgroup {
+    font-weight: bolder;
+  }
+  :where(select:is([multiple], [size])) optgroup option {
+    padding-inline-start: 20px;
+  }
+  ::file-selector-button {
+    margin-inline-end: 4px;
+  }
+  ::placeholder {
+    opacity: 1;
+  }
+  @supports (not (-webkit-appearance: -apple-pay-button))  or (contain-intrinsic-size: 1px) {
+    ::placeholder {
+      color: currentcolor;
+      @supports (color: color-mix(in lab, red, red)) {
+        color: color-mix(in oklab, currentcolor 50%, transparent);
+      }
+    }
+  }
+  textarea {
+    resize: vertical;
+  }
+  ::-webkit-search-decoration {
+    -webkit-appearance: none;
+  }
+  ::-webkit-date-and-time-value {
+    min-height: 1lh;
+    text-align: inherit;
+  }
+  ::-webkit-datetime-edit {
+    display: inline-flex;
+  }
+  ::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+  ::-webkit-datetime-edit, ::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field, ::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-second-field, ::-webkit-datetime-edit-millisecond-field, ::-webkit-datetime-edit-meridiem-field {
+    padding-block: 0;
+  }
+  ::-webkit-calendar-picker-indicator {
+    line-height: 1;
+  }
+  :-moz-ui-invalid {
+    box-shadow: none;
+  }
+  button, input:where([type='button'], [type='reset'], [type='submit']), ::file-selector-button {
+    appearance: button;
+  }
+  ::-webkit-inner-spin-button, ::-webkit-outer-spin-button {
+    height: auto;
+  }
+  [hidden]:where(:not([hidden='until-found'])) {
+    display: none !important;
+  }
+}
+@layer utilities {
+  .absolute {
+    position: absolute;
+  }
+  .fixed {
+    position: fixed;
+  }
+  .mt-2 {
+    margin-top: calc(var(--spacing) * 2);
+  }
+  .mt-4 {
+    margin-top: calc(var(--spacing) * 4);
+  }
+  .mt-6 {
+    margin-top: calc(var(--spacing) * 6);
+  }
+  .mt-8 {
+    margin-top: calc(var(--spacing) * 8);
+  }
+  .mt-12 {
+    margin-top: calc(var(--spacing) * 12);
+  }
+  .mb-3 {
+    margin-bottom: calc(var(--spacing) * 3);
+  }
+  .mb-4 {
+    margin-bottom: calc(var(--spacing) * 4);
+  }
+  .mb-6 {
+    margin-bottom: calc(var(--spacing) * 6);
+  }
+  .block {
+    display: block;
+  }
+  .flex {
+    display: flex;
+  }
+  .inline {
+    display: inline;
+  }
+  .h-full {
+    height: 100%;
+  }
+  .h-screen {
+    height: 100vh;
+  }
+  .w-full {
+    width: 100%;
+  }
+  .flex-grow {
+    flex-grow: 1;
+  }
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  .items-center {
+    align-items: center;
+  }
+  .items-end {
+    align-items: flex-end;
+  }
+  .items-start {
+    align-items: flex-start;
+  }
+  .items-stretch {
+    align-items: stretch;
+  }
+  .justify-between {
+    justify-content: space-between;
+  }
+  .justify-center {
+    justify-content: center;
+  }
+  .gap-0 {
+    gap: calc(var(--spacing) * 0);
+  }
+  .gap-2 {
+    gap: calc(var(--spacing) * 2);
+  }
+  .gap-3 {
+    gap: calc(var(--spacing) * 3);
+  }
+  .gap-4 {
+    gap: calc(var(--spacing) * 4);
+  }
+  .gap-6 {
+    gap: calc(var(--spacing) * 6);
+  }
+  .self-stretch {
+    align-self: stretch;
+  }
+  .border-t {
+    border-top-style: var(--tw-border-style);
+    border-top-width: 1px;
+  }
+  .bg-transparent {
+    background-color: transparent;
+  }
+  .p-6 {
+    padding: calc(var(--spacing) * 6);
+  }
+  .p-8 {
+    padding: calc(var(--spacing) * 8);
+  }
+  .px-4 {
+    padding-inline: calc(var(--spacing) * 4);
+  }
+  .px-8 {
+    padding-inline: calc(var(--spacing) * 8);
+  }
+  .py-2 {
+    padding-block: calc(var(--spacing) * 2);
+  }
+  .py-4 {
+    padding-block: calc(var(--spacing) * 4);
+  }
+  .pt-6 {
+    padding-top: calc(var(--spacing) * 6);
+  }
+  .text-center {
+    text-align: center;
+  }
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+  .text-3xl {
+    font-size: var(--text-3xl);
+    line-height: var(--tw-leading, var(--text-3xl--line-height));
+  }
+  .text-5xl {
+    font-size: var(--text-5xl);
+    line-height: var(--tw-leading, var(--text-5xl--line-height));
+  }
+  .text-base {
+    font-size: var(--text-base);
+    line-height: var(--tw-leading, var(--text-base--line-height));
+  }
+  .text-sm {
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+  }
+  .text-xl {
+    font-size: var(--text-xl);
+    line-height: var(--tw-leading, var(--text-xl--line-height));
+  }
+  .text-xs {
+    font-size: var(--text-xs);
+    line-height: var(--tw-leading, var(--text-xs--line-height));
+  }
+  .text-\[8px\] {
+    font-size: 8px;
+  }
+  .leading-none {
+    --tw-leading: 1;
+    line-height: 1;
+  }
+  .font-black {
+    --tw-font-weight: var(--font-weight-black);
+    font-weight: var(--font-weight-black);
+  }
+  .font-bold {
+    --tw-font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-bold);
+  }
+  .tracking-wider {
+    --tw-tracking: var(--tracking-wider);
+    letter-spacing: var(--tracking-wider);
+  }
+  .tracking-widest {
+    --tw-tracking: var(--tracking-widest);
+    letter-spacing: var(--tracking-widest);
+  }
+  .text-white {
+    color: var(--color-white);
+  }
+  .uppercase {
+    text-transform: uppercase;
+  }
+  .opacity-30 {
+    opacity: 30%;
+  }
+  .opacity-40 {
+    opacity: 40%;
+  }
+  .opacity-50 {
+    opacity: 50%;
+  }
+  .opacity-60 {
+    opacity: 60%;
+  }
+  .opacity-70 {
+    opacity: 70%;
+  }
+  .opacity-80 {
+    opacity: 80%;
+  }
+  .shadow-2xl {
+    --tw-shadow: 0 25px 50px -12px var(--tw-shadow-color, rgb(0 0 0 / 0.25));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .shadow-xl {
+    --tw-shadow: 0 20px 25px -5px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 8px 10px -6px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .hover\:opacity-100 {
+    &:hover {
+      @media (hover: hover) {
+        opacity: 100%;
+      }
+    }
+  }
+}
+@property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+@property --tw-leading {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-font-weight {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-tracking {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-inset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-ring-inset {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-offset-width {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --tw-ring-offset-color {
+  syntax: "*";
+  inherits: false;
+  initial-value: #fff;
+}
+@property --tw-ring-offset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@layer properties {
+  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
+    *, ::before, ::after, ::backdrop {
+      --tw-border-style: solid;
+      --tw-leading: initial;
+      --tw-font-weight: initial;
+      --tw-tracking: initial;
+      --tw-shadow: 0 0 #0000;
+      --tw-shadow-color: initial;
+      --tw-shadow-alpha: 100%;
+      --tw-inset-shadow: 0 0 #0000;
+      --tw-inset-shadow-color: initial;
+      --tw-inset-shadow-alpha: 100%;
+      --tw-ring-color: initial;
+      --tw-ring-shadow: 0 0 #0000;
+      --tw-inset-ring-color: initial;
+      --tw-inset-ring-shadow: 0 0 #0000;
+      --tw-ring-inset: initial;
+      --tw-ring-offset-width: 0px;
+      --tw-ring-offset-color: #fff;
+      --tw-ring-offset-shadow: 0 0 #0000;
+    }
+  }
+}
+</style></head>
+  <body class="desktop no-touch body--dark" style="--q-primary: #5898d4;">
+    <script defer="" src="/_nicegui/3.5.0/static/socket.io.min.js"></script>
+    
+    <script defer="" src="/_nicegui/3.5.0/static/tailwindcss.min.js"></script>
+    
+    <script type="module">
+      import * as Vue from "vue";
+      globalThis.Vue = Vue;
+    </script>
+    
+    <script defer="" src="/_nicegui/3.5.0/static/quasar.umd.prod.js"></script>
+    
+    <script defer="" src="/_nicegui/3.5.0/static/nicegui.js"></script>
+
+    <script defer="" src="/_nicegui/3.5.0/static/lang/en-US.umd.prod.js"></script>
+    <style></style>
+
+
+
+    <div id="app" data-v-app=""><div class="q-layout q-layout--standard nicegui-layout" tabindex="-1" id="c0" style="min-height: 720px;"><!----><!----><header class="q-header q-layout__section--marginal fixed-top nicegui-header wrap items-center py-2 px-4" id="c4" loopback="true" style="background-color: rgba(5, 5, 16, 0.9); border-bottom: 1px solid rgba(0, 243, 255, 0.2); height: 80px;"><div id="c5" class="nicegui-row row w-full items-center justify-between"><div id="c6" class="nicegui-column gap-0"><div id="c7" class="neon-text-blue text-5xl font-black leading-none" style="font-family: Oxanium, sans-serif; letter-spacing: 1px;">G777</div><div id="c8" class="text-xs font-bold text-white opacity-80" style="font-family: Oxanium, sans-serif; letter-spacing: 6px;">ULTIMATE</div></div><div id="c9" class="nicegui-row row gap-4"><div id="c10" class="cyber-tab cursor-pointer active"><div id="c11" class="uppercase tracking-wider">مرسل المجموعات</div></div><div id="c12" class="cyber-tab cursor-pointer"><div id="c13" class="uppercase tracking-wider">جالب الأعضاء</div></div><div id="c14" class="cyber-tab cursor-pointer"><div id="c15" class="uppercase tracking-wider">جالب الروابط</div></div><div id="c16" class="cyber-tab cursor-pointer"><div id="c17" class="uppercase tracking-wider">فلتر الأرقام</div></div></div><div id="c18" class="nicegui-row row gap-2 items-center"><button class="q-btn q-btn-item non-selectable no-outline q-btn--flat q-btn--rectangle text-white q-btn--actionable q-focusable q-hoverable q-btn--dense font-bold opacity-70 hover:opacity-100" tabindex="0" type="button" id="c19"><span class="q-focus-helper"></span><span class="q-btn__content text-center col items-center q-anchor--skip justify-center row"><span class="block">AR</span></span></button><i class="q-icon notranslate material-icons text-white opacity-70 hover:opacity-100 cursor-pointer" aria-hidden="true" id="c20" style="font-size: 28px;">settings</i></div></div><!----></header><div class="q-page-container" id="c1" style="padding-top: 80px;"><main class="q-page" id="c2" style="min-height: 640px;"><div id="c3" class="nicegui-content"><div id="c21" class="nicegui-row row w-full h-screen no-wrap gap-0"><div id="c22" class="nicegui-column h-full justify-center items-center py-4 bg-transparent" style="width: 100px; z-index: 100;"><div id="c23" class="hex-btn active"><i class="q-icon notranslate material-icons" aria-hidden="true" id="c24">language</i><div id="c25" class="label text-center leading-none text-[8px]">ربط الواتساب</div></div><div id="c26" class="hex-btn"><i class="q-icon notranslate material-icons" aria-hidden="true" id="c27">map</i><div id="c28" class="label text-center leading-none text-[8px]">خرائط جوجل</div></div><div id="c29" class="hex-btn"><i class="q-icon notranslate material-icons" aria-hidden="true" id="c30">dashboard</i><div id="c31" class="label text-center leading-none text-[8px]">نظام العملاء</div></div><div id="c32" class="hex-btn"><i class="q-icon notranslate material-icons" aria-hidden="true" id="c33">radar</i><div id="c34" class="label text-center leading-none text-[8px]">صائد الفرص</div></div><div id="c35" class="hex-btn"><i class="q-icon notranslate material-icons" aria-hidden="true" id="c36">settings_suggest</i><div id="c37" class="label text-center leading-none text-[8px]"> إعداد النشاط</div></div><div id="c38" class="hex-btn"><i class="q-icon notranslate material-icons" aria-hidden="true" id="c39">smart_toy</i><div id="c40" class="label text-center leading-none text-[8px]">مساعد الذكاء</div></div><div id="c41" class="hex-btn"><i class="q-icon notranslate material-icons" aria-hidden="true" id="c42">cloud_queue</i><div id="c43" class="label text-center leading-none text-[8px]">مركز السحاب</div></div><div id="c44" class="hex-btn"><i class="q-icon notranslate material-icons" aria-hidden="true" id="c45">palette</i><div id="c46" class="label text-center leading-none text-[8px]">المظهر</div></div></div><div id="c47" class="cyberpunk-bg scanline"></div><div id="c48" class="nicegui-column flex-grow p-6 w-full h-full" style="overflow-y: auto; z-index: 1;"><div id="c49" class="nicegui-column w-full items-center gap-6 p-8" style="max-width: 900px; margin: 0px auto;"><div id="c50" class="nicegui-column items-center gap-3 mb-6"><i class="q-icon notranslate material-icons" aria-hidden="true" id="c51" style="font-size: 64px; color: rgb(0, 229, 255);">phonelink_setup</i><div id="c52" class="text-3xl font-black" style="color: rgb(224, 247, 255); letter-spacing: -0.5px;">ربط واتساب السحابي</div><div id="c53" class="text-base opacity-60 text-center">اربط جهازك بمحور الذكاء الاصطناعي</div></div><div id="c54" class="nicegui-row row w-full gap-6 justify-center items-start"><div id="c55" class="nicegui-column flex-grow gap-6" style="min-width: 320px; max-width: 450px;"><div class="q-card q-card--dark q-dark nicegui-card w-full p-6 shadow-xl" id="c56" style="background: rgb(10, 22, 40); border: 1px solid rgba(26, 58, 92, 0.533); border-radius: 20px;"><div id="c57" class="nicegui-row row w-full items-center justify-between mb-4"><div id="c58" class="text-sm font-bold uppercase tracking-widest opacity-50">حالة المحرك</div><div class="q-badge flex inline items-center no-wrap q-badge--single-line bg-primary q-badge--rounded" role="status" id="c59">مباشر</div></div><div id="c60" class="nicegui-column w-full gap-4"><div id="c96" class="nicegui-row row items-center gap-4"><i class="q-icon notranslate material-icons" aria-hidden="true" id="c97" style="font-size: 42px; color: rgb(46, 204, 113);">verified_user</i><div id="c98" class="nicegui-column gap-0"><div id="c99" class="text-xl font-black" style="color: rgb(46, 204, 113);">نشط</div><div id="c100" class="text-sm opacity-60">مرتبط بـ: Unknown</div></div></div><hr class="q-separator q-separator--horizontal q-separator--dark nicegui-separator" aria-orientation="horizontal" id="c101" style="opacity: 0.1;"><div id="c102" class="nicegui-row row w-full justify-between items-center opacity-80"><div id="c103" class="text-xs font-bold">مزامنة الذكاء</div><div id="c104" class="text-xs font-bold" style="color: rgb(46, 204, 113);">مفعل</div></div><div id="c105" class="nicegui-row row mt-2"><div class="q-badge flex inline items-center no-wrap q-badge--single-line bg-positive" role="status" id="c106" dense="true">Engine: HEALTHY</div></div></div></div><div class="q-card q-card--dark q-dark nicegui-card w-full p-6" id="c64" style="background: rgb(5, 10, 18); border: 1px dashed rgb(26, 58, 92); border-radius: 20px;"><div id="c65" class="text-sm font-bold mb-3 opacity-70">الربط عبر الكود</div><div id="c66" class="nicegui-row row w-full gap-2"><label class="q-field row no-wrap items-start q-field--outlined q-input q-field--labeled q-field--dense q-field--dark flex-grow" for="c67"><!----><div class="q-field__inner relative-position col self-stretch"><div class="q-field__control relative-position row no-wrap" tabindex="-1"><div class="q-field__control-container col relative-position row no-wrap q-anchor--skip"><div class="q-field__label no-pointer-events absolute ellipsis">رقم الهاتف</div><input class="q-field__native q-placeholder" tabindex="0" aria-label="رقم الهاتف" name="c67" id="c67" loopback="false" list="undefined-datalist" type="text" value=""></div></div><!----></div><!----></label><!----><button class="q-btn q-btn-item non-selectable no-outline q-btn--unelevated q-btn--rectangle q-btn--rounded bg-primary text-white q-btn--actionable q-focusable q-hoverable" tabindex="0" type="button" id="c68" style="background: rgb(0, 229, 255);"><span class="q-focus-helper"></span><span class="q-btn__content text-center col items-center q-anchor--skip justify-center row"><i class="q-icon notranslate material-icons" aria-hidden="true" role="img">vpn_key</i></span></button></div></div></div><div id="c69" class="nicegui-column gap-6" style="width: 350px;"><div class="q-card q-card--dark q-dark nicegui-card w-full p-8 shadow-2xl items-center text-center" id="c70" style="background: white; border-radius: 30px; border: 2px solid rgba(0, 229, 255, 0.2);"><div id="c71" class="text-xs font-black tracking-widest mb-6" style="color: rgb(26, 26, 26); opacity: 0.4;">امسح رمز QR</div><div id="c72" class="nicegui-column w-full items-center justify-center" style="min-height: 250px;"><i class="q-icon notranslate material-icons" aria-hidden="true" id="c107" style="font-size: 120px; color: rgb(46, 204, 113); opacity: 0.1;">check_circle</i><div id="c108" class="text-sm font-bold opacity-30 mt-4">تم إنشاء الرابط</div></div><div id="c74" class="text-xs mt-6 opacity-60" style="color: rgb(26, 26, 26);">افتح إعدادات واتساب &gt; الأجهزة المرتبطة</div></div></div></div><div id="c75" class="nicegui-row row w-full justify-center gap-4 mt-8"><button class="q-btn q-btn-item non-selectable no-outline q-btn--unelevated q-btn--rectangle q-btn--rounded bg-primary text-white q-btn--actionable q-focusable q-hoverable px-8 py-2" tabindex="0" type="button" id="c76"><span class="q-focus-helper"></span><span class="q-btn__content text-center col items-center q-anchor--skip justify-center row"><i class="q-icon on-left notranslate material-icons" aria-hidden="true" role="img">sync</i><span class="block">تحديث</span></span></button><button class="q-btn q-btn-item non-selectable no-outline q-btn--outline q-btn--rectangle q-btn--rounded text-primary q-btn--actionable q-focusable q-hoverable px-8" tabindex="0" type="button" id="c77" style="color: rgb(255, 71, 87);"><span class="q-focus-helper"></span><span class="q-btn__content text-center col items-center q-anchor--skip justify-center row"><i class="q-icon on-left notranslate material-icons" aria-hidden="true" role="img">restart_alt</i><span class="block">إعادة ضبط كاملة</span></span></button></div><div id="c78" class="nicegui-row row w-full border-t mt-12 pt-6 opacity-40 justify-between items-center" style="border-color: rgba(26, 58, 92, 0.2);"><div id="c79" class="text-xs font-mono">تكامل Evolution API v2.3.6</div><div id="c80" class="text-xs font-mono">عقدة الذكاء الاصطناعي: G777-Travel</div></div></div><!----></div></div></div></main></div></div></div>
+    <div id="popup" class="nicegui-error-popup" aria-hidden="true">
+      <span>Connection lost.</span>
+      <span>Trying to reconnect...</span>
+    </div>
+    <div id="too_long_message_popup" class="nicegui-error-popup" aria-hidden="true">
+      <span>Message too long</span>
+      <span>The message is too large for WebSocket transmission.</span>
+    </div>
+    <script type="module">
+      const app = createApp(parseElements(String.raw`{"0":{"tag":"q-layout","class":["nicegui-layout"],"props":{"view":"hHh lpr fff"},"children":[4,1],"events":[{"listener_id":"e64fa3a7-6605-49a6-95fe-8c945abfd6d2","type":"sub_pages_open","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null},{"listener_id":"9ce21bc6-dd03-416c-b5f0-efad8e5d0729","type":"sub_pages_navigate","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"1":{"tag":"q-page-container","children":[2]},"2":{"tag":"q-page","children":[3]},"3":{"tag":"div","class":["nicegui-content"],"children":[21]},"4":{"tag":"nicegui-header","class":["nicegui-header","wrap","items-center","py-2","px-4"],"style":{"background-color":"rgba(5, 5, 16, 0.9)","border-bottom":"1px solid rgba(0, 243, 255, 0.2)","height":"80px"},"props":{"model-value":true,"loopback":true,"bordered":false,"elevated":false,"add-scroll-padding":true},"children":[5],"events":[{"listener_id":"cf3ade3c-081e-441d-993e-6f166f224cb0","type":"update:modelValue","specials":[],"modifiers":[],"keys":[],"args":[null],"throttle":0,"leading_events":true,"trailing_events":true,"js_handler":null}],"component":{"key":"9c6755c1d6cf4b466fd2da49fe8ea36b/header.js","name":"header","tag":"nicegui-header"}},"5":{"tag":"div","class":["nicegui-row","row","w-full","items-center","justify-between"],"children":[6,9,18]},"6":{"tag":"div","class":["nicegui-column","gap-0"],"children":[7,8]},"7":{"tag":"div","text":"G777","class":["neon-text-blue","text-5xl","font-black","leading-none"],"style":{"font-family":"\"Oxanium\", sans-serif","letter-spacing":"1px"}},"8":{"tag":"div","text":"ULTIMATE","class":["text-xs","font-bold","text-white","opacity-80"],"style":{"font-family":"\"Oxanium\", sans-serif","letter-spacing":"6px"}},"9":{"tag":"div","class":["nicegui-row","row","gap-4"],"children":[10,12,14,16]},"10":{"tag":"div","class":["cyber-tab","cursor-pointer","active"],"children":[11],"events":[{"listener_id":"61d85454-8f82-47e2-9f59-19ef3422e8da","type":"click","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"11":{"tag":"div","text":"مرسل المجموعات","class":["uppercase","tracking-wider"]},"12":{"tag":"div","class":["cyber-tab","cursor-pointer"],"children":[13],"events":[{"listener_id":"74ddbe4e-f6da-4c72-9861-3c8fdb41d8e3","type":"click","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"13":{"tag":"div","text":"جالب الأعضاء","class":["uppercase","tracking-wider"]},"14":{"tag":"div","class":["cyber-tab","cursor-pointer"],"children":[15],"events":[{"listener_id":"6fa75d56-deb7-49ac-b9af-9c4cf4162d88","type":"click","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"15":{"tag":"div","text":"جالب الروابط","class":["uppercase","tracking-wider"]},"16":{"tag":"div","class":["cyber-tab","cursor-pointer"],"children":[17],"events":[{"listener_id":"c1022f01-d33c-4586-9998-bf7b38c39c62","type":"click","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"17":{"tag":"div","text":"فلتر الأرقام","class":["uppercase","tracking-wider"]},"18":{"tag":"div","class":["nicegui-row","row","gap-2","items-center"],"children":[19,20]},"19":{"tag":"q-btn","class":["font-bold","opacity-70","hover:opacity-100"],"props":{"color":"primary","label":"AR","flat":true,"text-color":"white","dense":true},"events":[{"listener_id":"d794f22c-163a-4abb-a111-e3058c6e90bc","type":"click","specials":[],"modifiers":[],"keys":[],"args":[],"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"20":{"tag":"q-icon","class":["text-white","opacity-70","hover:opacity-100","cursor-pointer"],"props":{"name":"settings","size":"28px"}},"21":{"tag":"div","class":["nicegui-row","row","w-full","h-screen","no-wrap","gap-0"],"children":[22,47,48]},"22":{"tag":"div","class":["nicegui-column","h-full","justify-center","items-center","py-4","bg-transparent"],"style":{"width":"100px","z-index":"100"},"children":[23,26,29,32,35,38,41,44]},"23":{"tag":"div","class":["hex-btn","active"],"children":[24,25],"events":[{"listener_id":"207affba-1787-433f-941c-ca5fd103781c","type":"click","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"24":{"tag":"q-icon","props":{"name":"language"}},"25":{"tag":"div","text":"ربط الواتساب","class":["label","text-center","leading-none","text-[8px]"]},"26":{"tag":"div","class":["hex-btn"],"children":[27,28],"events":[{"listener_id":"a7ad1b3e-b2a4-4f08-904b-86810a08071a","type":"click","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"27":{"tag":"q-icon","props":{"name":"map"}},"28":{"tag":"div","text":"خرائط جوجل","class":["label","text-center","leading-none","text-[8px]"]},"29":{"tag":"div","class":["hex-btn"],"children":[30,31],"events":[{"listener_id":"d02e42ae-e2d6-4fee-b07d-053558e6e321","type":"click","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"30":{"tag":"q-icon","props":{"name":"dashboard"}},"31":{"tag":"div","text":"نظام العملاء","class":["label","text-center","leading-none","text-[8px]"]},"32":{"tag":"div","class":["hex-btn"],"children":[33,34],"events":[{"listener_id":"5be27186-cb7e-42dc-a023-d94488769594","type":"click","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"33":{"tag":"q-icon","props":{"name":"radar"}},"34":{"tag":"div","text":"صائد الفرص","class":["label","text-center","leading-none","text-[8px]"]},"35":{"tag":"div","class":["hex-btn"],"children":[36,37],"events":[{"listener_id":"19b579b9-10cd-4108-9c54-0fc9d513e157","type":"click","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"36":{"tag":"q-icon","props":{"name":"settings_suggest"}},"37":{"tag":"div","text":" إعداد النشاط","class":["label","text-center","leading-none","text-[8px]"]},"38":{"tag":"div","class":["hex-btn"],"children":[39,40],"events":[{"listener_id":"eb996e6b-5ce0-4572-a2a5-ff7383d9e808","type":"click","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"39":{"tag":"q-icon","props":{"name":"smart_toy"}},"40":{"tag":"div","text":"مساعد الذكاء","class":["label","text-center","leading-none","text-[8px]"]},"41":{"tag":"div","class":["hex-btn"],"children":[42,43],"events":[{"listener_id":"bfaacf5d-fa07-4ddb-b52c-3276d9fc9608","type":"click","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"42":{"tag":"q-icon","props":{"name":"cloud_queue"}},"43":{"tag":"div","text":"مركز السحاب","class":["label","text-center","leading-none","text-[8px]"]},"44":{"tag":"div","class":["hex-btn"],"children":[45,46],"events":[{"listener_id":"00c51946-83eb-4f7d-b0c9-98609d60645b","type":"click","specials":[],"modifiers":[],"keys":[],"args":null,"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"45":{"tag":"q-icon","props":{"name":"palette"}},"46":{"tag":"div","text":"المظهر","class":["label","text-center","leading-none","text-[8px]"]},"47":{"tag":"div","class":["cyberpunk-bg","scanline"]},"48":{"tag":"div","class":["nicegui-column","flex-grow","p-6","w-full","h-full"],"style":{"overflow-y":"auto","z-index":"1"},"children":[49,81,82]},"49":{"tag":"div","class":["nicegui-column","w-full","items-center","gap-6","p-8"],"style":{"max-width":"900px","margin":"0 auto"},"children":[50,54,75,78]},"50":{"tag":"div","class":["nicegui-column","items-center","gap-3","mb-6"],"children":[51,52,53]},"51":{"tag":"q-icon","style":{"color":"#00e5ff"},"props":{"name":"phonelink_setup","size":"64px"}},"52":{"tag":"div","text":"ربط واتساب السحابي","class":["text-3xl","font-black"],"style":{"color":"#e0f7ff","letter-spacing":"-0.5px"}},"53":{"tag":"div","text":"اربط جهازك بمحور الذكاء الاصطناعي","class":["text-base","opacity-60","text-center"]},"54":{"tag":"div","class":["nicegui-row","row","w-full","gap-6","justify-center","items-start"],"children":[55,69]},"55":{"tag":"div","class":["nicegui-column","flex-grow","gap-6"],"style":{"min-width":"320px","max-width":"450px"},"children":[56,64]},"56":{"tag":"q-card","class":["nicegui-card","w-full","p-6","shadow-xl"],"style":{"background":"#0a1628","border":"1px solid #1a3a5c88","border-radius":"20px"},"children":[57,60]},"57":{"tag":"div","class":["nicegui-row","row","w-full","items-center","justify-between","mb-4"],"children":[58,59]},"58":{"tag":"div","text":"حالة المحرك","class":["text-sm","font-bold","uppercase","tracking-widest","opacity-50"]},"59":{"tag":"q-badge","text":"مباشر","props":{"color":"primary","outline":false,"rounded":true}},"60":{"tag":"div","class":["nicegui-column","w-full","gap-4"],"children":[61]},"61":{"tag":"div","class":["nicegui-row","row","items-center","gap-3"],"children":[62,63]},"62":{"tag":"q-spinner-ring","props":{"color":"primary","size":"md","thickness":5.0}},"63":{"tag":"div","text":"جاري تهيئة المحور...","class":["text-base"]},"64":{"tag":"q-card","class":["nicegui-card","w-full","p-6"],"style":{"background":"#050a12","border":"1px dashed #1a3a5c","border-radius":"20px"},"children":[65,66]},"65":{"tag":"div","text":"الربط عبر الكود","class":["text-sm","font-bold","mb-3","opacity-70"]},"66":{"tag":"div","class":["nicegui-row","row","w-full","gap-2"],"children":[67,68]},"67":{"tag":"nicegui-input","class":["flex-grow"],"props":{"value":"","loopback":false,"error":null,"label":"رقم الهاتف","for":"c67","type":"text","_autocomplete":[],"outlined":true,"dense":true},"events":[{"listener_id":"f489ba69-6f80-469a-93b2-7dbed9211ba4","type":"update:value","specials":[],"modifiers":[],"keys":[],"args":[null],"throttle":0,"leading_events":true,"trailing_events":true,"js_handler":null}],"component":{"key":"b9093b846f34a71adc16c9db3c63407f/input.js","name":"input","tag":"nicegui-input"}},"68":{"tag":"q-btn","style":{"background":"#00e5ff"},"props":{"color":"primary","label":"","icon":"vpn_key","unelevated":true,"rounded":true},"events":[{"listener_id":"5989b236-d4f2-46ea-9eb4-e3cd3ebdd5ed","type":"click","specials":[],"modifiers":[],"keys":[],"args":[],"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"69":{"tag":"div","class":["nicegui-column","gap-6"],"style":{"width":"350px"},"children":[70]},"70":{"tag":"q-card","class":["nicegui-card","w-full","p-8","shadow-2xl","items-center","text-center"],"style":{"background":"white","border-radius":"30px","border":"2px solid #00e5ff33"},"children":[71,72,74]},"71":{"tag":"div","text":"امسح رمز QR","class":["text-xs","font-black","tracking-widest","mb-6"],"style":{"color":"#1a1a1a","opacity":"0.4"}},"72":{"tag":"div","class":["nicegui-column","w-full","items-center","justify-center"],"style":{"min-height":"250px"},"children":[73]},"73":{"tag":"q-spinner-audio","props":{"color":"primary","size":"64px","thickness":5.0}},"74":{"tag":"div","text":"افتح إعدادات واتساب &gt; الأجهزة المرتبطة","class":["text-xs","mt-6","opacity-60"],"style":{"color":"#1a1a1a"}},"75":{"tag":"div","class":["nicegui-row","row","w-full","justify-center","gap-4","mt-8"],"children":[76,77]},"76":{"tag":"q-btn","class":["px-8","py-2"],"props":{"color":"primary","label":"تحديث","icon":"sync","unelevated":true,"rounded":true},"events":[{"listener_id":"cb8a3048-cdad-4645-8d38-cfc45b20d944","type":"click","specials":[],"modifiers":[],"keys":[],"args":[],"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"77":{"tag":"q-btn","class":["px-8"],"style":{"color":"#ff4757"},"props":{"color":"primary","label":"إعادة ضبط كاملة","icon":"restart_alt","outline":true,"rounded":true},"events":[{"listener_id":"b9ccc409-ec26-419e-bb47-806e03eea018","type":"click","specials":[],"modifiers":[],"keys":[],"args":[],"throttle":0.0,"leading_events":true,"trailing_events":true,"js_handler":null}]},"78":{"tag":"div","class":["nicegui-row","row","w-full","border-t","mt-12","pt-6","opacity-40","justify-between","items-center"],"style":{"border-color":"#1a3a5c33"},"children":[79,80]},"79":{"tag":"div","text":"تكامل Evolution API v2.3.6","class":["text-xs","font-mono"]},"80":{"tag":"div","text":"عقدة الذكاء الاصطناعي: G777-Travel","class":["text-xs","font-mono"]},"81":{"tag":"nicegui-timer","component":{"key":"0e4cb910c7f9ab4a5051bfce742bf0f5/timer.js","name":"timer","tag":"nicegui-timer"}},"82":{"tag":"nicegui-timer","component":{"key":"0e4cb910c7f9ab4a5051bfce742bf0f5/timer.js","name":"timer","tag":"nicegui-timer"}}}`), {
+        version: "3.5.0",
+        prefix: "",
+        query: {'client_id': '09746eb8-47f8-4456-b4ad-ea690f729582', 'next_message_id': 0},
+        extraHeaders: {},
+        transports: ['websocket', 'polling'],
+      });
+      const dark = True;
+      const language = "en-US";
+      const vue_config = {"brand":{"primary":"#5898d4"},"loadingBar":{"color":"primary","skipHijack":false}};
+      
+        app.use(Quasar, {config: vue_config});
+        Quasar.lang.set(Quasar.lang[language.replace('-', '')]);
+        Quasar.Dark.set(dark === None ? "auto" : dark);
+    
+
+      import { default as header } from "/_nicegui/3.5.0/components/9c6755c1d6cf4b466fd2da49fe8ea36b/header.js";
+app.component("nicegui-header", header);
+import { default as input } from "/_nicegui/3.5.0/components/b9093b846f34a71adc16c9db3c63407f/input.js";
+app.component("nicegui-input", input);
+import { default as timer } from "/_nicegui/3.5.0/components/0e4cb910c7f9ab4a5051bfce742bf0f5/timer.js";
+app.component("nicegui-timer", timer);
+      
+
+      app.mount("#app");
+    </script>
+  
+<div id="q-loading-bar" data-v-app=""><div class="q-loading-bar q-loading-bar--top bg-primary" aria-hidden="true" style="transform: translate3d(-100%, -200%, 0px); height: 2px; opacity: 0;"></div></div><div id="q-notify" data-v-app=""><div class="q-notifications"><div class="q-notifications__list q-notifications__list--top fixed column no-wrap items-start"></div><div class="q-notifications__list q-notifications__list--top fixed column no-wrap items-end"></div><div class="q-notifications__list q-notifications__list--bottom fixed column no-wrap items-start"></div><div class="q-notifications__list q-notifications__list--bottom fixed column no-wrap items-end"></div><div class="q-notifications__list q-notifications__list--top fixed column no-wrap items-center"></div><div class="q-notifications__list q-notifications__list--bottom fixed column no-wrap items-center"><div class="q-notification row items-stretch q-notification--standard bg-positive text-white" role="alert"><div class="q-notification__wrapper col relative-position border-radius-inherit row items-center"><div class="q-notification__content row items-center col"><i class="q-icon notranslate material-icons q-notification__icon q-notification__icon--additional" aria-hidden="true" role="img">bolt</i><div class="q-notification__message col">تم مزامنة النظام. البوت متصل الآن.</div></div></div></div></div><div class="q-notifications__list q-notifications__list--center fixed column no-wrap items-start justify-center"></div><div class="q-notifications__list q-notifications__list--center fixed column no-wrap items-end justify-center"></div><div class="q-notifications__list q-notifications__list--center fixed column no-wrap flex-center"></div></div></div></body></html>

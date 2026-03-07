@@ -1,0 +1,93 @@
+﻿# 📋 G777 ELECTRA .gitignore (CNS Squad - Public Repo Edition)
+# ===============================================================
+
+# --- G777 SPECIFIC SECRETS (NEVER REMOVE) ---
+.env
+.env.*
+*.backup
+*.json.backup
+auth_info/
+baileys-service/auth_info/
+chrome_profile/
+GITHUB_SECRETS_*.json
+SENTINEL_AUDIT_*.md
+
+# --- DATABASE & DATA ---
+*.sqlite
+*.db
+docker-volumes/
+uploads/
+data/*.xlsx
+data/*.csv
+trips_db.json
+G777_HYBRID_SCHEMA.sql
+database/schema.sql
+
+# --- AUDITS & MISSION LOGS ---
+*AUDIT_REPORT.md
+*PRODUCTION_AUDIT.md
+SENTINEL_MISSION_SUMMARY.md
+SOLVED_ISSUES.md
+
+# --- PYTHON & NODE ---
+venv/
+.venv/
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# --- AGENT PERSISTENCE ---
+.gemini/
+.antigravity/
+.specify/
+.agent/
+.cursor/
+
+# --- OS & IDE ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.git_old_private_backup/
+
+# --- FLUTTER & DART ---
+frontend_flutter/build/
+frontend_flutter/.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+
+# --- CHROME PROFILE ---
+chrome_profile/
+
+# --- NODE MODULES ---
+baileys-service/node_modules/
+
+# --- VENV ---
+venv/
+.venv/
+
+# --- FLUTTER & DART ---
+frontend_flutter/build/
+frontend_flutter/.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+
+# --- CHROME PROFILE ---
+chrome_profile/
+
+# --- NODE MODULES ---
+baileys-service/node_modules/
+
+# --- VENV ---
+venv/
+.venv/
