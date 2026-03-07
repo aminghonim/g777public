@@ -1,8 +1,10 @@
-﻿"""
+"""
 G777 Antigravity - Main Entry Point
 Version: 2.2.0 | Flutter Edition
 Mandate: Modular & Transparent Orchestration
 """
+
+# 🛡️ CNS SQUAD MANDATE: Zero-Regression & Full Quality Audit (Activated)
 
 import sys
 import os

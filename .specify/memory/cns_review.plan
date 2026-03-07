@@ -1,0 +1,9 @@
+# CNS Squad Review Activation Plan
+
+## Objective
+Trigger the newly configured CodeRabbit bot in `g777public` to verify the "Full Squad Mode" instructions.
+
+## Changes
+1. **Metadata**: Add a "Surgical" comment to `main.py`.
+2. **Commit**: `chore: trigger initial CNS Squad AI audit in Arabic`
+3. **Action**: Open PR toward `main`.
