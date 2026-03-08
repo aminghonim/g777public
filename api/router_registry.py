@@ -18,6 +18,7 @@ from . import (
     social_extractor,
 )
 from backend.webhook_handler import router as webhook_router
+from backend.routers.web_ui import router as web_ui_router
 
 
 def register_all_routers(app: FastAPI):

@@ -5,9 +5,14 @@
 - **Primary Database**: **Supabase** (PostgreSQL via Pooler).
   - **Database URL**: `postgresql://postgres.zbrpwteyldwpqlcxdpmf:G777SecureCRM2026@aws-1-eu-central-1.pooler.supabase.com:6543/postgres`
 - **Supabase Project**: `zbrpwteyldwpqlcxdpmf` (`https://zbrpwteyldwpqlcxdpmf.supabase.co`)
+- **AI Model**: **Gemini 2.0 Flash**. (Free Tier)
+- **Secondary Stack (Modern Free Stack)**:
+  - **Email**: **Resend** (Free 3k/mo). `backend/services/resend_client.py`. (API Key: `re_X6N...`)
+  - **Vector DB**: **Pinecone** (Serverless `us-east-1`). `backend/services/pinecone_manager.py`. (Rule 12: Tenant isolation enforced).
+  - **Cache & Rate Limit**: **Upstash Redis**. `backend/services/cache_manager.py`. (Rule 11: AI Budget protection).
+  - **Auth & Identity**: **Clerk**. `backend/core/auth.py`. (Middleware + JWT Verification).
+  - **Observability**: **Sentry**. `backend/core/monitoring.py`. (Error & Performance tracking).
 - **Deprecated Database**: **Neon PostgreSQL** (Confirmed Removed).
-- **AI Model**: **Gemini 2.0 Flash**.
-  - **API Key**: `AIzaSyDBrn8vJ3k1Xu86VhdNHSse9ybbJyxDG2g`
 - **Communication Engine**: **Evolution API v2** (Local/Gateway architecture).
   - **Local Gateway**: `backend/wa_gateway.py` (WAGateway class).
   - **Logic Mixins**: `backend/evolution/` (Handlers for connection, messaging, etc.).
@@ -47,10 +52,18 @@
   - PR #1 `fix/test-cns-review` **merged** — 4 commits, 0 regressions, CodeRabbit: "No actionable comments".
   - Local `main` synced via `git pull --rebase origin main`.
   - Future: RAGAS Integration Plan prepared in `Artifacts/RAGAS_Integration_Plan.md`.
+- **2026-03-08**: **THE MODERN UNIFICATION**:
+  - Consolidated all project rules into a single **CNS Squad Constitution** (`GEMINI.md`).
+  - Audited and cleaned `G777_MIGRATION_VAULT`; extracted n8n workflows and recovered `baileys-service` source.
+  - Successfully integrated the **Modern Free Stack** (Resend, Pinecone, Upstash, Sentry, Clerk).
+  - Implemented **Clerk Authentication Middleware** with a legacy fallback for Zero-Regression (Rule 4).
+  - Verified all core managers with a new `pytest` suite: `tests/test_free_stack_managers.py`.
 
 ## ⚠️ Known Blockers/Issues
 
 - Evolution API may need `sudo docker restart evolution-api` if webhooks stop arriving.
+- **Pydantic Version Conflict**: `clerk-sdk-python` requires `pydantic<2.0.0`, but FastAPI and other core modules require `pydantic>=2.7.0`.
+  - **Status**: Clerk SDK uninstalled from pip to keep the system stable. Using a custom manual `ClerkAuth` implementation via `httpx` to avoid version hell.
 
 ## 🔴 Technical Pitfalls & Anti-Patterns
 
@@ -67,3 +80,8 @@
   - **Correct**: `ruff:\n  enabled: false`
   - **Wrong**: `ruff: false`
   - **Additional**: `ast-grep` tool uses a completely different schema (`rule_dirs`, `essential_rules`). Do NOT use `enabled: false` for it. Remove it entirely if not needed.
+- **Pydantic Version Hell**:
+  - **Avoid**: Installing `clerk-sdk-python` via pip (it forces a downgrade to 1.10.x).
+  - **Solution**: Use direct API calls to `api.clerk.com` for session verification.
+- **Rule Consolidation**:
+  - **Rule**: NEVER create scattered `.mdc` or `.md` rules. **GEMINI.md** is the single source of truth (Rule 0).
