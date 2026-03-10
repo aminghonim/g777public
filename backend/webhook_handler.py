@@ -5,36 +5,37 @@ Processes ALL types of WhatsApp messages: Text, Images, Audio, Video, Documents.
 Flow: Baileys → Privacy → DB → AI → Reply + N8N Forwarding
 """
 
-import logging
-from fastapi import APIRouter, Request, BackgroundTasks, Response
-from fastapi.responses import JSONResponse
-from typing import Dict, Any
+# Standard library
 import asyncio
-import httpx
-import os
 import json
+import logging
+import os
 from datetime import datetime
+from typing import Any, Dict
 
-# Import services
+# Third-party
+import httpx
+from fastapi import APIRouter, BackgroundTasks, Request
+from fastapi.responses import JSONResponse
+
+# Local / first-party
 from .db_service import (
-    get_customer_by_phone,
-    create_customer,
     create_conversation,
-    save_message,
-    get_conversation_history,
+    create_customer,
+    get_customer_by_phone,
     is_excluded,
     pause_bot_for_customer,
+    save_message,
 )
 
-# Import manager for tenant‑aware queries (Rule 12 Tenant Isolation)
+# Import manager for tenant-aware queries (Rule 12 Tenant Isolation)
 from .database_manager import DatabaseManager
 from .crm_intelligence import run_data_extraction
-from .ai_engine import ai_engine
-from .baileys_client import baileys_client
-from .message_processor import process_ai_response, extract_message_info
+from .message_processor import extract_message_info
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
 
 # ============================================================================
 # CONFIGURATION
@@ -254,9 +255,9 @@ async def forward_to_n8n(
             return response
 
     except httpx.TimeoutException:
-        logger.error(f"N8N Timeout after 15s")
+        logger.error("N8N Timeout after 15s")
     except Exception as e:
-        logger.error(f"[ERR] N8N Forwarding Error: {e}", exc_info=True)
+        logger.error("[ERR] N8N Forwarding Error: %s", e, exc_info=True)
 
     return None
 

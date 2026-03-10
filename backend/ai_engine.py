@@ -5,40 +5,45 @@ Handles AI logic for intent classification, entity extraction,
 and dynamic response generation using the new google-genai SDK.
 """
 
-import os
+# Standard library
 import json
-import asyncio
-import yaml
 import logging
-from typing import Dict, Any, Optional, List
+import os
+from typing import Any, Dict, List, Optional
+
+# Third-party
+import yaml
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+
+try:
+    from google import adk
+    ADK_AVAILABLE = True
+except ImportError:
+    adk = None
+    ADK_AVAILABLE = False
+
+# Local / first-party
 from .db_service import (
-    get_tenant_settings,
     get_system_prompt,
-    format_offerings_for_prompt,
-    get_customer_by_phone,
+    get_tenant_settings,
     is_excluded,
-    get_training_samples,
 )
 from .mcp_manager import mcp_manager
-from .services.pinecone_manager import pinecone_manager
 from backend.agents.orchestrator import Orchestrator
-from google import adk
 from backend.ai_agents.persona_agent import PersonaAgent
-from dotenv import load_dotenv
-from loguru import logger
 
 load_dotenv()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 class AIEngine:
-    def __init__(self):
-        self.strings = {}  # Safety initialization
+    """AI orchestration engine for intent classification and response generation."""
+
+    def __init__(self) -> None:
+        self.strings: Dict[str, Any] = {}  # Safety initialization
         self.api_key = os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             logger.error(
@@ -53,8 +58,9 @@ class AIEngine:
         # Initialize CNS Orchestrator
         self.orchestrator = Orchestrator()
 
-        # Initialize ADK Persona Agent (Modernized)
-        self.persona_agent = PersonaAgent()
+        # Initialize ADK Persona Agent only when the SDK is available
+        self.persona_agent = PersonaAgent() if ADK_AVAILABLE else None
+
 
         # Load AI Instructions
         self.instructions = self._load_instructions()
@@ -314,32 +320,31 @@ RULES:
 
         # 4. Delegate to Orchestrator or ADK Runner
         try:
-            # Modern Track: ADK Runner
-            try:
-                # Refresh tools for the persona agent (Modernized via ADK)
-                # We create a specific instance with tools for this run
-                request_agent = PersonaAgent(tools=tools)
-                runner = adk.Runner(agent=request_agent)
-                response_text = ""
+            # Modern Track: ADK Runner (only when SDK is installed)
+            if ADK_AVAILABLE and adk is not None:
+                try:
+                    request_agent = PersonaAgent(tools=tools)
+                    runner = adk.Runner(agent=request_agent)
+                    response_text = ""
 
-                # ADK executes the tool-use loop automatically
-                async for event in runner.run_async(
-                    user_id="g777_admin",
-                    session_id=customer_phone,
-                    new_message=types.Content(
-                        role="user", parts=[types.Part(text=message)]
-                    ),
-                ):
-                    if hasattr(event, "text") and event.text:
-                        response_text += event.text
+                    async for event in runner.run_async(
+                        user_id="g777_admin",
+                        session_id=customer_phone,
+                        new_message=types.Content(
+                            role="user", parts=[types.Part(text=message)]
+                        ),
+                    ):
+                        if hasattr(event, "text") and event.text:
+                            response_text += event.text
 
-                if response_text:
-                    return response_text
+                    if response_text:
+                        return response_text
 
-            except Exception as adk_err:
-                logger.error(
-                    f"ADK Execution Error: {adk_err}. Falling back to Orchestrator."
-                )
+                except Exception as adk_err:
+                    logger.error(
+                        "ADK Execution Error: %s. Falling back to Orchestrator.",
+                        adk_err,
+                    )
 
             # Legacy/Safety Track: Orchestrator
             response_text = await self.orchestrator.process_request(
@@ -352,8 +357,9 @@ RULES:
             return response_text
 
         except Exception as e:
-            logger.error(f"Generation Error: {e}", exc_info=True)
+            logger.error("Generation Error: %s", e, exc_info=True)
             return self._get_string("errors.ai_api_overload")
+
 
     def _load_kb(self) -> Optional[Dict[str, Any]]:
         """Surgically load knowledge base from JSON"""
