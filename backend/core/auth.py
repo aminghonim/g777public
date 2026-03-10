@@ -1,60 +1,96 @@
-import os
-from fastapi import Request, HTTPException, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import httpx
-from loguru import logger
+"""
+Clerk JWT Authentication — Verifies tokens using the JWKS endpoint.
 
-# 🛡️ CNS SQUAD MANDATE: Rule 12 (Tenant Shield)
-# This module handles Clerk JWT verification and user extraction.
+Uses the public key from Clerk's JWKS endpoint instead of calling the
+Clerk REST API, which is both faster (no network round-trip per request)
+and more reliable (works offline if JWKS is cached).
+"""
+
+import os
+import logging
+from typing import Any, Dict
+
+import httpx
+from jose import JWTError, jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+logger = logging.getLogger(__name__)
 
 security = HTTPBearer()
 
-CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
-CLERK_API_BASE = "https://api.clerk.dev/v1"
+CLERK_JWKS_URL = os.getenv(
+    "CLERK_JWKS_URL",
+    "https://credible-kingfish-86.clerk.accounts.dev/.well-known/jwks.json",
+)
+
+_jwks_cache: Dict[str, Any] = {}
+
+
+async def _get_jwks() -> Dict[str, Any]:
+    """
+    Fetches and caches Clerk's JWKS (JSON Web Key Set) for token verification.
+    Cached in memory so each process only fetches once at startup.
+    """
+    if _jwks_cache:
+        return _jwks_cache
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(CLERK_JWKS_URL)
+            response.raise_for_status()
+            _jwks_cache.update(response.json())
+            logger.info("Clerk JWKS loaded from %s", CLERK_JWKS_URL)
+    except httpx.RequestError as exc:
+        logger.error("Failed to fetch Clerk JWKS: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Auth service unavailable — cannot reach Clerk JWKS.",
+        ) from exc
+
+    return _jwks_cache
+
 
 class ClerkAuth:
     """
-    Handles authentication via Clerk.
-    Verifies the JWT token and extracts user information.
+    Verifies Clerk JWTs using the public JWKS endpoint.
+    Avoids per-request calls to the Clerk REST API for lower latency.
     """
-    
+
     @staticmethod
-    async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    async def verify_token(
+        credentials: HTTPAuthorizationCredentials = Depends(security),
+    ) -> Dict[str, Any]:
+        """
+        Decodes and validates the Clerk JWT from the Authorization header.
+        Returns the decoded payload on success; raises HTTP 401 on any failure.
+        """
         token = credentials.credentials
-        if not CLERK_SECRET_KEY:
-            logger.error("CLERK_SECRET_KEY is missing in .env")
-            raise HTTPException(status_code=500, detail="Auth configuration error")
+        jwks = await _get_jwks()
 
         try:
-            # Check with Clerk API to verify our session
-            async with httpx.AsyncClient() as client:
-                headers = {"Authorization": f"Bearer {CLERK_SECRET_KEY}"}
-                # Verification using Clerk's backend API (User Introspection)
-                # This ensures the session is currently valid on Clerk's servers.
-                response = await client.get(
-                    f"{CLERK_API_BASE}/users/me", # Clerk's standard "Who am I?" endpoint
-                    headers={"Authorization": f"Bearer {token}"}
-                )
-                
-                if response.status_code != 200:
-                    logger.warning(f"Clerk token verification failed: {response.text}")
-                    raise HTTPException(status_code=401, detail="Invalid Clerk session")
-                
-                user_data = response.json()
-                # 🛡️ Rule 12: Attach user_id to context for tenant isolation
-                return {
-                    "user_id": user_data.get("id"),
-                    "email": user_data.get("email_addresses")[0].get("email_address") if user_data.get("email_addresses") else None,
-                    "status": "active"
-                }
+            payload = jwt.decode(
+                token,
+                jwks,
+                algorithms=["RS256"],
+                options={"verify_aud": False},
+            )
+        except JWTError as exc:
+            logger.warning("Clerk JWT verification failed: %s", exc)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired session token.",
+            ) from exc
 
-        except Exception as e:
-            logger.error(f"Clerk verification error: {str(e)}")
-            raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+        return {
+            "user_id": payload.get("user_id") or payload.get("sub"),
+            "email": payload.get("email"),
+            "role": payload.get("role", "client"),
+        }
 
-def get_current_user(user_data: dict = Depends(ClerkAuth.verify_token)):
-    """
-    Dependency to be used in secure routes.
-    Ensures Rule 12 (Tenant Isolation) can be applied by providing user context.
-    """
+
+def get_current_user(
+    user_data: Dict[str, Any] = Depends(ClerkAuth.verify_token),
+) -> Dict[str, Any]:
+    """FastAPI dependency for securing endpoints with Clerk auth."""
     return user_data
