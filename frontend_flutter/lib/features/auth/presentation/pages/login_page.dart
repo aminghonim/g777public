@@ -52,6 +52,10 @@ class _LoginPageState extends ConsumerState<LoginPage>
         .login(_usernameController.text.trim(), _passwordController.text);
   }
 
+  Future<void> _handleClerkLogin() async {
+    await ref.read(authProvider.notifier).loginWithClerk();
+  }
+
   Future<void> _handleGuestLogin() async {
     await ref.read(authProvider.notifier).continueAsGuest();
   }
@@ -184,7 +188,30 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
                             const SizedBox(height: 28),
 
-                            // Login button
+                            // Primary: Clerk sign-in (opens system browser)
+                            _buildClerkButton(colors),
+
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Divider(color: colors.textMuted.withValues(alpha: 0.3)),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: Text(
+                                    'أو',
+                                    style: TextStyle(color: colors.textMuted, fontSize: 12),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Divider(color: colors.textMuted.withValues(alpha: 0.3)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Legacy: local username/password login
                             _buildLoginButton(colors),
 
                             const SizedBox(height: 16),
@@ -382,6 +409,60 @@ class _LoginPageState extends ConsumerState<LoginPage>
                       fontSize: 16,
                       letterSpacing: 2,
                     ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClerkButton(ThemeColors colors) {
+    final isLoading = ref.watch(authProvider).isLoading;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: isLoading ? null : _handleClerkLogin,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: 50,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF6C47FF), Color(0xFF9B72FF)],
+            ),
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF6C47FF).withValues(alpha: 0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  )
+                : const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.lock_open_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 10),
+                      Text(
+                        'تسجيل الدخول بـ Clerk',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
                   ),
           ),
         ),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../data/auth_repository.dart';
 import '../../../core/security/secure_storage_service.dart';
+import '../../../core/services/clerk_auth_service.dart';
 
 part 'auth_provider.g.dart';
 
@@ -131,6 +132,35 @@ class Auth extends _$Auth {
       return true;
     } catch (e) {
       state = const AsyncData(AuthError('Failed to activate trial session'));
+      return false;
+    }
+  }
+
+  /// Clerk Deep-Link Entry Point (Windows Desktop — RFC 8252 Loopback flow).
+  /// Opens the system browser to Clerk's hosted sign-in page and waits for
+  /// the token to arrive via a local HTTP callback server on a random port.
+  Future<bool> loginWithClerk() async {
+    state = const AsyncLoading();
+    try {
+      final token = await ClerkAuthService.signIn();
+      await ClerkAuthService.saveToken(token);
+
+      // Store under the same keys as the legacy login for router compatibility.
+      await SecureStorageService.write('jwt_token', token);
+      await SecureStorageService.write(
+        'user_data',
+        '{"role":"client","auth_method":"clerk"}',
+      );
+
+      state = AsyncData(
+        AuthAuthenticated(token: token, user: const {'auth_method': 'clerk'}),
+      );
+      return true;
+    } on ClerkAuthException catch (e) {
+      state = AsyncData(AuthError(e.message));
+      return false;
+    } catch (e) {
+      state = AsyncData(AuthError('Clerk sign-in failed: $e'));
       return false;
     }
   }

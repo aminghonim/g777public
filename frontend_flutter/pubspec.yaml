@@ -53,6 +53,7 @@ dependencies:
   excel: ^4.0.6
   device_info_plus: ^12.3.0
   crypto: ^3.0.7
+  app_links: ^6.3.4
   freezed_annotation: 2.4.4
   json_annotation: 4.9.0
 
