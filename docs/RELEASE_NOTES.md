@@ -89,7 +89,7 @@
 
 | المكون | التقنية |
 |--------|---------|
-| **الواجهة** | NiceGUI + Custom CSS |
+| **الواجهة** | Flutter + Dart |
 | **الخلفية** | Python 3.11 + FastAPI |
 | **قاعدة البيانات** | Supabase (PostgreSQL) |
 | **الاختبارات** | pytest + Playwright |
@@ -168,6 +168,6 @@ gcloud run deploy g777 --source .
 *صُنع بحب في 2026* ❤️
 
 [![Made with Python](https://img.shields.io/badge/Made%20with-Python-blue?style=flat-square&logo=python)](https://python.org)
-[![Powered by NiceGUI](https://img.shields.io/badge/Powered%20by-NiceGUI-green?style=flat-square)](https://nicegui.io)
+[![Powered by Flutter](https://img.shields.io/badge/Powered%20by-Flutter-blue?style=flat-square&logo=flutter)](https://flutter.dev)
 
 </div>

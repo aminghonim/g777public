@@ -59,6 +59,12 @@
   - Implemented **Clerk Authentication Middleware** with a legacy fallback for Zero-Regression (Rule 4).
   - Verified all core managers with a new `pytest` suite: `tests/test_free_stack_managers.py`.
 
+- **2026-03-10**: **NICEGUI PURGE**:
+  - Completely removed **NiceGUI** from the project to finalize the transition to **Flutter**.
+  - Deleted `ui/` (legacy NiceGUI controllers), NiceGUI-specific tests, and Figma converter.
+  - Updated **GEMINI.md**, **.cursor/rules/cns.mdc**, and architectural docs to reflect the Flutter-only frontend.
+  - Resolved Python interpreter path issues by standardizing on `.venv` and updating VS Code / MCP configurations.
+
 ## ⚠️ Known Blockers/Issues
 
 - Evolution API may need `sudo docker restart evolution-api` if webhooks stop arriving.

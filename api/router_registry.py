@@ -35,6 +35,7 @@ def register_all_routers(app: FastAPI):
     from backend.routers.system import router as system_router
     from backend.routers.intelligence import router as intelligence_router
     from backend.routers.connector import router as connector_router
+    from backend.routers.crm import router as crm_router
 
     app.include_router(evolution_router, prefix="/evolution", tags=["Evolution SaaS"])
     app.include_router(users_router, prefix="/users", tags=["User Profiles & Quotas"])
@@ -47,6 +48,9 @@ def register_all_routers(app: FastAPI):
     )
     app.include_router(
         connector_router, prefix="/connector", tags=["System Connectors"]
+    )
+    app.include_router(
+        crm_router, prefix="/api/crm", tags=["CRM"]
     )
     app.include_router(system_router)
 

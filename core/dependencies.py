@@ -1,10 +1,17 @@
-from typing import Dict, Any, Optional
-from fastapi import HTTPException, Depends, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from core.security import SecurityEngine
+"""
+Core Dependencies for FastAPI Backend.
+Handles Authentication, User Identity Verification, and Middleware Dependencies.
+"""
 
-from backend.core.auth import ClerkAuth
+import os
+from typing import Dict, Any
+
+from fastapi import HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from loguru import logger
+
+from core.security import SecurityEngine
+from backend.core.auth import ClerkAuth
 
 # Initialize scheme here to be reused
 _bearer_scheme = HTTPBearer(auto_error=False)
@@ -22,9 +29,7 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing authorization token",
         )
-    
     token = credentials.credentials
-    
     # Check if Clerk is configured
     if os.getenv("CLERK_SECRET_KEY"):
         try:
@@ -45,4 +50,4 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication failed. Please login via Clerk.",
-        )
+        ) from exc

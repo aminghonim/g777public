@@ -85,7 +85,6 @@ class CampaignStatsGrid extends ConsumerWidget {
         border: Border.all(color: color.withValues(alpha: isDark ? 0.2 : 0.4)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

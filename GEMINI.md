@@ -9,7 +9,7 @@ globs: *
 
 This file is the **single source of truth** for all AI agents working on this codebase. It activates the Antigravity "Full Squad Mode". The following Iron Rules apply without exception.
 
-**Stack:** Linux (Ubuntu), Python 3.11+, NiceGUI, FastAPI, Node.js, Docker, Gemini 2.0 Flash.
+**Stack:** Linux (Ubuntu), Python 3.11+, FastAPI, Node.js, Docker, Gemini 2.0 Flash.
 
 ---
 
@@ -17,9 +17,9 @@ This file is the **single source of truth** for all AI agents working on this co
 
 ### 1. Environment & Setup
 
-This is a Python project using **NiceGUI** for the frontend and **FastAPI** for the backend.
+This is a Python project using **Flutter** for the frontend and **FastAPI** for the backend.
 
-**Key Libraries:** `nicegui`, `fastapi`, `uvicorn`, `psycopg2-binary`, `python-dotenv`, `pytest`, `playwright`, `openpyxl`, `pandas`.
+**Key Libraries:** `fastapi`, `uvicorn`, `psycopg2-binary`, `python-dotenv`, `pytest`, `playwright`, `openpyxl`, `pandas`.
 
 **Setup:**
 ```bash
@@ -71,7 +71,7 @@ playwright install
 - **Rule:** Treat every file as a sealed implementation.
 - **Process:** Changes in `Module A` must strictly interact with `Module B` via established public interfaces.
 - **Ban:** Never modify a stable module just to make a new feature work easier. Adapt the new feature instead.
-- **UI:** Keep all NiceGUI components within the `ui/` directory. Each major page or component should be in its own file.
+- **UI:** Keep all Flutter UI code within the `frontend_flutter/` directory.
 - **Backend:** All business logic, database interactions, and external API clients must reside in the `backend/` directory.
 - **Database Logic:** The `database_manager.py` is the single source of truth for database connections. Do not create new database connections elsewhere.
 
