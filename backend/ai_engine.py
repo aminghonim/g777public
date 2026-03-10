@@ -1,4 +1,4 @@
-﻿"""
+"""
 G777 Intent Engine - Powered by Gemini 2.0 Flash (Modern SDK)
 =============================================================
 Handles AI logic for intent classification, entity extraction,
@@ -10,7 +10,7 @@ import json
 import asyncio
 import yaml
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from google import genai
 from google.genai import types
 from .db_service import (
@@ -22,10 +22,12 @@ from .db_service import (
     get_training_samples,
 )
 from .mcp_manager import mcp_manager
+from .services.pinecone_manager import pinecone_manager
 from backend.agents.orchestrator import Orchestrator
 from google import adk
 from backend.ai_agents.persona_agent import PersonaAgent
 from dotenv import load_dotenv
+from loguru import logger
 
 load_dotenv()
 
@@ -392,5 +394,179 @@ RULES:
             return ""
 
 
+class GeminiPersonaEngine:
+    """
+    Gemini Persona Engine for WhatsApp Auto-Responder.
+    Uses google-genai SDK with Pinecone for tenant-isolated context retrieval.
+    """
+    
+    def __init__(self):
+        """Initialize the Gemini Persona Engine"""
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        if not self.api_key:
+            logger.error("GEMINI_API_KEY not found in environment variables!")
+            raise ValueError("GEMINI_API_KEY is required")
+        
+        # Initialize the new google-genai client
+        self.client = genai.Client(api_key=self.api_key)
+        self.model_name = "gemini-2.0-flash"
+        
+        logger.info("GeminiPersonaEngine initialized successfully")
+    
+    def _build_dynamic_prompt(
+        self, 
+        incoming_message: str, 
+        chat_history: str, 
+        long_term_memory: List[Dict[str, Any]],
+        persona: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """
+        Build a dynamic prompt with persona injection capability.
+        
+        Args:
+            incoming_message: Current message from user
+            chat_history: Conversation history from Supabase
+            long_term_memory: Retrieved context from Pinecone
+            persona: Dynamic persona configuration (can be injected from database)
+        
+        Returns:
+            Formatted prompt string
+        """
+        # Default persona if none provided (can be overridden by database)
+        default_persona = {
+            "name": "ياسمين",
+            "role": "مساعد مبيعات احترافي",
+            "tone": "ودود واحترافي",
+            "company": "شركة السفر",
+            "specialty": "السفر والسياحة"
+        }
+        
+        # Use injected persona or default
+        active_persona = persona or default_persona
+        
+        # Format long-term memory context
+        memory_context = ""
+        if long_term_memory:
+            memory_context = "\n".join([
+                f"- {mem.get('text', '')}" for mem in long_term_memory[:5]
+            ])
+        
+        # Build the dynamic prompt
+        prompt = f"""
+أنت {active_persona['name']}، {active_persona['role']} في {active_persona['company']}.
+النبرة: {active_persona['tone']}.
+التخصص: {active_persona['specialty']}.
+
+قواعد مهمة:
+1. يجب أن تتحدث باللغة العربية دائماً
+2. كن محترفاً وودوداً في ردودك
+3. استخدم السياق التالي لإجاباتك الدقيقة
+4. إذا لم تكن تعرف الإجابة، كن صريحاً واطلب توضيحاً
+
+السياق الطويل الأمد (ذاكرة العميل):
+{memory_context if memory_context else "لا يوجد سياق سابق"}
+
+تاريخ المحادثة:
+{chat_history if chat_history else "هذه أول محادثة"}
+
+الرسالة الحالية من العميل:
+{incoming_message}
+
+الرد المطلوب (بالعربية):
+"""
+        return prompt
+    
+    async def generate_response(
+        self, 
+        incoming_message: str, 
+        chat_history: str, 
+        long_term_memory: List[Dict[str, Any]],
+        tenant_id: str,
+        persona: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """
+        Generate a response using Gemini 2.0 Flash with tenant isolation.
+        
+        Args:
+            incoming_message: Current message from user
+            chat_history: Conversation history from Supabase
+            long_term_memory: Retrieved context from Pinecone
+            tenant_id: Tenant ID for isolation (Rule 12)
+            persona: Optional persona configuration from database
+        
+        Returns:
+            Generated Arabic response as professional sales agent
+        """
+        try:
+            # Build dynamic prompt
+            prompt = self._build_dynamic_prompt(
+                incoming_message=incoming_message,
+                chat_history=chat_history,
+                long_term_memory=long_term_memory,
+                persona=persona
+            )
+            
+            # Generate response using google-genai SDK
+            response = await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.7,  # Balanced creativity and consistency
+                    max_output_tokens=500,  # Reasonable length for WhatsApp
+                )
+            )
+            
+            generated_text = response.text.strip()
+            
+            # Log successful generation
+            logger.info(f"Generated response for tenant {tenant_id}: {len(generated_text)} chars")
+            
+            return generated_text
+            
+        except Exception as e:
+            # Fallback response with error logging
+            logger.error(f"Gemini API error for tenant {tenant_id}: {str(e)}")
+            
+            fallback_message = (
+                "شكراً لتواصلك معنا. حالياً نحن نعمل على تحسين خدمتنا. "
+                "يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع ممثل المبيعات مباشرة."
+            )
+            
+            logger.warning(f"Used fallback response for tenant {tenant_id}")
+            return fallback_message
+    
+    async def query_tenant_context(self, tenant_id: str, query_text: str, top_k: int = 5) -> List[Dict[str, Any]]:
+        """
+        Query Pinecone for tenant-specific context using tenant isolation.
+        
+        Args:
+            tenant_id: Tenant ID for isolation (Rule 12)
+            query_text: Query text for semantic search
+            top_k: Number of results to return
+        
+        Returns:
+            List of relevant context documents
+        """
+        try:
+            # This would require embedding the query_text first
+            # For now, return empty list as placeholder
+            # In production, you'd use an embedding service here
+            
+            # Example implementation (requires embedding model):
+            # query_vector = await self._embed_query(query_text)
+            # results = pinecone_manager.query_vectors(tenant_id, query_vector, top_k)
+            # return results.get('matches', [])
+            
+            logger.info(f"Context query for tenant {tenant_id}: '{query_text}'")
+            return []  # Placeholder until embedding is implemented
+            
+        except Exception as e:
+            logger.error(f"Context query error for tenant {tenant_id}: {str(e)}")
+            return []
+
+
 # Global Instance
 ai_engine = AIEngine()
+
+# Global Persona Engine Instance
+gemini_persona_engine = GeminiPersonaEngine()

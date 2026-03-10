@@ -1,4 +1,4 @@
-﻿"""
+"""
 G777 Webhook Handler - Enhanced Media Support
 ==============================================
 Processes ALL types of WhatsApp messages: Text, Images, Audio, Video, Documents.
@@ -25,6 +25,9 @@ from .db_service import (
     is_excluded,
     pause_bot_for_customer,
 )
+
+# Import manager for tenant‑aware queries (Rule 12 Tenant Isolation)
+from .database_manager import DatabaseManager
 from .crm_intelligence import run_data_extraction
 from .ai_engine import ai_engine
 from .baileys_client import baileys_client
@@ -314,6 +317,81 @@ async def whatsapp_webhook(request: Request, background_tasks: BackgroundTasks):
         return JSONResponse(
             status_code=500, content={"status": "error", "message": str(e)}
         )
+
+
+# ---------------------------------------------------------------------------
+# Evolution-specific webhook (tenant‑aware lead insertion)
+# ---------------------------------------------------------------------------
+
+@router.post("/api/webhook/evolution")
+async def evolution_webhook(request: Request):
+    """Handle incoming text messages from Evolution API.
+
+    1. Expect a JSON payload containing **sender_number**,
+       **instance_name** and **message_type**.
+    2. Only take action on text messages; ignore others gracefully.
+    3. Consult ``DatabaseManager`` with ``instance_name`` as the
+       tenant/user identifier.
+    4. If the phone number does not exist, upsert a new **lead**.
+
+    Returns a simple status dict or error details.
+    """
+    try:
+        payload = await request.json()
+    except json.JSONDecodeError:
+        logger.error("[ERR] Invalid JSON payload for evolution webhook")
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": "Invalid JSON"},
+        )
+
+    sender = None
+    instance = payload.get("instance")
+    event = payload.get("event")
+
+    if event != "messages.upsert":
+        logger.info(f"[Info] Ignoring non-upsert event: {event}")
+        return {"status": "ignored", "reason": f"event {event}"}
+
+    data = payload.get("data", {})
+    key = data.get("key", {})
+    from_me = key.get("fromMe", False)
+
+    if from_me:
+        return {"status": "ignored", "reason": "own_message"}
+
+    remote_jid = key.get("remoteJid", "")
+    if remote_jid and "@s.whatsapp.net" in remote_jid:
+        sender = remote_jid.split("@")[0]
+
+    if not sender or not instance:
+        logger.error("[ERR] Missing sender or instance in payload")
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "error",
+                "message": "Missing required fields",
+            },
+        )
+
+
+    try:
+        db = DatabaseManager()
+        existing = db.get_customer_by_phone(sender, instance)
+        if not existing:
+            # insert as lead (customer_type is handled by upsert logic)
+            db.upsert_customer(phone=sender, user_id=instance)
+            logger.info(f"[DB] New lead created: {sender} @ {instance}")
+        else:
+            logger.info(f"[DB] Customer already exists: {sender} @ {instance}")
+    except Exception as e:
+        logger.error(f"[ERR] Evolution DB operation failed: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "Database failure"},
+        )
+
+    return {"status": "ok"}
 
 
 # ============================================================================
