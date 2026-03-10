@@ -89,6 +89,13 @@ class _Sidebar extends ConsumerWidget {
                     isActive: location == '/dashboard',
                   ),
                   _HexNavItem(
+                    icon: Icons.people_alt_rounded,
+                    label: 'العملاء (CRM)',
+                    accentColor: Colors.greenAccent,
+                    route: '/crm',
+                    isActive: location == '/crm',
+                  ),
+                  _HexNavItem(
                     icon: Icons.rocket_launch_rounded,
                     label: l10n.groupSender,
                     accentColor: colorScheme.groupSenderAccent,

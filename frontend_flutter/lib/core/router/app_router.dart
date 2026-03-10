@@ -13,6 +13,7 @@ import '../../features/poll_sender/presentation/pages/poll_sender_page.dart';
 import '../../features/links_grabber/presentation/pages/links_grabber_page.dart';
 import '../../features/theme_settings/presentation/pages/theme_settings_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../features/crm/presentation/pages/crm_page.dart';
 
 import '../../shared/layouts/main_layout.dart';
 
@@ -64,6 +65,11 @@ GoRouter router(RouterRef ref) {
             path: '/warmer',
             name: 'warmer',
             builder: (context, state) => const AccountWarmerPage(),
+          ),
+          GoRoute(
+            path: '/crm',
+            name: 'crm',
+            builder: (context, state) => const CrmCustomersPage(),
           ),
           GoRoute(
             path: '/poll-sender',
