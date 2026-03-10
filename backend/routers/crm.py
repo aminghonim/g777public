@@ -23,7 +23,7 @@ from fastapi.responses import StreamingResponse
 from backend.core.analytics import track_crm_export
 from backend.database_manager import db_manager
 from core.dependencies import get_current_user
-from services.crm_logic import CRMService
+from backend.services.crm_logic import CRMService
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -133,7 +133,7 @@ async def add_customer_tag(
         if not customer:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
 
-        updated_customer = CRMService.add_tag(customer, tag)
+        updated_customer = CRMService.add_tag(customer, tag, user_id)
         logger.info("Added tag '%s' to customer %s for user %s", tag, customer_id, user_id)
         return {"message": f"Tag '{tag}' added successfully to customer {customer_id}"}
 
@@ -174,7 +174,7 @@ async def remove_customer_tag(
         if not customer:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
 
-        CRMService.remove_tag(customer, tag)
+        CRMService.remove_tag(customer, tag, user_id)
         logger.info("Removed tag '%s' from customer %s for user %s", tag, customer_id, user_id)
         return {"message": f"Tag '{tag}' removed successfully from customer {customer_id}"}
 
