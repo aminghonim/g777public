@@ -1,3 +1,6 @@
+"""
+Utility script to verify Model Context Protocol (MCP) server discovery and tool usage.
+"""
 import asyncio
 import logging
 from backend.ai_engine import AIEngine
@@ -6,11 +9,11 @@ logging.basicConfig(level=logging.INFO)
 
 
 async def test_mcp_discovery():
+    """Test the discovery of tools from configured MCP servers."""
     print("--- Discovery Test ---")
-    engine = AIEngine()
     from backend.mcp_manager import mcp_manager
 
-    tools = await mcp_manager.get_tools()
+    tools = await mcp_manager.get_tools_definitions()
     print(f"Found {len(tools)} tools from MCP servers.")
     for tool in tools:
         for func in tool.function_declarations:
@@ -18,6 +21,7 @@ async def test_mcp_discovery():
 
 
 async def test_ai_tool_use():
+    """Test the AI engine's ability to use discovery tools in a conversation."""
     print("\n--- AI Tool-Use Test ---")
     engine = AIEngine()
     # Mocking a request that would trigger calendar tool

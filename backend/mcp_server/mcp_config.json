@@ -31,7 +31,8 @@
     "postgres": {
       "command": "/home/g777/.nvm/versions/node/v24.14.0/bin/node",
       "args": [
-        "/home/g777/.nvm/versions/node/v24.14.0/lib/node_modules/@modelcontextprotocol/server-postgres/dist/index.js"
+        "/home/g777/.nvm/versions/node/v24.14.0/lib/node_modules/@modelcontextprotocol/server-postgres/dist/index.js",
+        "$DATABASE_URL"
       ],
       "env": {
         "PATH": "/home/g777/.nvm/versions/node/v24.14.0/bin:/usr/local/bin:/usr/bin:/bin",
@@ -41,7 +42,8 @@
     "everything": {
       "command": "/home/g777/.nvm/versions/node/v24.14.0/bin/node",
       "args": [
-        "/home/g777/.nvm/versions/node/v24.14.0/lib/node_modules/@modelcontextprotocol/server-everything/dist/index.js"
+        "/home/g777/.nvm/versions/node/v24.14.0/lib/node_modules/@modelcontextprotocol/server-everything/dist/index.js",
+        "stdio"
       ],
       "env": {
         "PATH": "/home/g777/.nvm/versions/node/v24.14.0/bin:/usr/local/bin:/usr/bin:/bin",

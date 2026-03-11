@@ -4,16 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:g777_client/features/crm/presentation/pages/crm_page.dart';
 import 'package:g777_client/features/crm/providers/crm_provider.dart';
 import 'package:g777_client/features/crm/data/crm_repository.dart';
-import 'package:g777_client/shared/providers/locale_provider.dart';
-import 'package:g777_client/shared/providers/theme_provider.dart';
 import 'package:g777_client/l10n/app_localizations.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:g777_client/core/providers/shared_prefs_provider.dart';
 
 void main() {
-  testWidgets('CrmCustomersPage loads and displays basic UI', (WidgetTester tester) async {
-
+  testWidgets('CrmCustomersPage loads and displays basic UI', (
+    WidgetTester tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
@@ -56,23 +55,23 @@ class CustomersNotifierMock extends CustomersNotifier {
         'phone': '123456789',
         'customer_type': 'vip',
         'city': 'Cairo',
-      }
+      },
     ]);
   }
 
   @override
-  Future<void> fetchCustomers({String? type, String? city, String? interests}) async {}
+  Future<void> fetchCustomers({
+    String? type,
+    String? city,
+    String? interests,
+  }) async {}
 }
 
 class CrmStatsNotifierMock extends CrmStatsNotifier {
   CrmStatsNotifierMock() : super(MockCrmRepository()) {
     state = const AsyncValue.data({
       'total_customers': 1,
-      'by_type': {
-        'vip': 1,
-        'lead': 0,
-        'customer': 0,
-      }
+      'by_type': {'vip': 1, 'lead': 0, 'customer': 0},
     });
   }
 

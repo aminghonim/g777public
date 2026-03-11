@@ -65,6 +65,13 @@
   - Updated **GEMINI.md**, **.cursor/rules/cns.mdc**, and architectural docs to reflect the Flutter-only frontend.
   - Resolved Python interpreter path issues by standardizing on `.venv` and updating VS Code / MCP configurations.
 
+- **2026-03-11**: **MCP STABILIZATION**:
+  - Installed `mcp-python-sdk` in the core virtual environment (`.venv`).
+  - Refactored `backend/mcp_manager.py` to fix singleton initialization bugs and linting errors.
+  - Implemented lazy logging, explicit UTF-8 encoding, and comprehensive docstrings.
+  - Verified MCP tool discovery across all configured servers (GitKraken, postgres, chrome-devtools, etc.).
+  - Cleaned up `backend/verify_mcp.py` and confirmed successful discovery test.
+
 ## ⚠️ Known Blockers/Issues
 
 - Evolution API may need `sudo docker restart evolution-api` if webhooks stop arriving.

@@ -64,6 +64,77 @@ class TestWebhookHandlerSurgical:
         assert data["success"] is True
         assert data["extracted"]["message_text"] == "Hi"
 
+    # ------------------------------------------------------------------
+    # Evolution webhook tests
+    # ------------------------------------------------------------------
+
+    def test_evolution_webhook_creates_lead(self, monkeypatch):
+        """A text payload should trigger a DB lookup and insertion when missing."""
+        payload = {
+            "sender_number": "201234567890",
+            "instance_name": "tenantA",
+            "message_type": "text",
+            "message": "Hi there",
+        }
+
+        # patch database manager behaviour
+        class DummyDB:
+            def __init__(self):
+                pass
+
+            def get_customer_by_phone(self, phone, user_id):
+                assert phone == "201234567890"
+                assert user_id == "tenantA"
+                return None
+
+            def upsert_customer(self, phone, user_id, name=None, metadata=None):
+                assert phone == "201234567890"
+                assert user_id == "tenantA"
+                return "new-id"
+
+        monkeypatch.setattr("backend.webhook_handler.DatabaseManager", DummyDB)
+
+        response = client.post("/api/webhook/evolution", json=payload)
+        assert response.status_code == 200
+        assert response.json()["status"] == "ok"
+
+    def test_evolution_webhook_existing_customer(self, monkeypatch):
+        payload = {
+            "sender_number": "201234567890",
+            "instance_name": "tenantA",
+            "message_type": "text",
+        }
+
+        class DummyDB2:
+            def __init__(self):
+                pass
+
+            def get_customer_by_phone(self, phone, user_id):
+                return {"id": "exists"}
+
+            def upsert_customer(self, *args, **kwargs):
+                raise AssertionError("should not be called when customer exists")
+
+        monkeypatch.setattr("backend.webhook_handler.DatabaseManager", DummyDB2)
+        response = client.post("/api/webhook/evolution", json=payload)
+        assert response.status_code == 200
+        assert response.json()["status"] == "ok"
+
+    def test_evolution_webhook_non_text_ignored(self):
+        payload = {
+            "sender_number": "201234567890",
+            "instance_name": "tenantA",
+            "message_type": "image",
+        }
+        response = client.post("/api/webhook/evolution", json=payload)
+        assert response.status_code == 200
+        assert response.json()["status"] == "ignored"
+
+    def test_evolution_webhook_missing_fields(self):
+        response = client.post("/api/webhook/evolution", json={})
+        assert response.status_code == 400
+        assert response.json()["status"] == "error"
+
     # =================================================================
     # ❌ FAILURE & ERROR HANDLING TESTS
     # =================================================================
