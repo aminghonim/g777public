@@ -9,7 +9,7 @@ class TestSenderSurgical:
     @pytest.fixture
     def sender(self):
         with patch(
-            "backend.whatsapp_sender.CloudService"
+            "backend.whatsapp_sender.AzureCloudService"
         ) as mock_cloud_class, patch("backend.whatsapp_sender.db_manager") as mock_db:
 
             # Setup Cloud Mock
@@ -35,15 +35,16 @@ class TestSenderSurgical:
     # ✅ SUCCESS STATE TESTS
     # =================================================================
 
-    def test_replace_variables_success(self, sender):
+    @pytest.mark.asyncio
+    async def test_replace_variables_success(self, sender):
         """اختبار استبدال المتغيرات في الرسالة"""
         msg = "Hello {name}"
         data = {"name": "Ahmed"}
-        assert sender._replace_variables(msg, data) == "Hello Ahmed"
-        assert sender._replace_variables("H {Name}", data) == "H Ahmed"
-        assert sender._replace_variables("H {NAME}", data) == "H Ahmed"
-        assert sender._replace_variables(msg, "not_a_dict") == "Hello العميل"
-        assert sender._replace_variables(msg, {}) == "Hello العميل"
+        assert await sender._process_message(msg, data) == "Hello Ahmed"
+        assert await sender._process_message("H {Name}", data) == "H Ahmed"
+        assert await sender._process_message("H {NAME}", data) == "H Ahmed"
+        assert await sender._process_message(msg, "not_a_dict") == "Hello العميل"
+        assert await sender._process_message(msg, {}) == "Hello العميل"
 
     @patch("time.sleep", return_value=None)
     def test_run_campaign_success(self, mock_sleep, sender):
@@ -71,7 +72,7 @@ class TestSenderSurgical:
         """اختبار إيقاف الحملة في المنتصف"""
         mock_members = [{"phone": "1"}, {"phone": "2"}, {"phone": "3"}]
 
-        def stop_on_second(*args):
+        def stop_on_second(*args, **kwargs):
             if sender.cloud.start_campaign_cloud.call_count >= 1:
                 sender.stop_campaign()
             return {"success": True}
