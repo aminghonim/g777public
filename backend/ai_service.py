@@ -1,4 +1,4 @@
-﻿"""
+"""
 AI Service - Google Gemini Integration
 ======================================
 Handles communication with Google's Gemini API for text generation and data extraction.
@@ -11,8 +11,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from backend.core.model_router import model_router
+
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+# GEMINI_URL is now managed dynamically via ModelRouter and UnifiedAIClient
 
 
 async def generate_ai_response(prompt, system_message=""):

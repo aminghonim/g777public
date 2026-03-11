@@ -5,7 +5,7 @@
 - **Primary Database**: **Supabase** (PostgreSQL via Pooler).
   - **Database URL**: `postgresql://postgres.zbrpwteyldwpqlcxdpmf:G777SecureCRM2026@aws-1-eu-central-1.pooler.supabase.com:6543/postgres`
 - **Supabase Project**: `zbrpwteyldwpqlcxdpmf` (`https://zbrpwteyldwpqlcxdpmf.supabase.co`)
-- **AI Model**: **Gemini 2.0 Flash**. (Free Tier)
+- **AI Model**: **Dynamic Routing** via `ModelRouter` (Gemini 3.1 Flash/Pro + 2.5 Computer Use).
 - **Secondary Stack (Modern Free Stack)**:
   - **Email**: **Resend** (Free 3k/mo). `backend/services/resend_client.py`. (API Key: `re_X6N...`)
   - **Vector DB**: **Pinecone** (Serverless `us-east-1`). `backend/services/pinecone_manager.py`. (Rule 12: Tenant isolation enforced).
@@ -98,3 +98,8 @@
   - **Solution**: Use direct API calls to `api.clerk.com` for session verification.
 - **Rule Consolidation**:
   - **Rule**: NEVER create scattered `.mdc` or `.md` rules. **GEMINI.md** is the single source of truth (Rule 0).
+- **2026-03-11**: **THE SMART TASK ROUTER**:
+  - Implemented a centralized **Smart Task Router** (`backend/core/model_router.py`) to move away from hardcoded model names.
+  - Configured dynamic selection in `config.yaml` for tasks: `intent_analysis`, `customer_chat`, `extraction`, `computer_use`, `content_generation`.
+  - Upgraded core components (`AIEngine`, `Orchestrator`, `GeminiAIClient`) to use the router, enabling **Gemini 3.1 Thinking** and **Visual RPA**.
+  - Verified logic and live connectivity with a new surgical test suite.

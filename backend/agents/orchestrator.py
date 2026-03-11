@@ -16,6 +16,7 @@ from backend.memory.vector_store_manager import VectorStoreManager
 from backend.observers.system_monitor import SystemMonitor
 from backend.observers.file_watcher import CodeChangeHandler
 from backend.executors.sandbox import SandboxExecutor
+from backend.core.model_router import model_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,9 +29,11 @@ class Orchestrator:
     Coordinates all other components: Memory, Senses, Actions, and Sub-Agents.
     """
 
-    def __init__(self, model_name: str = "gemini-2.0-flash"):
-        self.model_name = model_name
+    def __init__(self, model_name: Optional[str] = None):
         self.api_key = os.getenv("GEMINI_API_KEY")
+        
+        # Priority: explicit arg -> router -> fallback
+        self.model_name = model_name or model_router.get_model_for_task("customer_chat")
 
         if not self.api_key:
             logger.error("WARNING: GEMINI_API_KEY not found! Orchestrator may fail.")
@@ -45,7 +48,7 @@ class Orchestrator:
         self.sentinel = SentinelAgent(self)  # <--- Initialize Sentinel
         self.intent_analyzer = IntentAlignment()  # <--- Initialize Intent Analyzer
 
-        logger.info(f"Orchestrator initialized with model: {model_name}")
+        logger.info(f"Orchestrator initialized with model: {self.model_name}")
 
     def intake_sensory_data(self) -> str:
         """

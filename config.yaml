@@ -146,3 +146,22 @@ scraper_settings:
       business_name_selector: "h3, div[class*='headline']"
       phone_selector: "[data-item-id*='phone'], [href*='tel']"
       address_selector: "[data-item-id*='address']"
+
+# 🧠 Smart Task Router - Model Selection Logic
+model_routing:
+  default: "gemini-2.0-flash" # Fallback
+  tasks:
+    intent_analysis: "gemini-3-flash-preview"
+    customer_chat: "gemini-3-flash-preview"
+    extraction: "gemini-3.1-flash-lite-preview"
+    complex_problem_solving: "gemini-3.1-pro-preview"
+    computer_use: "gemini-2.5-computer-use-preview"
+    content_generation: "gemini-2.5-flash-image"
+    market_research: "deep-research-pro-preview-12-2025"
+
+  
+  # Thinking Mode Configuration
+  thinking_config:
+    include_thinking: true
+    models_supported: ["gemini-3.1-flash-preview", "gemini-3.1-pro-preview"]
+

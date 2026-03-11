@@ -1,4 +1,4 @@
-﻿"""
+"""
 Antigravity AI Client - Multi-Provider Support
 يدعم: Google Gemini 2.0 (Free) + Azure OpenAI (Pro)
 تم التحديث للمكتبة الجديدة google.genai
@@ -6,6 +6,7 @@ Antigravity AI Client - Multi-Provider Support
 
 import os
 from dotenv import load_dotenv
+from backend.core.model_router import model_router
 
 load_dotenv()
 
@@ -31,7 +32,8 @@ class GeminiAIClient:
         else:
             self.client = None  # Client needs key
 
-        self.model_name = "gemini-2.5-flash"  # Latest model!
+        # Route to default customer_chat model or fallback
+        self.model_name = model_router.get_model_for_task("customer_chat")
         print(f"[OK] Gemini Client initialized with model: {self.model_name}")
 
     async def generate_response(self, prompt: str, system_message: str = "") -> str:

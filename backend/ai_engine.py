@@ -31,8 +31,9 @@ from .db_service import (
     is_excluded,
 )
 from .mcp_manager import mcp_manager
-from backend.agents.orchestrator import Orchestrator
-from backend.ai_agents.persona_agent import PersonaAgent
+from .agents.orchestrator import Orchestrator
+from .ai_agents.persona_agent import PersonaAgent
+from backend.core.model_router import model_router
 
 load_dotenv()
 
@@ -60,7 +61,6 @@ class AIEngine:
 
         # Initialize ADK Persona Agent only when the SDK is available
         self.persona_agent = PersonaAgent() if ADK_AVAILABLE else None
-
 
         # Load AI Instructions
         self.instructions = self._load_instructions()
@@ -103,16 +103,18 @@ class AIEngine:
             print(f"Warning: Could not load AI instructions: {e}")
             return {}
 
-    def _get_settings(self):
-        return get_tenant_settings()
+    def get_model_for_task(self, task: str) -> str:
+        """Call the centralized model router"""
+        settings = get_tenant_settings()
+        db_model = settings.get("ai_model")
+        return model_router.get_model_for_task(task, db_override=db_model)
 
     async def analyze_intent(self, message: str) -> Dict[str, Any]:
         """
         Analyze if message is business-related and detect intent.
         Kept lightweight using direct client for speed.
         """
-        settings = self._get_settings()
-        model_name = settings.get("ai_model", "gemini-2.0-flash")
+        model_name = self.get_model_for_task("intent_analysis")
 
         # Get system instruction from config
         intent_config = self.instructions.get("intent_classifier", {})
@@ -179,8 +181,7 @@ Now analyze this message:"""
         OUTPUT JSON:
         """
 
-        settings = self._get_settings()
-        model_name = settings.get("ai_model", "gemini-2.0-flash-exp")
+        model_name = self.get_model_for_task("extraction")
 
         try:
             response = await self.client.aio.models.generate_content(
@@ -388,8 +389,7 @@ RULES:
             return ""
 
         prompt = prompt_template.replace("{conversation}", conversation_text)
-        settings = self._get_settings()
-        model_name = settings.get("ai_model", "gemini-2.0-flash-exp")
+        model_name = self.get_model_for_task("market_research") # Summarization falls under research/intelligence
 
         try:
             response = await self.client.aio.models.generate_content(
@@ -415,7 +415,7 @@ class GeminiPersonaEngine:
         
         # Initialize the new google-genai client
         self.client = genai.Client(api_key=self.api_key)
-        self.model_name = "gemini-2.0-flash"
+        self.model_name = "gemini-3.1-flash-preview" # Upgraded from 2.0-flash
         
         logger.info("GeminiPersonaEngine initialized successfully")
     
