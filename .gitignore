@@ -1,9 +1,11 @@
-﻿# 📋 G777 ELECTRA .gitignore (CNS Squad - Public Repo Edition)
+# G777 ELECTRA .gitignore (CNS Squad - Public Repo Edition)
 # ===============================================================
 
 # --- G777 SPECIFIC SECRETS (NEVER REMOVE) ---
 .env
 .env.*
+# Exception: the template file is safe to share as a setup reference.
+!.env.example
 *.backup
 *.json.backup
 auth_info/
@@ -11,6 +13,12 @@ baileys-service/auth_info/
 chrome_profile/
 GITHUB_SECRETS_*.json
 SENTINEL_AUDIT_*.md
+
+# --- SECRETS & CONFIG OVERRIDES ---
+# These files may contain production keys and must never be committed.
+secrets.yaml
+secrets.yml
+docker-compose.override.yml
 
 # --- DATABASE & DATA ---
 *.sqlite
@@ -28,6 +36,12 @@ database/schema.sql
 *PRODUCTION_AUDIT.md
 SENTINEL_MISSION_SUMMARY.md
 SOLVED_ISSUES.md
+
+# --- LOGS (runtime logs expose stack traces and internal config) ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # --- PYTHON & NODE ---
 venv/
@@ -67,27 +81,8 @@ frontend_flutter/.dart_tool/
 # --- CHROME PROFILE ---
 chrome_profile/
 
-# --- NODE MODULES ---
+# --- NODE MODULES (baileys bridge) ---
 baileys-service/node_modules/
 
-# --- VENV ---
-venv/
-.venv/
-
-# --- FLUTTER & DART ---
-frontend_flutter/build/
-frontend_flutter/.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-
-# --- CHROME PROFILE ---
-chrome_profile/
-
-# --- NODE MODULES ---
-baileys-service/node_modules/
-
-# --- VENV ---
-venv/
-.venv/
+# --- n8n LOCAL DATA (contains encryption keys and workflow credentials) ---
+.n8n/
