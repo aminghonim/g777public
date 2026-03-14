@@ -5,7 +5,7 @@
 - **Primary Database**: **Supabase** (PostgreSQL via Pooler).
   - **Database URL**: `postgresql://postgres.zbrpwteyldwpqlcxdpmf:G777SecureCRM2026@aws-1-eu-central-1.pooler.supabase.com:6543/postgres`
 - **Supabase Project**: `zbrpwteyldwpqlcxdpmf` (`https://zbrpwteyldwpqlcxdpmf.supabase.co`)
-- **AI Model**: **Gemini 2.0 Flash**. (Free Tier)
+- **AI Model**: **Dynamic Routing** via `ModelRouter` (Gemini 3.1 Flash/Pro + 2.5 Computer Use).
 - **Secondary Stack (Modern Free Stack)**:
   - **Email**: **Resend** (Free 3k/mo). `backend/services/resend_client.py`. (API Key: `re_X6N...`)
   - **Vector DB**: **Pinecone** (Serverless `us-east-1`). `backend/services/pinecone_manager.py`. (Rule 12: Tenant isolation enforced).
@@ -19,9 +19,9 @@
 - **Cloud Naming Status**: All legacy 'Cloud' references refactored to 'WA/Evolution' to avoid confusion between local gateway and external cloud.
 - **Automation**: **n8n Local** (`http://127.0.0.1:5678`).
 
-## 🛠️ Infrastructure Details (Azure VM: 127.0.0.1)
+## 🛠️ Infrastructure Details (Local: 127.0.0.1)
 
-- **Evolution API Port**: `3000` (Local Bridge) or `8080` (Azure VM).
+- **Evolution API Port**: `3000` (Local Bridge).
 - **n8n Port**: `5678`.
 - **Internal Webhook Gateway**: `http://172.17.0.1:5678/webhook/whatsapp`.
 - **Evolution API Key**: `antigravity_secret_key_2024`.
@@ -65,6 +65,13 @@
   - Updated **GEMINI.md**, **.cursor/rules/cns.mdc**, and architectural docs to reflect the Flutter-only frontend.
   - Resolved Python interpreter path issues by standardizing on `.venv` and updating VS Code / MCP configurations.
 
+- **2026-03-11**: **MCP STABILIZATION**:
+  - Installed `mcp-python-sdk` in the core virtual environment (`.venv`).
+  - Refactored `backend/mcp_manager.py` to fix singleton initialization bugs and linting errors.
+  - Implemented lazy logging, explicit UTF-8 encoding, and comprehensive docstrings.
+  - Verified MCP tool discovery across all configured servers (GitKraken, postgres, chrome-devtools, etc.).
+  - Cleaned up `backend/verify_mcp.py` and confirmed successful discovery test.
+
 ## ⚠️ Known Blockers/Issues
 
 - Evolution API may need `sudo docker restart evolution-api` if webhooks stop arriving.
@@ -78,7 +85,7 @@
   - **Cause**: Using CMD-style flags (like `/q`, `/s`, `/f`) with PowerShell's `del` alias (which maps to `Remove-Item`).
   - **Prevention**: ALWAYS use PowerShell syntax: `Remove-Item -Path "path" -Recurse -Force` instead of `del /q`.
 - **Local Dev Connection**:
-  - Local development now uses **Local Baileys Bridge** (Port `3000`) instead of the Azure VM's Evolution API for faster iteration and privacy.
+  - The system uses **Local Baileys Bridge** (Port `3000`) for all communications ensuring faster iteration and privacy.
   - `EvolutionManager` has a "Hybrid Adapter" to auto-detect Port `3000` and switch logic.
 - **CodeRabbit YAML Schema Pitfall (`.coderabbit.yaml`):**
   - **Error**: `Expected object, received boolean at "reviews.tools.ruff"` (and any other tool name).
@@ -91,3 +98,13 @@
   - **Solution**: Use direct API calls to `api.clerk.com` for session verification.
 - **Rule Consolidation**:
   - **Rule**: NEVER create scattered `.mdc` or `.md` rules. **GEMINI.md** is the single source of truth (Rule 0).
+- **2026-03-11**: **THE SMART TASK ROUTER**:
+  - Implemented a centralized **Smart Task Router** (`backend/core/model_router.py`) to move away from hardcoded model names.
+  - Configured dynamic selection in `config.yaml` for tasks: `intent_analysis`, `customer_chat`, `extraction`, `computer_use`, `content_generation`.
+  - Upgraded core components (`AIEngine`, `Orchestrator`, `GeminiAIClient`) to use the router, enabling **Gemini 3.1 Thinking** and **Visual RPA**.
+  - Verified logic and live connectivity with a new surgical test suite.
+- **2026-03-14**: **MEDIA & AI STABILIZATION**:
+  - Resolved **401 Unauthorized** error for media downloads by bypassing the Backend and connecting n8n directly to `baileys_bridge:3000`.
+  - Fixed **404 Missing Endpoint** by injecting a new `/download` route into `baileys-service/server.js` for media decryption.
+  - Resolved **Gemini Veo Model Error** in n8n by switching the task from "Generate Video" to "Multimodal Chat" (Analyze) using binary input.
+  - Finalized the **Media Decryption Pipeline**: WhatsApp (Encrypted) -> Bridge (Decrypt) -> n8n (Binary) -> Gemini (Analyze).
