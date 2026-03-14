@@ -19,9 +19,9 @@
 - **Cloud Naming Status**: All legacy 'Cloud' references refactored to 'WA/Evolution' to avoid confusion between local gateway and external cloud.
 - **Automation**: **n8n Local** (`http://127.0.0.1:5678`).
 
-## 🛠️ Infrastructure Details (Azure VM: 127.0.0.1)
+## 🛠️ Infrastructure Details (Local: 127.0.0.1)
 
-- **Evolution API Port**: `3000` (Local Bridge) or `8080` (Azure VM).
+- **Evolution API Port**: `3000` (Local Bridge).
 - **n8n Port**: `5678`.
 - **Internal Webhook Gateway**: `http://172.17.0.1:5678/webhook/whatsapp`.
 - **Evolution API Key**: `antigravity_secret_key_2024`.
@@ -85,7 +85,7 @@
   - **Cause**: Using CMD-style flags (like `/q`, `/s`, `/f`) with PowerShell's `del` alias (which maps to `Remove-Item`).
   - **Prevention**: ALWAYS use PowerShell syntax: `Remove-Item -Path "path" -Recurse -Force` instead of `del /q`.
 - **Local Dev Connection**:
-  - Local development now uses **Local Baileys Bridge** (Port `3000`) instead of the Azure VM's Evolution API for faster iteration and privacy.
+  - The system uses **Local Baileys Bridge** (Port `3000`) for all communications ensuring faster iteration and privacy.
   - `EvolutionManager` has a "Hybrid Adapter" to auto-detect Port `3000` and switch logic.
 - **CodeRabbit YAML Schema Pitfall (`.coderabbit.yaml`):**
   - **Error**: `Expected object, received boolean at "reviews.tools.ruff"` (and any other tool name).
@@ -103,3 +103,8 @@
   - Configured dynamic selection in `config.yaml` for tasks: `intent_analysis`, `customer_chat`, `extraction`, `computer_use`, `content_generation`.
   - Upgraded core components (`AIEngine`, `Orchestrator`, `GeminiAIClient`) to use the router, enabling **Gemini 3.1 Thinking** and **Visual RPA**.
   - Verified logic and live connectivity with a new surgical test suite.
+- **2026-03-14**: **MEDIA & AI STABILIZATION**:
+  - Resolved **401 Unauthorized** error for media downloads by bypassing the Backend and connecting n8n directly to `baileys_bridge:3000`.
+  - Fixed **404 Missing Endpoint** by injecting a new `/download` route into `baileys-service/server.js` for media decryption.
+  - Resolved **Gemini Veo Model Error** in n8n by switching the task from "Generate Video" to "Multimodal Chat" (Analyze) using binary input.
+  - Finalized the **Media Decryption Pipeline**: WhatsApp (Encrypted) -> Bridge (Decrypt) -> n8n (Binary) -> Gemini (Analyze).
