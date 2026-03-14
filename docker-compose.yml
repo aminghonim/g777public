@@ -1,10 +1,15 @@
-version: '3.8'
+# Docker Compose for G777 Stack
 
 services:
   evolution-db:
     image: postgres:15-alpine
     container_name: evolution_db
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       POSTGRES_DB: evolution
       POSTGRES_USER: postgres
@@ -18,6 +23,12 @@ services:
     image: atendai/evolution-api:latest
     container_name: evolution_api
     restart: always
+    profiles: ["evolution", "full"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - evolution-db
     ports:
@@ -36,8 +47,95 @@ services:
       - WEBHOOK_EVENTS_MESSAGES_UPDATE=true
       - WEBHOOK_EVENTS_SEND_MESSAGE=true
       - CACHE_REDIS_ENABLED=false
+      - CONFIG_SESSION_PHONE_VERSION=2.3000.1015901307
+      - NODE_OPTIONS=--network-family-autoselection-attempt-timeout=500
     volumes:
       - ./data/evolution_instances:/evolution/instances
+    networks:
+      - g777-network
+
+  g777-backend:
+    build: .
+    container_name: g777_backend
+    restart: always
+    # No profile: runs by default with any 'up' command
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      - evolution-db
+    ports:
+      - "8000:8000"
+    expose:
+      - "8000"
+    env_file: .env
+    environment:
+      - PORT=8000
+    volumes:
+      - .:/app
+    networks:
+      - g777-network
+
+  baileys-bridge:
+    build: ./baileys-service
+    container_name: baileys_bridge
+    restart: always
+    profiles: ["baileys", "full"]
+    user: "1000:1000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "3000:3000"
+    expose:
+      - "3000"
+    env_file: .env
+    environment:
+      - PORT=3000
+      - WEBHOOK_URL=http://g777-backend:8000/webhook/whatsapp
+    volumes:
+      - ./auth_info:/app/auth_info
+    networks:
+      - g777-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: g777_nginx
+    restart: always
+    # No profile: runs by default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - g777-backend
+    networks:
+      - g777-network
+
+  n8n:
+    image: n8nio/n8n:latest # Using the latest stable version
+    container_name: g777_n8n
+    restart: always
+    user: "1000:1000"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Africa/Cairo
+    ports:
+      - "5678:5678"
+    volumes:
+      - ~/.n8n:/home/node/.n8n
     networks:
       - g777-network
 

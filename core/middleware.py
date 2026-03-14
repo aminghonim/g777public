@@ -12,8 +12,11 @@ async def secure_handshake_middleware(request: Request, call_next):
     """
     Validates the G777 Handshake Token for all non-exempt requests.
     """
-    # 1. Bypass exempt paths and OPTIONS requests
-    if request.url.path in settings.system.exempt_paths or request.method == "OPTIONS":
+    # 1. Bypass exempt paths and OPTIONS requests.
+    # startswith is used so trailing slashes and query params on exempt prefixes are also bypassed.
+    path = request.url.path
+    is_exempt = any(path == ep or path.startswith(ep.rstrip("/") + "/") for ep in settings.system.exempt_paths)
+    if is_exempt or request.method == "OPTIONS":
         return await call_next(request)
 
     # 2. Extract and Validate Token
