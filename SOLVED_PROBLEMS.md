@@ -224,3 +224,53 @@ WhatsApp -> Baileys Bridge (baileys-bridge:3000)
 | مسار الإرسال الصحيح | http://baileys-bridge:3000/send بـ phone + message |
 | مسار الذاكرة الصحيح | http://g777_backend:8000/memory بـ phone + intent + fact |
 | مسار الـ Webhook | http://g777_n8n:5678/webhook/{uuid} — داخلي بالكامل |
+
+---
+
+## Sprint #4 — Video Support & RAG Intelligence (2026-03-14)
+
+### الميزة المضافة 1: دعم رسائل الفيديو في N8N Workflow
+
+**المشكلة:** عقدة `Switch1` كانت تعالج فرعين فقط (Audio, Image) بدون أي معالجة لرسائل الفيديو، التي تضيع بصمت.
+
+**الحل الهندسي (Video Pipeline):**
+
+أضفنا فرعاً رابعاً للـ Switch1 يكشف `videoMessage.url`، متصلاً بـ Pipeline كامل:
+
+```
+Switch1[Video]
+  --> Get BaseVideo  (POST g777_backend:8000 — يجلب base64 للفيديو)
+  --> Convert to File4  (قلب base64 -> binary)
+  --> Analyze Video1  (Gemini 2.5 Flash — resource: video, inputType: binary)
+  --> Get Memory (Addon)1  (يكمل في الـ Pipeline العادي)
+```
+
+**المكونات المضافة:**
+- `Get BaseVideo` — نفس `Get Base1` لكن على موضع Y مختلف (1632).
+- `Convert to File4` — convertToFile node لتحويل base64.
+- `Analyze Video1` — `@n8n/n8n-nodes-langchain.googleGemini` بـ resource: video.
+
+**التحديثات المتعلقة:**
+- `Format Context (Addon)1`: أضفنا `Analyze Video1` لقائمة الـ nodes التي يحاول الكود استعادة البيانات منها.
+- `AI Agent1`: تعبير النص يشمل الآن output من `Analyze Video1`.
+- `Extract Intent (Addon)1`: تحسين استخراج الـ phone و userMessage لتشمل حالة الفيديو.
+
+---
+
+### الميزة المضافة 2: RAG Intelligence — الذاكرة في قلب الـ Prompt
+
+**المبدأ:** البوت لم يعد مجرد "ساعي بريد" — هو الآن يستخدم ذاكرة العميل كـ Context للـ AI Agent.
+
+**الـ Pipeline الجديد المكتمل:**
+
+```
+Webhook -> Not from me -> Switch1 (Text/Audio/Image/Video)
+  -> [media nodes] -> Get Memory (Addon)1
+  -> Format Context (تجميع الذاكرة + الرسالة)
+  -> AI Agent1 (Gemini + system prompt + memory context)
+  -> Loop Over Items -> Extract Intent
+  -> Save Memory (Addon)1 (يحفظ التفاعل الجديد)
+  -> Wait -> Send Text
+```
+
+**قاعدة بيانات الذاكرة:** `customer_memory` تحتوي: phone, intent, fact, created_at.
