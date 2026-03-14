@@ -1,23 +1,28 @@
 import makeWASocket, { 
   useMultiFileAuthState, 
   DisconnectReason,
-  fetchLatestBaileysVersion
+  fetchLatestBaileysVersion,
+  downloadMediaMessage
 } from '@whiskeysockets/baileys'
 import express from 'express'
 import { Boom } from '@hapi/boom'
-import qrcode from 'qrcode-terminal'
 import pino from 'pino'
+import QRCode from 'qrcode'
 
 const app = express()
 app.use(express.json())
 
-const PORT = process.env.PORT || 3000 // Changed default to 3000 to match setup
+const PORT = process.env.PORT || 3000
 const logger = pino({ level: 'info' })
 
 let sock = null
 let qrCodeData = null
 let connectionStatus = 'disconnected'
-let webhookUrl = process.env.WEBHOOK_URL || 'http://localhost:8080/webhook/whatsapp'
+
+// Default to Python Backend on 8000
+let webhookUrl = process.env.WEBHOOK_URL || 'http://localhost:8000/webhook/whatsapp'
+
+console.log(`[INIT] Webhook URL: ${webhookUrl}`)
 
 // ============================================
 // Webhook Configuration Endpoint
@@ -37,11 +42,11 @@ app.patch('/webhook/set', (req, res) => {
 // Baileys Setup
 // ============================================
 
-// Store disabled - optional feature
-
 async function connectToWhatsApp() {
   const { state, saveCreds } = await useMultiFileAuthState('auth_info')
   const { version } = await fetchLatestBaileysVersion()
+
+  logger.info(`Starting Baileys with version: ${version.join('.')}`)
 
   sock = makeWASocket({
     version,
@@ -51,41 +56,88 @@ async function connectToWhatsApp() {
     getMessage: async () => undefined
   })
   
-  // store.bind(sock.ev) - disabled
-
   sock.ev.on('creds.update', saveCreds)
 
-  // Message Listener & Forwarder
+  // ============================================
+  // Resilient Message Queue (Pitfall 3: Graceful Degradation)
+  // ============================================
+  const MAX_RETRY_QUEUE = 100
+  const retryQueue = []
+
+  async function forwardToWebhook(payload, retryCount = 0) {
+    const MAX_RETRIES = 3
+    const RETRY_DELAY_MS = 2000
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(10000)
+      })
+      logger.info(`Webhook response: ${response.status}`)
+      return response
+    } catch (e) {
+      if (retryCount < MAX_RETRIES) {
+        logger.warn(`Webhook attempt ${retryCount + 1}/${MAX_RETRIES} failed: ${e.message}. Retrying...`)
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS * (retryCount + 1)))
+        return forwardToWebhook(payload, retryCount + 1)
+      }
+      logger.error(`Webhook unreachable after ${MAX_RETRIES} retries. Queuing message.`)
+      if (retryQueue.length < MAX_RETRY_QUEUE) {
+        retryQueue.push({ payload, timestamp: Date.now() })
+      } else {
+        logger.warn(`Retry queue full (${MAX_RETRY_QUEUE}). Dropping oldest message.`)
+        retryQueue.shift()
+        retryQueue.push({ payload, timestamp: Date.now() })
+      }
+      return null
+    }
+  }
+
+  // Unified Message Listener & Forwarder
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
-    if (type === 'notify') {
-      for (const msg of messages) {
-        if (!msg.message) continue
-        
-        try {
-          // Forward to Main Server (CRM)
-          const response = await fetch(webhookUrl, {
-            method: 'POST',
-            body: JSON.stringify({ data: { message: msg.message, key: msg.key } }),
-            headers: { 'Content-Type': 'application/json' }
-          })
-          
-          // HANDLE REPLY FROM SERVER (NEW)
-          const responseData = await response.json()
-          if (responseData && responseData.reply) {
-             logger.info(`🤖 Sending AI Reply: ${responseData.reply}`)
-             await sock.sendMessage(msg.key.remoteJid, { text: responseData.reply })
-          }
-          
-          logger.info(`Webhook sent: ${response.status}`)
-        } catch (e) {
-          logger.error(`Webhook forward failed: ${e.message}`)
+    if (type !== 'notify') return
+
+    for (const msg of messages) {
+      if (!msg.message) continue
+      if (msg.key.fromMe) {
+          logger.info('Skipping own message')
+          continue
+      }
+
+      logger.info(`New message from ${msg.key.remoteJid}: ${JSON.stringify(msg.message).substring(0, 100)}...`)
+      
+      try {
+        const payload = {
+            event: 'messages.upsert',
+            instance: 'local',
+            data: {
+                message: msg.message,
+                key: msg.key,
+                pushName: msg.pushName || 'WhatsApp User',
+                timestamp: msg.messageTimestamp,
+                status: 'RECEIVED'
+            }
         }
+
+        logger.info(`Forwarding to Webhook: ${webhookUrl}`)
+        const response = await forwardToWebhook(payload)
+
+        if (response) {
+          const responseData = await response.json().catch(() => ({}))
+          if (responseData && responseData.reply) {
+            logger.info(`Sending AI Reply from webhook response: ${responseData.reply}`)
+            await sock.sendMessage(msg.key.remoteJid, { text: responseData.reply })
+          }
+        }
+      } catch (e) {
+        logger.error(`Message processing error: ${e.message}`)
       }
     }
   })
 
+
   sock.ev.on('connection.update', async (update) => {
-    // ... existing connection logic ...
     const { connection, lastDisconnect, qr } = update
     
     if (qr) {
@@ -96,72 +148,21 @@ async function connectToWhatsApp() {
     if (connection === 'close') {
       connectionStatus = 'disconnected'
       
-      // Check if it was a logout
-      const wasLoggedOut = (lastDisconnect?.error instanceof Boom) 
-        && lastDisconnect.error.output.statusCode === DisconnectReason.loggedOut
+      const statusCode = lastDisconnect?.error?.output?.statusCode
+      const wasLoggedOut = statusCode === DisconnectReason.loggedOut
       
       if (wasLoggedOut) {
-        logger.info('⚠️ Logged out. Clearing session and generating new QR code...')
-        qrCodeData = null  // Clear old QR
-        
-        // Delete old session files to force fresh start
-        try {
-          const fs = await import('fs')
-          const path = await import('path')
-          const authPath = path.join(process.cwd(), 'auth_info')
-          
-          if (fs.existsSync(authPath)) {
-            const files = fs.readdirSync(authPath)
-            for (const file of files) {
-              fs.unlinkSync(path.join(authPath, file))
-            }
-            logger.info('✅ Old session files deleted')
-          }
-        } catch (err) {
-          logger.error('Failed to delete session files:', err.message)
-        }
+        logger.info('⚠️ Logged out. Clearing session...')
+        qrCodeData = null
+        // Force cleanup will happen in reset endpoint
       } else {
-        logger.info('Connection closed. Reconnecting...')
+        logger.info(`Connection closed (Reason: ${statusCode}). Reconnecting...`)
+        setTimeout(connectToWhatsApp, 3000)
       }
-      
-      // Always reconnect to generate new QR or restore connection
-      await connectToWhatsApp()
-      
     } else if (connection === 'open') {
       connectionStatus = 'connected'
-      qrCodeData = null  // Clear QR when connected
+      qrCodeData = null
       logger.info('✅ Connected to WhatsApp!')
-    }
-  })
-
-  sock.ev.on('messages.upsert', async ({ messages }) => {
-    const msg = messages[0]
-    if (!msg.message || msg.key.fromMe) return
-
-    logger.info('New message received:', msg)
-    
-    // Check if contact exists in store
-    const remoteJid = msg.key.remoteJid
-    const contact = store.contacts[remoteJid] || {}
-    const isSavedContact = !!contact.name || !!contact.notify  // Basic check, 'name' usually set if in phonebook
-
-    // Prepare Payload
-    const payload = {
-        data: {
-            message: msg.message,
-            key: msg.key,
-            pushName: msg.pushName,
-            isContact: isSavedContact // <--- HERE IS THE CRITICAL FLAG
-        }
-    }
-    
-    // Send to Python Webhook
-    try {
-        const axios = (await import('axios')).default
-        const WEBHOOK_URL = process.env.WEBHOOK_URL || 'http://localhost:8080/webhook/whatsapp'
-        await axios.post(WEBHOOK_URL, payload)
-    } catch (e) {
-        logger.error('Webhook failed:', e.message)
     }
   })
 }
@@ -187,10 +188,7 @@ app.get('/qr', async (req, res) => {
   }
 
   try {
-    // Generate QR code as data URL (base64 image)
-    const QRCode = (await import('qrcode')).default
     const qrImage = await QRCode.toDataURL(qrCodeData)
-    
     res.json({
       success: true,
       qr: qrCodeData,
@@ -198,71 +196,7 @@ app.get('/qr', async (req, res) => {
       message: 'Scan this QR code with WhatsApp'
     })
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    })
-  }
-})
-
-app.get('/qr-image', async (req, res) => {
-  if (!qrCodeData) {
-    return res.send('<h1>No QR Code available</h1><p>Already connected or not initialized.</p>')
-  }
-
-  try {
-    const QRCode = (await import('qrcode')).default
-    const qrImage = await QRCode.toDataURL(qrCodeData)
-    
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>WhatsApp QR Code</title>
-          <style>
-            body {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              min-height: 100vh;
-              margin: 0;
-              font-family: Arial, sans-serif;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            }
-            .container {
-              background: white;
-              padding: 40px;
-              border-radius: 20px;
-              box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-              text-align: center;
-            }
-            h1 {
-              color: #333;
-              margin-bottom: 20px;
-            }
-            img {
-              max-width: 300px;
-              border: 10px solid #25D366;
-              border-radius: 10px;
-            }
-            p {
-              color: #666;
-              margin-top: 20px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>📱 Scan QR Code</h1>
-            <img src="${qrImage}" alt="WhatsApp QR Code">
-            <p>Open WhatsApp > Settings > Linked Devices > Link a Device</p>
-          </div>
-        </body>
-      </html>
-    `)
-  } catch (error) {
-    res.status(500).send(`<h1>Error: ${error.message}</h1>`)
+    res.status(500).json({ success: false, message: error.message })
   }
 })
 
@@ -279,146 +213,104 @@ app.post('/send', async (req, res) => {
     const { phone, message } = req.body
 
     if (!phone || !message) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Phone and message are required' 
-      })
-    }
-
-    if (connectionStatus !== 'connected') {
-      return res.status(503).json({ 
-        success: false, 
-        message: 'WhatsApp not connected' 
-      })
+      return res.status(400).json({ success: false, message: 'Phone and message are required' })
     }
 
     const jid = phone.includes('@') ? phone : `${phone}@s.whatsapp.net`
     await sock.sendMessage(jid, { text: message })
 
-    res.json({ 
-      success: true, 
-      message: 'Message sent successfully',
-      to: phone 
-    })
+    res.json({ success: true, message: 'Message sent successfully' })
   } catch (error) {
-    logger.error('Send message error:', error)
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    })
+    res.status(500).json({ success: false, message: error.message })
   }
 })
 
-app.post('/disconnect', async (req, res) => {
+app.post('/download', async (req, res) => {
   try {
-    if (sock) {
-      await sock.logout()
-      connectionStatus = 'disconnected'
-      qrCodeData = null
+    const { key, message } = req.body;
+    if (!message || !key) {
+      return res.status(400).json({ success: false, error: 'Both key and message are required' });
     }
-    res.json({ success: true, message: 'Disconnected successfully' })
+
+    // Smart Extraction: If original message is a reply containing a quoted media message,
+    // we automatically target the quoted message for decryption.
+    let targetMessage = message;
+    if (message.extendedTextMessage?.contextInfo?.quotedMessage) {
+      targetMessage = message.extendedTextMessage.contextInfo.quotedMessage;
+      logger.info('Extracting media from quotedMessage (Reply detected)');
+    }
+
+    const msg = { key, message: targetMessage };
+    const buffer = await downloadMediaMessage(
+      msg,
+      'buffer',
+      { },
+      { logger }
+    );
+    
+    if (!buffer) {
+      return res.status(404).json({ success: false, error: 'Could not download media' });
+    }
+
+    const base64 = buffer.toString('base64');
+    res.json({ success: true, base64 });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message })
+    logger.error(`Media download error: ${error.message}`);
+    res.status(500).json({ success: false, error: error.message });
+  }
+})
+
+app.post('/logout', async (req, res) => {
+  try {
+    if (sock) await sock.logout()
+    res.json({ success: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
   }
 })
 
 app.post('/reset', async (req, res) => {
   try {
-    // Logout first
     if (sock) {
-      try {
-        await sock.logout()
-      } catch (e) {
-        logger.warn('Logout failed, continuing with reset:', e.message)
-      }
+       try { await sock.logout() } catch(e) {}
     }
     
-    // Delete session files
     const fs = await import('fs')
     const path = await import('path')
     const authPath = path.join(process.cwd(), 'auth_info')
     
     if (fs.existsSync(authPath)) {
-      const files = fs.readdirSync(authPath)
+      const files = fs.readdirSync(authPath);
       for (const file of files) {
-        fs.unlinkSync(path.join(authPath, file))
+        fs.rmSync(path.join(authPath, file), { recursive: true, force: true });
       }
-      logger.info('✅ Session files deleted')
     }
     
-    // Reset state
     connectionStatus = 'disconnected'
     qrCodeData = null
     sock = null
     
-    // Reconnect to generate new QR
-    await connectToWhatsApp()
+    setTimeout(connectToWhatsApp, 2000)
     
-    res.json({ 
-      success: true, 
-      message: 'Session reset. New QR code will be generated shortly.' 
-    })
+    res.json({ success: true, message: 'Session reset' })
   } catch (error) {
-    logger.error('Reset error:', error)
     res.status(500).json({ success: false, message: error.message })
   }
 })
 
-// ============================================
-// Pairing Code Logic
-// ============================================
-
 app.post('/pairing-code', async (req, res) => {
   try {
     const { phone } = req.body
+    if (!phone || !sock) return res.status(400).json({ message: 'Phone or Socket missing' })
 
-    if (!phone) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Phone number is required' 
-      })
-    }
-
-    if (connectionStatus === 'connected') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Already connected' 
-      })
-    }
-    
-    if (!sock) {
-         return res.status(503).json({ 
-        success: false, 
-        message: 'Socket not initialized' 
-      })
-    }
-
-    // Ensure phone number format (remove non-digits)
-    const formattedPhone = phone.replace(/[^0-9]/g, '')
-
-    // Request pairing code from Baileys
-    const code = await sock.requestPairingCode(formattedPhone)
-
-    res.json({ 
-      success: true, 
-      code: code?.toUpperCase(),
-      message: 'Pairing code generated successfully'
-    })
-
+    const code = await sock.requestPairingCode(phone.replace(/[^0-9]/g, ''))
+    res.json({ success: true, code: code?.toUpperCase() })
   } catch (error) {
-    logger.error('Pairing code error:', error)
-    res.status(500).json({ 
-      success: false, 
-      message: error.message || 'Failed to generate pairing code'
-    })
+    res.status(500).json({ success: false, message: error.message })
   }
 })
 
-// ============================================
-// Start Server
-// ============================================
-
-app.listen(PORT, async () => {
-  logger.info(`🚀 Server running on port ${PORT}`)
-  await connectToWhatsApp()
+app.listen(PORT, () => {
+  logger.info(`🚀 Baileys Bridge running on port ${PORT}`)
+  connectToWhatsApp().catch(err => logger.error('Startup failed:', err))
 })

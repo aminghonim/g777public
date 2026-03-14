@@ -28,6 +28,7 @@
 1. **Internal Bypassing**: Configured n8n to call the Baileys Bridge directly (`http://baileys_bridge:3000/download`) instead of going through `g777_backend`.
 2. **Surgical Route Injection**: Added a `/download` POST route to `baileys-service/server.js`. This route uses `downloadMediaMessage` from `@whiskeysockets/baileys` to decrypt the media and return it to n8n.
 3. **Task Redefinition**: Changed the Gemini node "Operation" in n8n to **Multimodal Chat** (or **Analyze**). Set **Input Type** to **Binary File** to pass the decrypted media buffer directly to the model.
+4. **Quoted Media Support**: Added logic to handle media sent as a reply (Quoted Messages). Updated `baileys-service` to automatically extract media from the `quotedMessage` context.
 
 ## 🚫 What NOT to Do (Anti-Patterns)
 
