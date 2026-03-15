@@ -172,6 +172,32 @@ site_difficulty:
     "datadome.com": "hard"
     "perimeterx.com": "hard"
 
+# 🔄 Proxy Rotation Configuration
+proxy_rotation:
+  enabled: false  # Set to true to enable proxy rotation
+  rotation_strategy: "round_robin"  # round_robin, random, health_based
+  retry_on_failure: true
+  blacklist_duration: 900  # seconds (15 minutes)
+  health_check_interval: 300  # seconds (5 minutes)
+  
+  # Proxy list - Add your proxies here
+  proxies:
+    # Example HTTP proxy
+    # - type: "http"
+    #   host: "proxy1.example.com"
+    #   port: 8080
+    #   username: "user1"
+    #   password: "pass1"
+    
+    # Example SOCKS5 proxy
+    # - type: "socks5"
+    #   host: "proxy2.example.com"
+    #   port: 1080
+    #   username: "user2"
+    #   password: "pass2"
+    
+    # Add more proxies as needed
+
 # 🧠 Smart Task Router - Model Selection Logic
 model_routing:
   default: "gemini-2.0-flash" # Fallback

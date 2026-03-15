@@ -12,6 +12,7 @@ Architecture:
 """
 
 import logging
+import time
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
@@ -61,6 +62,257 @@ def _load_scraper_config(config_path: str = _CONFIG_PATH) -> Dict[str, Any]:
         return {}
 
 
+class ProxyManager:
+    """
+    Manages proxy rotation with health tracking and automatic failover.
+    
+    Supports HTTP and SOCKS5 proxies with round-robin, random, and health-based
+    rotation strategies. Implements proxy blacklisting for failed proxies.
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        """
+        Initialize ProxyManager with configuration.
+        
+        Args:
+            config: Proxy configuration from config.yaml
+        """
+        self.config = config
+        self.enabled = config.get("enabled", False)
+        self.proxies = config.get("proxies", [])
+        self.strategy = config.get("rotation_strategy", "round_robin")
+        self.blacklist_duration = config.get("blacklist_duration", 900)  # 15 minutes
+        
+        # State tracking
+        self._current_index = 0
+        self._proxy_health: Dict[str, Dict[str, Any]] = {}
+        self._blacklist: Dict[str, float] = {}
+        
+        # Initialize proxy health tracking
+        for proxy in self.proxies:
+            proxy_id = self._get_proxy_id(proxy)
+            self._proxy_health[proxy_id] = {
+                "success_count": 0,
+                "failure_count": 0,
+                "last_used": 0,
+                "last_success": 0,
+                "last_failure": 0
+            }
+        
+        logger.info(
+            "ProxyManager initialized: enabled=%s, strategy=%s, proxies=%d",
+            self.enabled,
+            self.strategy,
+            len(self.proxies)
+        )
+    
+    def _get_proxy_id(self, proxy: Dict[str, Any]) -> str:
+        """Generate unique identifier for proxy."""
+        return f"{proxy.get('type', 'http')}://{proxy.get('host', '')}:{proxy.get('port', 0)}"
+    
+    def _is_proxy_blacklisted(self, proxy: Dict[str, Any]) -> bool:
+        """Check if proxy is currently blacklisted."""
+        if not self.enabled:
+            return False
+        
+        proxy_id = self._get_proxy_id(proxy)
+        if proxy_id in self._blacklist:
+            # Check if blacklist duration has expired
+            if time.time() - self._blacklist[proxy_id] > self.blacklist_duration:
+                del self._blacklist[proxy_id]
+                logger.info("Proxy %s removed from blacklist", proxy_id)
+                return False
+            return True
+        return False
+    
+    def _select_proxy_round_robin(self) -> Optional[Dict[str, Any]]:
+        """Select next proxy in round-robin order."""
+        available_proxies = [p for p in self.proxies if not self._is_proxy_blacklisted(p)]
+        
+        if not available_proxies:
+            logger.warning("No available proxies (all blacklisted)")
+            return None
+        
+        proxy = available_proxies[self._current_index % len(available_proxies)]
+        self._current_index += 1
+        return proxy
+    
+    def _select_proxy_random(self) -> Optional[Dict[str, Any]]:
+        """Select random proxy from available pool."""
+        import random
+        available_proxies = [p for p in self.proxies if not self._is_proxy_blacklisted(p)]
+        
+        if not available_proxies:
+            logger.warning("No available proxies (all blacklisted)")
+            return None
+        
+        return random.choice(available_proxies)
+    
+    def _select_proxy_health_based(self) -> Optional[Dict[str, Any]]:
+        """Select proxy based on health metrics (success rate)."""
+        available_proxies = [p for p in self.proxies if not self._is_proxy_blacklisted(p)]
+        
+        if not available_proxies:
+            logger.warning("No available proxies (all blacklisted)")
+            return None
+        
+        # Calculate success rate for each proxy
+        best_proxy = None
+        best_score = -1
+        
+        for proxy in available_proxies:
+            proxy_id = self._get_proxy_id(proxy)
+            health = self._proxy_health.get(proxy_id, {})
+            
+            success_count = health.get("success_count", 0)
+            failure_count = health.get("failure_count", 0)
+            total_attempts = success_count + failure_count
+            
+            if total_attempts == 0:
+                score = 0.5  # Neutral score for unused proxies
+            else:
+                score = success_count / total_attempts
+            
+            # Prefer recently successful proxies
+            if health.get("last_success", 0) > time.time() - 300:  # Within 5 minutes
+                score += 0.1
+            
+            if score > best_score:
+                best_score = score
+                best_proxy = proxy
+        
+        return best_proxy
+    
+    def get_proxy(self) -> Optional[Dict[str, Any]]:
+        """
+        Get the next proxy based on rotation strategy.
+        
+        Returns:
+            Proxy configuration dict or None if no proxies available
+        """
+        if not self.enabled or not self.proxies:
+            return None
+        
+        if self.strategy == "round_robin":
+            return self._select_proxy_round_robin()
+        elif self.strategy == "random":
+            return self._select_proxy_random()
+        elif self.strategy == "health_based":
+            return self._select_proxy_health_based()
+        else:
+            logger.warning("Unknown proxy strategy: %s, using round_robin", self.strategy)
+            return self._select_proxy_round_robin()
+    
+    def mark_proxy_success(self, proxy: Dict[str, Any]) -> None:
+        """
+        Mark proxy as successful for health tracking.
+        
+        Args:
+            proxy: Proxy configuration that was used successfully
+        """
+        if not self.enabled:
+            return
+        
+        proxy_id = self._get_proxy_id(proxy)
+        if proxy_id in self._proxy_health:
+            self._proxy_health[proxy_id]["success_count"] += 1
+            self._proxy_health[proxy_id]["last_success"] = time.time()
+            self._proxy_health[proxy_id]["last_used"] = time.time()
+        
+        logger.debug("Proxy %s marked as successful", proxy_id)
+    
+    def mark_proxy_failed(self, proxy: Dict[str, Any], error: str = "Unknown") -> None:
+        """
+        Mark proxy as failed and potentially blacklist it.
+        
+        Args:
+            proxy: Proxy configuration that failed
+            error: Error description for logging
+        """
+        if not self.enabled:
+            return
+        
+        proxy_id = self._get_proxy_id(proxy)
+        if proxy_id in self._proxy_health:
+            self._proxy_health[proxy_id]["failure_count"] += 1
+            self._proxy_health[proxy_id]["last_failure"] = time.time()
+            self._proxy_health[proxy_id]["last_used"] = time.time()
+            
+            # Blacklist if too many failures
+            failure_count = self._proxy_health[proxy_id]["failure_count"]
+            if failure_count >= 3:  # Blacklist after 3 failures
+                self._blacklist[proxy_id] = time.time()
+                logger.warning(
+                    "Proxy %s blacklisted after %d failures: %s",
+                    proxy_id,
+                    failure_count,
+                    error
+                )
+        
+        logger.debug("Proxy %s marked as failed: %s", proxy_id, error)
+    
+    def is_proxy_healthy(self, proxy: Dict[str, Any]) -> bool:
+        """
+        Check if proxy is considered healthy.
+        
+        Args:
+            proxy: Proxy configuration to check
+            
+        Returns:
+            True if proxy is healthy, False otherwise
+        """
+        if not self.enabled:
+            return True
+        
+        if self._is_proxy_blacklisted(proxy):
+            return False
+        
+        proxy_id = self._get_proxy_id(proxy)
+        if proxy_id not in self._proxy_health:
+            return True  # New proxy is considered healthy
+        
+        health = self._proxy_health[proxy_id]
+        success_count = health.get("success_count", 0)
+        failure_count = health.get("failure_count", 0)
+        
+        if failure_count == 0:
+            return True
+        
+        # Consider healthy if success rate > 50%
+        total_attempts = success_count + failure_count
+        return (success_count / total_attempts) > 0.5
+    
+    def get_proxy_stats(self) -> Dict[str, Any]:
+        """
+        Get proxy statistics for monitoring.
+        
+        Returns:
+            Dictionary with proxy health statistics
+        """
+        if not self.enabled:
+            return {"enabled": False}
+        
+        stats = {
+            "enabled": True,
+            "total_proxies": len(self.proxies),
+            "blacklisted_count": len(self._blacklist),
+            "strategy": self.strategy,
+            "proxy_health": {}
+        }
+        
+        for proxy in self.proxies:
+            proxy_id = self._get_proxy_id(proxy)
+            health = self._proxy_health.get(proxy_id, {})
+            stats["proxy_health"][proxy_id] = {
+                "success_count": health.get("success_count", 0),
+                "failure_count": health.get("failure_count", 0),
+                "blacklisted": proxy_id in self._blacklist,
+                "healthy": self.is_proxy_healthy(proxy)
+            }
+        
+        return stats
+
+
 class ScraplingEngine:
     """
     Adapter layer for Scrapling library.
@@ -89,6 +341,10 @@ class ScraplingEngine:
         self.session_config = self.config.get("identity", {})
         self.validation_config = self.config.get("validation", {})
         self.site_difficulty_config = self.config.get("site_difficulty", {})
+        self.proxy_config = self.config.get("proxy_rotation", {})
+        
+        # Initialize Proxy Manager
+        self.proxy_manager = ProxyManager(self.proxy_config)
 
         # State Tracking
         self._consecutive_failures: Dict[str, int] = {}
@@ -193,6 +449,35 @@ class ScraplingEngine:
             logger.warning("Error determining site difficulty for %s: %s", url, e)
             return self.site_difficulty_config.get("default", "medium")
 
+    def _format_proxy_for_scrapling(self, proxy: Dict[str, Any]) -> str:
+        """
+        Format proxy configuration for Scrapling fetchers.
+        
+        Args:
+            proxy: Proxy configuration dict
+            
+        Returns:
+            Proxy URL string in format: http://user:pass@host:port or socks5://user:pass@host:port
+        """
+        proxy_type = proxy.get("type", "http").lower()
+        host = proxy.get("host", "")
+        port = proxy.get("port", 0)
+        username = proxy.get("username", "")
+        password = proxy.get("password", "")
+        
+        if proxy_type not in ["http", "https", "socks5"]:
+            logger.warning("Unsupported proxy type: %s", proxy_type)
+            proxy_type = "http"
+        
+        # Build proxy URL
+        if username and password:
+            proxy_url = f"{proxy_type}://{username}:{password}@{host}:{port}"
+        else:
+            proxy_url = f"{proxy_type}://{host}:{port}"
+        
+        logger.debug("Formatted proxy URL: %s", proxy_url.replace(password, "***") if password else proxy_url)
+        return proxy_url
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -206,7 +491,7 @@ class ScraplingEngine:
         This method analyzes the target URL and selects the optimal fetcher:
         - "easy": Regular Fetcher (fast, lightweight HTTP)
         - "medium": Dynamic Fetcher (JavaScript rendering via Playwright)
-        - "hard": Stealthy Fetcher (anti-bot bypass with fingerprint spoofing)
+        - "hard": StealthyFetcher (anti-bot bypass with fingerprint spoofing)
 
         Args:
             url: Target URL to fetch
@@ -214,6 +499,8 @@ class ScraplingEngine:
                 - force_fetcher: Override auto-selection ("fetcher", "dynamic", "stealthy")
                 - session_name: Session persistence name
                 - headless: Run browser in headless mode (default from config)
+                - proxy: Override proxy selection (dict with proxy config)
+                - use_proxy: Enable/disable proxy for this request (default from config)
 
         Returns:
             Scrapling Response/Page object
@@ -225,7 +512,7 @@ class ScraplingEngine:
         Example:
             engine = ScraplingEngine()
             page = engine.smart_fetch("https://facebook.com/groups")
-            # Automatically uses StealthyFetcher for facebook.com
+            # Automatically uses StealthyFetcher for facebook.com with proxy rotation
         """
         if not self.is_available:
             raise RuntimeError(
@@ -235,6 +522,24 @@ class ScraplingEngine:
 
         # Check for manual override
         force_fetcher = kwargs.pop("force_fetcher", None)
+        
+        # Handle proxy selection
+        proxy_override = kwargs.pop("proxy", None)
+        use_proxy = kwargs.pop("use_proxy", self.proxy_manager.enabled)
+        
+        current_proxy = None
+        if use_proxy:
+            if proxy_override:
+                current_proxy = proxy_override
+            else:
+                current_proxy = self.proxy_manager.get_proxy()
+            
+            if current_proxy:
+                proxy_url = self._format_proxy_for_scrapling(current_proxy)
+                kwargs["proxy"] = proxy_url
+                logger.info("Using proxy: %s", proxy_url.split("@")[-1] if "@" in proxy_url else proxy_url)
+            else:
+                logger.warning("Proxy requested but none available")
 
         if force_fetcher:
             difficulty = force_fetcher
@@ -276,9 +581,17 @@ class ScraplingEngine:
                 page = fetcher.get(url, timeout=self.timeout, **kwargs)
                 logger.info("Regular fetch complete for: %s (status=%s)", url, getattr(page, "status", "N/A"))
 
+            # Mark proxy as successful if used
+            if current_proxy:
+                self.proxy_manager.mark_proxy_success(current_proxy)
+
             return page
 
         except Exception as e:
+            # Mark proxy as failed if used
+            if current_proxy:
+                self.proxy_manager.mark_proxy_failed(current_proxy, str(e))
+            
             logger.error("Smart fetch failed for %s: %s", url, e)
             raise
 
@@ -481,7 +794,7 @@ class ScraplingEngine:
         Run a diagnostic health check on the scraping engine.
 
         Returns:
-            Dict with engine status, availability, and config summary
+            Dict with engine status, availability, proxy stats, and config summary
         """
         return {
             "engine": self.engine_type,
@@ -492,4 +805,5 @@ class ScraplingEngine:
             "adaptive": self.adaptive,
             "timeout": self.timeout,
             "configured_targets": list(self.targets.keys()),
+            "proxy_stats": self.proxy_manager.get_proxy_stats(),
         }
