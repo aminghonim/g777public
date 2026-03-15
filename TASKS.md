@@ -19,8 +19,8 @@
 - [x] **Task W-04**: Refactor `backend/grabber/scraper.py` to use Scrapling adaptive parser.
 - [x] **Task W-05**: Refactor `backend/group_finder.py` to use `StealthyFetcher`.
 - [x] **Task W-06**: Refactor `backend/maps_extractor.py` to use Scrapling Spider.
-- [ ] **Task W-09**: **FINAL WIRING**: Update `backend/grabber/main.py` to make Scrapling the default engine. _(Mandate: No hardcoded JS allowed)_.
-- [ ] **Task W-10**: Implement "Session Injector" in `GroupFinder`. _(Mandate: Use sessions from config/env only)_.
+- [x] **Task W-09**: **FINAL WIRING**: Update `backend/grabber/main.py` to make Scrapling the default engine. _(Completed - Branch: feature/scrapling-integration-v2)_.
+- [x] **Task W-10**: Implement "Session Injector" in `GroupFinder`. _(Completed - Branch: feature/scrapling-integration-v2)_.
 
 ---
 
@@ -38,8 +38,9 @@
 
 - [x] **Task A-05**: Foundation: Install Scrapling & browsers.
 - [x] **Task A-07**: Create `backend/scrapling_engine.py` with Telemetry & Validation.
-- [ ] **Task A-11**: Final QA Gate: Run all tests and verify Zero-Regression across the full suite.
-- [ ] **Task A-12**: Inject learned patterns into Knowledge Base (KIs).
+- [/] **Task A-11**: Final QA Gate: Run all tests and verify Zero-Regression. _(Assigned to Cursor - Branch: cursor/scrapling-ui-audit-latency)_.
+- [x] **Task A-12**: Inject learned patterns into Knowledge Base (KIs). _(Assigned to Knowledge Officer)_.
+- [x] **Task A-13**: System Maintenance: `docker system prune -f`. _(Assigned to Knowledge Officer)_.
 
 ---
 
