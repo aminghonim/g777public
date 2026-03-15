@@ -16,6 +16,11 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
   List<dynamic> _groups = [];
   List<dynamic> _members = [];
   String? _selectedGroupName;
+  bool _isLoadingMore = false;
+  int _currentPage = 0;
+  static const int _pageSize = 100;
+  bool _hasMorePages = true;
+  final ScrollController _scrollController = ScrollController();
 
   ApiClient get _api => ref.read(apiClientProvider);
 
@@ -32,19 +37,44 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
     }
   }
 
-  Future<void> _fetchMembers(String jid, String name) async {
-    setState(() {
-      _isLoading = true;
-      _selectedGroupName = name;
-    });
-    try {
-      final res = await _api.get('/api/members-grabber/groups/$jid/members');
+  Future<void> _fetchMembers(String jid, String name, {bool loadMore = false}) async {
+    if (!loadMore) {
       setState(() {
-        _members = res.data as List<dynamic>;
+        _isLoading = true;
+        _selectedGroupName = name;
+        _members.clear();
+        _currentPage = 0;
+        _hasMorePages = true;
+      });
+    } else {
+      if (_isLoadingMore || !_hasMorePages) return;
+      setState(() => _isLoadingMore = true);
+    }
+
+    try {
+      final page = loadMore ? _currentPage + 1 : 1;
+      final res = await _api.get('/api/members-grabber/groups/$jid/members?page=$page&limit=$_pageSize');
+      final newMembers = res.data['members'] as List<dynamic>? ?? [];
+      final totalCount = res.data['total'] as int? ?? 0;
+
+      // Export all loaded members (paginated)
+      setState(() {
+        if (!loadMore) {
+          _members = newMembers;
+        } else {
+          _members.addAll(newMembers);
+          _currentPage = page;
+        }
+        _hasMorePages = _members.length < totalCount;
         _isLoading = false;
+        _isLoadingMore = false;
       });
     } catch (e) {
       _showError('Fetch Members Error: $e');
+      setState(() {
+        _isLoading = false;
+        _isLoadingMore = false;
+      });
     }
   }
 
@@ -77,16 +107,25 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
       ),
     );
   }
+@override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
-  void _showSuccess(String msg) {
-    if (!mounted) return;
-    final colorScheme = Theme.of(context).colorScheme;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: colorScheme.statusOnline,
-        behavior: SnackBarBehavior.floating,
-      ),
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMore &&
+        _hasMorePages &&
+        _selectedGroupName != null) {
+      _fetchMembers(_groups.firstWhere((g) => g['name'] == _selectedGroupName)['jid'], _selectedGroupName!, loadMore: true);
+    }),
     );
   }
 
@@ -164,7 +203,8 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
             colorScheme: colorScheme,
             borderColor: borderColor,
           ),
-          Expanded(
+          Expandedkey: ValueKey(group['jid']),
+                  (
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: _groups.length,
@@ -225,35 +265,85 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
                         letterSpacing: 2,
                       ),
                     ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: _members.length,
-                    separatorBuilder: (context, index) =>
-                        Divider(height: 1, color: borderColor),
-                    itemBuilder: (context, index) {
-                      final member = _members[index];
-                      return _buildDataTile(
-                        title: member['name'] ?? 'ANONYMOUS_USER',
-                        subtitle: member['phone'] ?? 'NO_PHONE',
-                        isSelected: false,
-                        onTap: null,
-                        accentColor: colorScheme.statusOnline,
-                        icon: Icons.alternate_email_rounded,
-                        colorScheme: colorScheme,
-                      );
+                  Column(
+                    children: [
+                      Expanded(
+                        child: ListView.separated(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          itemCount: _members.length + (_hasMorePages ? 1 : 0),
+                          separatorBuilder: (context, index) =>
+                              Divider(height: 1, color: borderColor),
+                          itemBuilder: (context, index) {
+                            if (index == _members.length) {
+                              // Loading indicator for next page
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: CircularProgressIndicator(
+                                    color: colorScheme.membersAccent,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              );
+                            }
+                            final member = _members[index];
+                            return _buildDataTile(
+                              key: ValueKey('${member['phone']}_${index}'),
+                              title: member['name'] ?? 'ANONYMOUS_USER',
+                              subtitle: member['phone'] ?? 'NO_PHONE',
+                              isSelected: false,
+                              onTap: null,
+                              accentColor: colorScheme.statusOnline,
+                              icon: Icons.alternate_email_rounded,
+                              colorScheme: colorScheme,
+                            );
+                          },
+                        ),
+                      ),
+                      if (_members.length > _pageSize)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            border: Border(top: BorderSide(color: borderColor)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${l10n.showing} ${_members.length} ${l10n.members.toLowerCase()}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                                ),
+                              ),
+                              if (_hasMorePages)
+                                Text(
+                                  l10n.loadMore ?? 'Load More',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: colorScheme.membersAccent,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                    ] );
                     },
                   ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConsoleHeader(
-    String title,
-    IconData icon,
-    VoidCallback? onAction, {
+    Key? key,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback? onTap,
+    required Color accentColor,
+    required ColorScheme colorScheme,
+    IconData? icon,
+  }) {
+    return InkWell(
+      key: key,nAction, {
     IconData? actionIcon,
     required ColorScheme colorScheme,
     required Color borderColor,
