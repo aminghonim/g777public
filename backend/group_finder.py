@@ -90,28 +90,28 @@ class GroupFinder:
                 self.driver.current_url
                 return
             except:
-                print(
+                self.logger.info(
                     t(
                         "hunter.logs.launching",
-                        "    Browser disconnected. Restarting...",
+                        "Browser disconnected. Restarting...",
                     )
                 )
                 self.driver = None
 
-        print(t("hunter.logs.launching", " [System] Launching Hunter Browser..."))
+        self.logger.info(t("hunter.logs.launching", " [System] Launching Hunter Browser..."))
         try:
             browser = WhatsAppBrowser(headless=False)
             self.driver = browser.initialize_driver()
         except Exception as e:
-            print(
+            self.logger.error(
                 t(
-                    "hunter.logs.launch_failed", "    Failed to launch browser: {err}"
+                    "hunter.logs.launch_failed", "Failed to launch browser: {err}"
                 ).format(err=e)
             )
-            print(
+            self.logger.info(
                 t(
                     "hunter.logs.browser_tip",
-                    "   🔧 Tip: Close all Chrome windows and try again.",
+                    "Tip: Close all Chrome windows and try again.",
                 )
             )
             raise
@@ -571,15 +571,16 @@ class GroupFinder:
 
         return new_links
 
-    def save(self, links):
+    def save(self, links: List[str]) -> None:
+        """Save found links to a file."""
         if not links:
             return
         filename = f"data/facebook_groups_{int(time.time())}.txt"
         os.makedirs("data", exist_ok=True)
         with open(filename, "w", encoding="utf-8") as f:
-            for l in links:
-                f.write(l + "\n")
-        print(t("hunter.logs.saved_to", "💾 Saved to {path}").format(path=filename))
+            for link in links:
+                f.write(link + "\n")
+        self.logger.info(t("hunter.logs.saved_to", "Saved to {path}").format(path=filename))
 
 
 if __name__ == "__main__":

@@ -22,23 +22,22 @@ from .utils import GrabberUtils
 
 class DataGrabber(GrabberBase, GrabberScraper, GrabberUtils):
     """
-    CNS-Enhanced Data Grabber.
-    Uses ScraplingEngine for adaptive element tracking and Selenium for live interaction.
+    CNS-Enhanced Data Grabber with ScraplingEngine as the ONLY engine.
+    Uses ScraplingEngine for adaptive element tracking and extraction.
+    Zero Hardcoding Compliance - All selectors from config.yaml
     """
 
     def __init__(
         self,
         headless: bool = False,
-        engine: str = "scrapling",
         config_path: str = "config.yaml",
     ):
         """
-        Initialize DataGrabber with ScraplingEngine as ONLY active engine.
+        Initialize DataGrabber with ScraplingEngine as the ONLY active engine.
         Zero Hardcoding Compliance - All selectors from config.yaml
         """
         super().__init__(headless=headless)
         self.persistence = GrabberPersistence(self.project_root)
-        self.engine_type = engine
         self.logger = logging.getLogger(__name__)
         
         # Load configuration
@@ -53,9 +52,7 @@ class DataGrabber(GrabberBase, GrabberScraper, GrabberUtils):
         GrabberScraper.__init__(self, config_path=config_path, driver=None)
 
         self.logger.info(
-            "DataGrabber initialized: engine=%s, headless=%s (Zero Hardcoding Mode)",
-            self.engine_type,
-            headless,
+            "DataGrabber initialized with ScraplingEngine ONLY (Zero Hardcoding Mode)",
         )
 
     def scrape_interactive_mode(self) -> Tuple[Optional[str], str]:
@@ -151,21 +148,10 @@ class DataGrabber(GrabberBase, GrabberScraper, GrabberUtils):
         except Exception:
             return False
 
-    # --- Legacy Compatibility Layer (Bridges to current engine) ---
+    # --- Internal Helpers ---
     def _get_group_name(self) -> str:
-        # Set driver reference for scraper methods
-        self.driver = self.driver
+        """Get the current group name from the driver."""
         return self._get_group_name_internal(self.driver)
-
-    def _run_enhanced_strategy(self, group_name: str) -> Tuple[Optional[str], str]:
-        """Legacy method bridge."""
-        return self._scrapling_extraction_strategy(group_name)
-
-    def _enhanced_extraction_strategy(
-        self, group_name: str
-    ) -> Tuple[Optional[str], str]:
-        """Legacy method bridge."""
-        return self._scrapling_extraction_strategy(group_name)
 
     def _save_members(
         self, members: Dict[str, dict], method: str, group_name: str = "Unknown"
