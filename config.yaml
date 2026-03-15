@@ -7,13 +7,14 @@ system:
   environment: "production"
 
 evolution_api:
-  url: "http://localhost:3000"
-  api_key: ""  # Loaded from EVOLUTION_API_KEY in .env - DO NOT hardcode here
+  url: "http://evolution-api:8080"
+  api_key: "antigravity_secret_key_2024"
   instance_name: "G777"
-  baileys_api_url: "http://localhost:3000"
+  baileys_api_url: "http://baileys-bridge:3000"
 
 network:
-  default_port: 8080
+  host: "0.0.0.0"
+  default_port: 8000
 
 delays:
   # Random delay between messages during campaigns
@@ -146,6 +147,30 @@ scraper_settings:
       business_name_selector: "h3, div[class*='headline']"
       phone_selector: "[data-item-id*='phone'], [href*='tel']"
       address_selector: "[data-item-id*='address']"
+
+# 🌐 Site Difficulty Configuration for Dynamic Browser Selection
+site_difficulty:
+  default: "medium"  # Default difficulty level for unknown sites
+  sites:
+    # Easy sites - Regular Fetcher (fast HTTP requests)
+    "google.com": "easy"
+    "google.com/maps": "easy"
+    "whatsapp.com": "easy"
+    "wikipedia.org": "easy"
+    
+    # Medium sites - Dynamic Fetcher (JavaScript rendering needed)
+    "linkedin.com": "medium"
+    "twitter.com": "medium"
+    "x.com": "medium"
+    "instagram.com": "medium"
+    
+    # Hard sites - Stealthy Fetcher (anti-bot protection)
+    "facebook.com": "hard"
+    "fb.com": "hard"
+    "cloudflare.com": "hard"
+    "akamai.com": "hard"
+    "datadome.com": "hard"
+    "perimeterx.com": "hard"
 
 # 🧠 Smart Task Router - Model Selection Logic
 model_routing:

@@ -13,6 +13,7 @@ Architecture:
 
 import logging
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 import yaml
 from tenacity import (
@@ -87,6 +88,7 @@ class ScraplingEngine:
         self.telemetry_config = self.config.get("telemetry", {})
         self.session_config = self.config.get("identity", {})
         self.validation_config = self.config.get("validation", {})
+        self.site_difficulty_config = self.config.get("site_difficulty", {})
 
         # State Tracking
         self._consecutive_failures: Dict[str, int] = {}
@@ -153,6 +155,132 @@ class ScraplingEngine:
             logger.debug("Injecting session path: %s", specific_path)
 
         return kwargs
+
+    def _get_site_difficulty(self, url: str) -> str:
+        """
+        Determine the difficulty level of a target site based on configuration.
+
+        Args:
+            url: Target URL to analyze
+
+        Returns:
+            Difficulty level: "easy", "medium", or "hard"
+        """
+        try:
+            parsed = urlparse(url)
+            domain = parsed.netloc.lower()
+
+            # Remove www. prefix if present
+            if domain.startswith("www."):
+                domain = domain[4:]
+
+            # Get site-specific difficulty mapping
+            sites_config = self.site_difficulty_config.get("sites", {})
+            default_level = self.site_difficulty_config.get("default", "medium")
+
+            # Check for exact domain match
+            if domain in sites_config:
+                return sites_config[domain]
+
+            # Check for partial domain match (e.g., "facebook.com" matches "m.facebook.com")
+            for site, level in sites_config.items():
+                if domain.endswith(site) or site.endswith(domain):
+                    return level
+
+            return default_level
+
+        except Exception as e:
+            logger.warning("Error determining site difficulty for %s: %s", url, e)
+            return self.site_difficulty_config.get("default", "medium")
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((ConnectionError, TimeoutError)),
+        reraise=True,
+    )
+    def smart_fetch(self, url: str, **kwargs: Any) -> Any:
+        """
+        Automatically select and use the appropriate fetcher based on site difficulty.
+
+        This method analyzes the target URL and selects the optimal fetcher:
+        - "easy": Regular Fetcher (fast, lightweight HTTP)
+        - "medium": Dynamic Fetcher (JavaScript rendering via Playwright)
+        - "hard": Stealthy Fetcher (anti-bot bypass with fingerprint spoofing)
+
+        Args:
+            url: Target URL to fetch
+            **kwargs: Additional parameters passed to the fetcher
+                - force_fetcher: Override auto-selection ("fetcher", "dynamic", "stealthy")
+                - session_name: Session persistence name
+                - headless: Run browser in headless mode (default from config)
+
+        Returns:
+            Scrapling Response/Page object
+
+        Raises:
+            RuntimeError: If Scrapling is not available
+            ConnectionError: If network is unreachable after retries
+
+        Example:
+            engine = ScraplingEngine()
+            page = engine.smart_fetch("https://facebook.com/groups")
+            # Automatically uses StealthyFetcher for facebook.com
+        """
+        if not self.is_available:
+            raise RuntimeError(
+                "Scrapling engine is not available. "
+                "Install with: pip install 'scrapling[all]'"
+            )
+
+        # Check for manual override
+        force_fetcher = kwargs.pop("force_fetcher", None)
+
+        if force_fetcher:
+            difficulty = force_fetcher
+        else:
+            difficulty = self._get_site_difficulty(url)
+
+        headless = kwargs.pop("headless", self.headless)
+        session_name = kwargs.pop("session_name", None)
+        session_kwargs = self._inject_session(session_name)
+        kwargs.update(session_kwargs)
+
+        logger.info(
+            "Smart fetching URL: %s (difficulty=%s, headless=%s)",
+            url,
+            difficulty,
+            headless,
+        )
+
+        try:
+            if difficulty == "hard":
+                # Use StealthyFetcher for anti-bot protected sites
+                network_idle = kwargs.pop("network_idle", True)
+                page = StealthyFetcher.fetch(
+                    url,
+                    headless=headless,
+                    network_idle=network_idle,
+                    **kwargs,
+                )
+                logger.info("Stealth fetch complete for: %s", url)
+
+            elif difficulty == "medium":
+                # Use DynamicFetcher for JS-rendered pages
+                page = DynamicFetcher.fetch(url, headless=headless, **kwargs)
+                logger.info("Dynamic fetch complete for: %s", url)
+
+            else:  # "easy" or default
+                # Use regular Fetcher for simple sites
+                fetcher = Fetcher()
+                page = fetcher.get(url, timeout=self.timeout, **kwargs)
+                logger.info("Regular fetch complete for: %s (status=%s)", url, getattr(page, "status", "N/A"))
+
+            return page
+
+        except Exception as e:
+            logger.error("Smart fetch failed for %s: %s", url, e)
+            raise
 
     @retry(
         stop=stop_after_attempt(3),
