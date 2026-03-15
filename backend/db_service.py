@@ -1,4 +1,4 @@
-﻿"""
+"""
 G777 Smart CRM - Database Service
 Uses Supabase PostgreSQL with Connection Pooling & Caching.
 """
@@ -13,8 +13,68 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2 import pool
 from dotenv import load_dotenv
+import time
+import logging
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
+
+def log_query_latency(threshold_ms=500):
+    """
+    Decorator to log database query latency.
+    Triggers warning for queries exceeding threshold.
+
+    Args:
+        threshold_ms: Alert threshold in milliseconds (default: 500ms)
+
+    Example:
+        @log_query_latency(500)
+        def get_customer_by_phone(phone):
+            ...
+    """
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            start_time = time.perf_counter()
+            try:
+                result = func(*args, **kwargs)
+                return result
+            finally:
+                elapsed_ms = (time.perf_counter() - start_time) * 1000
+
+                # Log summary
+                func_name = func.__name__
+
+                if elapsed_ms > threshold_ms:
+                    # SLOW QUERY WARNING
+                    logger.warning(
+                        f"SLOW_QUERY [ALERT]: {func_name} took {elapsed_ms:.2f}ms "
+                        f"(threshold: {threshold_ms}ms) | args={args[:2]} kwargs={list(kwargs.keys())}"
+                    )
+
+                    # Send to monitoring service (if configured)
+                    _report_slow_query(func_name, elapsed_ms, threshold_ms)
+                else:
+                    # Normal log
+                    logger.debug(
+                        f"DB_QUERY: {func_name} took {elapsed_ms:.2f}ms"
+                    )
+
+        return wrapper
+    return decorator
+
+
+def _report_slow_query(func_name, elapsed_ms, threshold_ms):
+    """
+    Send slow query alert to monitoring system.
+
+    TODO: Integrate with:
+    - Sentry error tracking
+    - DataDog APM
+    - Cloudwatch metrics
+    - Custom Slack webhook
+    """
+    pass
 
 # DB Configuration
 DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("NEON_DATABASE_URL")
@@ -72,6 +132,7 @@ def get_db_cursor():
         pool.putconn(conn)
 
 # --- Tenant Settings ---
+@log_query_latency(500)
 def get_tenant_settings():
     cached = settings_cache.get("tenant_settings")
     if cached: return cached
@@ -86,6 +147,7 @@ def get_tenant_settings():
             return res
         return {}
 
+@log_query_latency(500)
 def update_tenant_settings(updates):
     if not updates: return False
     set_c = [f"{k} = %s" for k in updates if k not in ['id', 'created_at']]
@@ -97,6 +159,7 @@ def update_tenant_settings(updates):
     return True
 
 # --- Prompts ---
+@log_query_latency(500)
 def get_system_prompt(name):
     key = f"prompt_{name}"
     cached = settings_cache.get(key)
@@ -239,6 +302,7 @@ def mark_field_collected(phone, field_name):
         return True
 
 # --- Conversations & Messages ---
+@log_query_latency(500)
 def save_message(conv_id, cust_id, sender_type, content, intent=None):
     """Saves a message using the new Row-per-message schema"""
     with get_db_cursor() as cur:
@@ -258,6 +322,7 @@ def create_conversation(cust_id, phone=None):
         cur.execute("INSERT INTO conversations (customer_id, phone) VALUES (%s, %s) RETURNING id", (cust_id, phone))
         return str(cur.fetchone()['id'])
 
+@log_query_latency(500)
 def get_conversation_history(conv_id, limit=10):
     """Retrieve chat history for AI context or extractor"""
     with get_db_cursor() as cur:
@@ -278,16 +343,13 @@ def is_excluded(phone):
     
     with get_db_cursor() as cur:
         if not cur: return False
-        cur.execute("SELECT exclude_from_bot FROM contacts WHERE phone = %s", (phone,))
-        res = cur.fetchone()
-        if res and res['exclude_from_bot']: return True
-        
-        cur.execute("SELECT is_blocked, bot_paused_until FROM customer_profiles WHERE phone = %s", (phone,))
+        cur.execute("SELECT is_blocked, bot_paused_until, exclude_from_bot FROM customer_profiles WHERE phone = %s", (phone,))
         res = cur.fetchone()
         if res:
-            if res['is_blocked']: return True
+            if res.get('is_blocked') or res.get('exclude_from_bot'): 
+                return True
             # Smart Pause Check
-            if res['bot_paused_until'] and res['bot_paused_until'] > datetime.now(res['bot_paused_until'].tzinfo):
+            if res.get('bot_paused_until') and res.get('bot_paused_until') > datetime.now(res['bot_paused_until'].tzinfo):
                 return True
         
     return False
