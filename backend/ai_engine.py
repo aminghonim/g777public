@@ -25,14 +25,17 @@ except ImportError:
     ADK_AVAILABLE = False
 
 # Local / first-party
+from backend.core.model_router import model_router
 from .db_service import (
     get_system_prompt,
     get_tenant_settings,
     is_excluded,
+    mark_field_collected,
+    update_customer,
 )
 from .mcp_manager import mcp_manager
-from backend.agents.orchestrator import Orchestrator
-from backend.ai_agents.persona_agent import PersonaAgent
+from .agents.orchestrator import Orchestrator
+from .ai_agents.persona_agent import PersonaAgent
 
 load_dotenv()
 
@@ -61,7 +64,6 @@ class AIEngine:
         # Initialize ADK Persona Agent only when the SDK is available
         self.persona_agent = PersonaAgent() if ADK_AVAILABLE else None
 
-
         # Load AI Instructions
         self.instructions = self._load_instructions()
 
@@ -77,7 +79,7 @@ class AIEngine:
             with open(config_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
-            logger.warning(f"Could not load strings.json: {e}")
+            logger.warning("Could not load strings.json: %s", e)
             return {}
 
     def _get_string(self, key_path: str, default: str = "") -> str:
@@ -100,19 +102,21 @@ class AIEngine:
             with open(config_path, "r", encoding="utf-8") as f:
                 return yaml.safe_load(f)
         except Exception as e:
-            print(f"Warning: Could not load AI instructions: {e}")
+            logger.warning("Could not load AI instructions: %s", e)
             return {}
 
-    def _get_settings(self):
-        return get_tenant_settings()
+    def get_model_for_task(self, task: str) -> str:
+        """Call the centralized model router"""
+        settings = get_tenant_settings()
+        db_model = settings.get("ai_model")
+        return model_router.get_model_for_task(task, db_override=db_model)
 
     async def analyze_intent(self, message: str) -> Dict[str, Any]:
         """
         Analyze if message is business-related and detect intent.
         Kept lightweight using direct client for speed.
         """
-        settings = self._get_settings()
-        model_name = settings.get("ai_model", "gemini-2.0-flash")
+        model_name = self.get_model_for_task("intent_analysis")
 
         # Get system instruction from config
         intent_config = self.instructions.get("intent_classifier", {})
@@ -146,7 +150,7 @@ Now analyze this message:"""
 
             return json.loads(text)
         except Exception as e:
-            logger.error(f"AI Intent Error: {e}")
+            logger.error("AI Intent Error: %s", e)
             return {"is_business": True, "intent": "unknown", "confidence": 0.0}
 
     async def extract_and_update_info(self, message: str, customer: Dict[str, Any]):
@@ -179,8 +183,7 @@ Now analyze this message:"""
         OUTPUT JSON:
         """
 
-        settings = self._get_settings()
-        model_name = settings.get("ai_model", "gemini-2.0-flash-exp")
+        model_name = self.get_model_for_task("extraction")
 
         try:
             response = await self.client.aio.models.generate_content(
@@ -196,7 +199,6 @@ Now analyze this message:"""
             data = json.loads(text)
 
             if data and isinstance(data, dict):
-                from .db_service import mark_field_collected, update_customer
 
                 updates = {}
                 # Update specific columns
@@ -229,7 +231,7 @@ Now analyze this message:"""
                     customer.update(updates)
 
         except Exception as e:
-            logger.error(f"Extraction Error: {e}")
+            logger.error("Extraction Error: %s", e)
 
         return customer
 
@@ -237,10 +239,9 @@ Now analyze this message:"""
         self,
         persona: Dict[str, Any],
         profile: Dict[str, Any],
-        # trips_text and faq_text are now removed from strict signature or ignored
         customer_name: str,
-        message: str,
-        conversation_history: str,
+        _message: str,
+        _conversation_history: str,
     ) -> str:
         """
         Constructs a Lean System Prompt relying on Orchestrator's Context Injection.
@@ -307,16 +308,30 @@ RULES:
             conversation_history,
         )
 
-        # 3. Define Tools (MCP)
-        # In the future, these will be strictly typed ADK tools.
-        # For now, we pass them as definitions if the Orchestrator needs them
-        # (Though Orchestrator currently loads its own context,
-        # the gemini client needs the tools config passed in generate_content).
+        # 3. Determine Routing Strategy
+        from backend.ai_agents.smart_router_agent import SmartRouterAgent
+        from backend.ai_client import UnifiedAIClient
 
-        # Current Orchestrator implementation handles tool definitions internally
-        # or via mcp_manager. Here we strictly delegate.
+        router = SmartRouterAgent()
+        settings = get_tenant_settings()
+        db_model = settings.get("ai_model")
+        strategy = router.determine_strategy(message, db_override=db_model)
+        logger.info("AI Engine Routing Strategy: %s", strategy)
 
+        # 4. Define Tools (MCP)
         tools = await mcp_manager.get_tools_definitions()
+
+        # 5. Direct Bypass for Non-Gemini Providers (Text-Only fallback)
+        if strategy["provider"] != "gemini":
+            logger.info(
+                "Routing bypassing ADK/Orchestrator to: %s", strategy["provider"]
+            )
+            client = UnifiedAIClient(provider=strategy["provider"])
+            prompt_context = (
+                f"{system_prompt}\n\nFallback Context:\n{fallback_context}"
+                f"\n\nChat History:\n{conversation_history}\n\nUser Message: {message}"
+            )
+            return await client.generate_response(prompt_context)
 
         # 4. Delegate to Orchestrator or ADK Runner
         try:
@@ -368,7 +383,7 @@ RULES:
             with open(kb_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
-            logger.error(f"Failed to load trips_db.json: {e}")
+            logger.error("Failed to load trips_db.json: %s", e)
             return None
 
     def _format_trips(self, trips: list) -> str:
@@ -378,7 +393,11 @@ RULES:
             details = ", ".join(
                 t.get("includes", []) + t.get("highlights", []) + t.get("extras", [])
             )
-            text += f"- **{t.get('type')}**: السعر {t.get('price')} ({details})\n  الوجهات: {', '.join(t.get('destinations', []))}\n"
+            destinations = ", ".join(t.get("destinations", []))
+            text += (
+                f"- **{t.get('type')}**: السعر {t.get('price')} ({details})"
+                f"\n  الوجهات: {destinations}\n"
+            )
         return text
 
     async def summarize_customer(self, conversation_text: str) -> str:
@@ -388,8 +407,8 @@ RULES:
             return ""
 
         prompt = prompt_template.replace("{conversation}", conversation_text)
-        settings = self._get_settings()
-        model_name = settings.get("ai_model", "gemini-2.0-flash-exp")
+        # Summarization falls under research/intelligence task type
+        model_name = self.get_model_for_task("market_research")
 
         try:
             response = await self.client.aio.models.generate_content(
@@ -405,24 +424,22 @@ class GeminiPersonaEngine:
     Gemini Persona Engine for WhatsApp Auto-Responder.
     Uses google-genai SDK with Pinecone for tenant-isolated context retrieval.
     """
-    
+
     def __init__(self):
         """Initialize the Gemini Persona Engine"""
         self.api_key = os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             logger.error("GEMINI_API_KEY not found in environment variables!")
             raise ValueError("GEMINI_API_KEY is required")
-        
-        # Initialize the new google-genai client
+
         self.client = genai.Client(api_key=self.api_key)
-        self.model_name = "gemini-2.0-flash"
-        
+        self.model_name = "gemini-3.1-flash-preview"
         logger.info("GeminiPersonaEngine initialized successfully")
-    
+
     def _build_dynamic_prompt(
-        self, 
-        incoming_message: str, 
-        chat_history: str, 
+        self,
+        incoming_message: str,
+        chat_history: str,
         long_term_memory: List[Dict[str, Any]],
         persona: Optional[Dict[str, Any]] = None
     ) -> str:
@@ -446,17 +463,17 @@ class GeminiPersonaEngine:
             "company": "شركة السفر",
             "specialty": "السفر والسياحة"
         }
-        
+
         # Use injected persona or default
         active_persona = persona or default_persona
-        
+
         # Format long-term memory context
         memory_context = ""
         if long_term_memory:
             memory_context = "\n".join([
                 f"- {mem.get('text', '')}" for mem in long_term_memory[:5]
             ])
-        
+
         # Build the dynamic prompt
         prompt = f"""
 أنت {active_persona['name']}، {active_persona['role']} في {active_persona['company']}.
@@ -481,11 +498,11 @@ class GeminiPersonaEngine:
 الرد المطلوب (بالعربية):
 """
         return prompt
-    
+
     async def generate_response(
-        self, 
-        incoming_message: str, 
-        chat_history: str, 
+        self,
+        incoming_message: str,
+        chat_history: str,
         long_term_memory: List[Dict[str, Any]],
         tenant_id: str,
         persona: Optional[Dict[str, Any]] = None
@@ -504,15 +521,13 @@ class GeminiPersonaEngine:
             Generated Arabic response as professional sales agent
         """
         try:
-            # Build dynamic prompt
             prompt = self._build_dynamic_prompt(
                 incoming_message=incoming_message,
                 chat_history=chat_history,
                 long_term_memory=long_term_memory,
                 persona=persona
             )
-            
-            # Generate response using google-genai SDK
+
             response = await self.client.aio.models.generate_content(
                 model=self.model_name,
                 contents=prompt,
@@ -521,53 +536,44 @@ class GeminiPersonaEngine:
                     max_output_tokens=500,  # Reasonable length for WhatsApp
                 )
             )
-            
+
             generated_text = response.text.strip()
-            
-            # Log successful generation
-            logger.info(f"Generated response for tenant {tenant_id}: {len(generated_text)} chars")
-            
+            logger.info(
+                "Generated response for tenant %s: %d chars", tenant_id, len(generated_text)
+            )
             return generated_text
-            
+
         except Exception as e:
-            # Fallback response with error logging
-            logger.error(f"Gemini API error for tenant {tenant_id}: {str(e)}")
-            
+            logger.error("Gemini API error for tenant %s: %s", tenant_id, e)
             fallback_message = (
                 "شكراً لتواصلك معنا. حالياً نحن نعمل على تحسين خدمتنا. "
                 "يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع ممثل المبيعات مباشرة."
             )
-            
-            logger.warning(f"Used fallback response for tenant {tenant_id}")
+            logger.warning("Used fallback response for tenant %s", tenant_id)
             return fallback_message
-    
-    async def query_tenant_context(self, tenant_id: str, query_text: str, top_k: int = 5) -> List[Dict[str, Any]]:
+
+    async def query_tenant_context(
+        self, tenant_id: str, query_text: str, top_k: int = 5
+    ) -> List[Dict[str, Any]]:
         """
         Query Pinecone for tenant-specific context using tenant isolation.
-        
+
         Args:
             tenant_id: Tenant ID for isolation (Rule 12)
             query_text: Query text for semantic search
-            top_k: Number of results to return
-        
+            top_k: Number of results to return (unused until embedding is wired up)
+
         Returns:
             List of relevant context documents
         """
         try:
-            # This would require embedding the query_text first
-            # For now, return empty list as placeholder
-            # In production, you'd use an embedding service here
-            
-            # Example implementation (requires embedding model):
-            # query_vector = await self._embed_query(query_text)
-            # results = pinecone_manager.query_vectors(tenant_id, query_vector, top_k)
-            # return results.get('matches', [])
-            
-            logger.info(f"Context query for tenant {tenant_id}: '{query_text}'")
-            return []  # Placeholder until embedding is implemented
-            
+            # Embedding-based retrieval is in the roadmap.
+            # When ready: embed query_text, then call pinecone_manager.query_vectors.
+            logger.info("Context query for tenant %s: '%s'", tenant_id, query_text)
+            return []  # Placeholder until embedding model is integrated
+
         except Exception as e:
-            logger.error(f"Context query error for tenant {tenant_id}: {str(e)}")
+            logger.error("Context query error for tenant %s: %s", tenant_id, e)
             return []
 
 
