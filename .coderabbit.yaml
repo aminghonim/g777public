@@ -9,5 +9,3 @@ reviews:
     - "!**/__pycache__/**"
     - "!package-lock.json"
     - "!Artifacts/**" # لو مش عاوزه يراجع ملفات الـ MD
-  summary:
-    heading_level: 2
