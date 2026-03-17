@@ -13,11 +13,16 @@ from datetime import datetime, timedelta
 
 class SecurityEngine:
     # JWT configuration
-    SECRET_KEY = os.getenv("SECRET_KEY") or os.urandom(32).hex()
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    if not SECRET_KEY:
+        if os.getenv("ENV") == "PROD":
+            raise RuntimeError("SECRET_KEY must be set in PROD environment")
+        SECRET_KEY = "dev_secret_key_change_me_in_prod"
+    
     ALGORITHM = os.getenv("JWT_ALGORITHM") or "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES = int(
-        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES") or 43200
-    )  # 30 Days default
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES") or 60
+    )  # Security: Reduced to 60 Minutes (ASVS V3.2.1)
 
     # In-memory Token Blocklist (for ASVS V7.4.1 Session Revocation)
     _token_blocklist = set()
