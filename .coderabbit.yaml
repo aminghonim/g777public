@@ -1,20 +1,6 @@
 reviews:
   path_filters:
-    - "backend/**"
-    - "api/**"
-    - "core/**"
-    - "services/**"
-    - "factory/**"
-    - "database/**"
+    - "frontend_flutter/lib/**"
     - "!**/*.md"
     - "!**/*.json"
-    - "!**/*.sh"
-    - "!**/*.txt"
-    - "!**/*.bin"
-    - "!**/*.png"
-    - "!**/*.jpg"
-    - "!**/*.svg"
-    - "!**/*.pyc"
-    - "!**/*.sqlite3"
-    - "!backend/mcp_server/**"
 
