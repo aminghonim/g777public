@@ -25,6 +25,14 @@ class SystemConfig(BaseModel):
         "/system/update/check",
         "/system/update/apply",
         "/system/stream/events",
+        "/evolution/status",
+        "/evolution/qr",
+        "/api/wa-hub/status",
+        "/api/wa-hub/qr",
+        "/webhook/whatsapp",
+        "/webhook/health",
+        "/api/webhook/evolution",
+        "/memory",
     ]
 
 

@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cns_backend
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      # Data persistence only - app code is baked into the image via COPY in Dockerfile
+      - ./data:/app/data
+    environment:
+      - ENV=${APP_ENV:-PROD}
+      - CONFIG_PATH=/app/config/config.yaml
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+    restart: always
+    networks:
+      - cns_network
+
+networks:
+  cns_network:
+    name: cns_network
+    driver: bridge
