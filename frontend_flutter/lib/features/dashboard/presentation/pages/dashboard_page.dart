@@ -5,15 +5,10 @@ import 'package:g777_client/l10n/app_localizations.dart';
 import 'package:g777_client/shared/providers/locale_provider.dart';
 import 'package:g777_client/shared/providers/theme_provider.dart';
 import '../widgets/live_telemetry_widget.dart';
-import '../widgets/whatsapp_status_card.dart';
-import '../widgets/style_selector.dart';
 import '../widgets/system_stats_grid.dart';
-import '../widgets/campaign_stats_grid.dart';
+import '../widgets/style_selector.dart';
+import '../widgets/scrapling_status_chip.dart';
 import 'package:g777_client/shared/providers/logs_provider.dart';
-import 'package:g777_client/features/group_sender/presentation/controllers/group_sender_controller.dart';
-import 'package:g777_client/features/analytics/presentation/widgets/campaign_analytics_widget.dart';
-import 'package:g777_client/features/evolution/presentation/widgets/instance_connection_widget.dart';
-import 'package:g777_client/features/settings/presentation/widgets/quota_dashboard_widget.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -27,9 +22,8 @@ class DashboardPage extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
     final isDark = themeMode.flutterThemeMode == ThemeMode.dark;
 
-    // Gap 2: Active bridges for singleton SSE pipeline
+    // Active bridges for singleton SSE pipeline
     ref.watch(logsStreamListenerProvider);
-    ref.watch(campaignStreamListenerProvider);
 
     final l10n = AppLocalizations.of(context)!;
 
@@ -60,17 +54,7 @@ class DashboardPage extends ConsumerWidget {
                       flex: 2,
                       child: Column(
                         children: [
-                          CampaignAnalyticsWidget(),
-                          SizedBox(height: 24),
-                          QuotaDashboardWidget(),
-                          SizedBox(height: 24),
-                          InstanceConnectionWidget(),
-                          SizedBox(height: 24),
-                          WhatsAppStatusCard(),
-                          SizedBox(height: 24),
                           SystemStatsGrid(),
-                          SizedBox(height: 24),
-                          CampaignStatsGrid(),
                         ],
                       ),
                     ),
@@ -91,10 +75,10 @@ class DashboardPage extends ConsumerWidget {
                   ],
                 ),
               ],
-            ), // closes Column
-          ), // closes SingleChildScrollView
-        ), // closes Container
-      ), // closes SelectionArea
+            ), 
+          ), 
+        ), 
+      ), 
     );
   }
 
@@ -151,6 +135,8 @@ class DashboardPage extends ConsumerWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const ScraplingStatusChip(),
+            const SizedBox(width: 16),
             // Language Switcher
             TextButton.icon(
               onPressed: () => ref.read(localeProvider.notifier).toggleLocale(),

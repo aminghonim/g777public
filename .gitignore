@@ -19,6 +19,7 @@ secrets.yml
 docker-compose.override.yml
 
 # --- DATABASE & DATA ---
+data/
 *.sqlite
 *.db
 docker-volumes/
