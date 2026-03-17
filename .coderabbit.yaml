@@ -1,15 +1,11 @@
 reviews:
   path_filters:
-    - "backend/**"
-    - "core/**"
-    - "api/**"
-    - "config/**"
-    - "services/**"
-    - "database/**"
-    - "!backend/mcp_server/**"
-    - "!backend/tests/**"
-    - "!backend/observers/**"
-    - "!backend/grabber/**"
+    - "backend/mcp_server/**"
+    - "backend/observers/**"
+    - "backend/grabber/**"
+    - "factory/**"
+    - "tools/**"
+    - "scripts/**"
+    - "!tests/**"
     - "!**/*.md"
-    - "!**/*.json"
 
