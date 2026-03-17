@@ -17,7 +17,7 @@ from backend.database_manager import db_manager
 from core.dependencies import get_current_user
 from backend.core.event_broker import event_broker
 from backend.core.evolution_manager import evolution_manager
-from backend.cloud_service import G777CloudService
+from backend.wa_gateway import WAGateway
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -346,8 +346,8 @@ async def _warmer_loop(user_id: str, config_id: str, config: Dict) -> None:
                 await asyncio.sleep(delay_interval)
                 continue
 
-            # Prepare cloud service and get user's instance(s)
-            cloud = G777CloudService()
+            # Prepare whatsapp gateway and get user's instance(s)
+            cloud = WAGateway()
             instances = []
             inst = evolution_manager._get_user_instance(user_id)
             if inst:

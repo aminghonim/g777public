@@ -4,9 +4,7 @@ from pydantic import BaseModel
 import logging
 import time
 
-# SaaS Logic
-from core.dependencies import get_current_user
-from backend.cloud_service import cloud_service
+from backend.wa_gateway import wa_gateway as cloud_service
 from backend.grabber.links_grabber import find_group_links
 
 router = APIRouter()
