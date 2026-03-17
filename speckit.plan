@@ -1,0 +1,44 @@
+# Spec-Kit Plan for Task A-11: Zero-Regression QA Audit Post-Media Updates
+## Mission Overview
+Execute comprehensive pytest suite to ensure Zero-Regression after media decryption updates. Validate Latency Monitor functionality with 500ms threshold enforcement.
+
+## Objectives
+1. **Zero-Regression Guarantee**: Run all pytest tests without failures
+2. **Latency Validation**: Confirm db_service.py has timing decorators and logs slow queries (>500ms)
+3. **Media Pipeline Integrity**: Verify no regressions in media handling (download/decrypt/analyze)
+
+## Execution Steps
+1. **Environment Setup**: Activate venv, ensure dependencies
+2. **Test Discovery**: Identify all test files in tests/ and backend/tests/
+3. **Pytest Execution**: Run full suite with coverage
+4. **Latency Audit**: Check db_service.py for @log_query_latency decorators
+5. **Media Tests**: Run specific media-related tests
+6. **Report Generation**: Document results and any failures
+
+## Risk Assessment
+- **High Risk**: Media updates may break existing functionality
+- **Mitigation**: Atomic snapshot before any changes (git stash)
+- **Fallback**: Rollback Protocol if regressions detected
+
+## Success Criteria
+- All pytest tests pass
+- Latency Monitor logs queries >500ms as warnings
+- No new errors in media pipeline
+- Clean git status (no uncommitted changes)
+
+## Timeline
+- Setup: 5 min
+- Test Execution: 15-30 min
+- Validation: 10 min
+- Reporting: 5 min
+
+## Dependencies
+- Python 3.11+
+- pytest installed
+- All requirements.txt packages
+- Supabase connection (for integration tests)
+
+## Artifacts
+- Test output logs
+- Latency monitoring logs
+- Updated .agent/MEMORY.md with results

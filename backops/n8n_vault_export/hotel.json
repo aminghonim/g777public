@@ -1,0 +1,190 @@
+{
+  "name": "hotel",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "reservation",
+        "formDescription": "please. choose your room",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "your name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "choose your room",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "single"
+                  },
+                  {
+                    "option": "delux"
+                  },
+                  {
+                    "option": "sweet"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -432,
+        -32
+      ],
+      "id": "a43c185e-e328-447d-b29d-570ab4089ebe",
+      "name": "On form submission",
+      "webhookId": "7b551f66-d788-4fe2-85af-0ebb459d9d50"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appAhlFD38U7PJ3vW",
+          "mode": "list",
+          "cachedResultName": "hotel",
+          "cachedResultUrl": "https://airtable.com/appAhlFD38U7PJ3vW"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbltP6dtOVZlUjCrV",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appAhlFD38U7PJ3vW/tbltP6dtOVZlUjCrV"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json['your name'] }}",
+            "room": "={{ $json['choose your room'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "room",
+              "displayName": "room",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -208,
+        -32
+      ],
+      "id": "125e595b-2649-4b58-9a81-147eb7c4a935",
+      "name": "Create a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "zUWONBM8ZkACwbSl",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        -32
+      ],
+      "id": "590d0e50-1958-4f50-8ca4-e97a99553c7a",
+      "name": "When chat message received",
+      "webhookId": "d3344194-031a-4c77-ae21-c1a559725704"
+    },
+    {
+      "parameters": {
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        208,
+        -32
+      ],
+      "id": "44a66e91-b968-4503-b538-e6c5f1f3c484",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        416,
+        -32
+      ],
+      "id": "9fbbc3ed-1484-4845-9889-c99d824c2bd7",
+      "name": "Google Gemini Chat Model"
+    }
+  ],
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
