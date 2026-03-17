@@ -16,6 +16,7 @@ import yaml
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 try:
     from google import adk
@@ -111,6 +112,11 @@ class AIEngine:
         db_model = settings.get("ai_model")
         return model_router.get_model_for_task(task, db_override=db_model)
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True
+    )
     async def analyze_intent(self, message: str) -> Dict[str, Any]:
         """
         Analyze if message is business-related and detect intent.
@@ -153,6 +159,11 @@ Now analyze this message:"""
             logger.error("AI Intent Error: %s", e)
             return {"is_business": True, "intent": "unknown", "confidence": 0.0}
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True
+    )
     async def extract_and_update_info(self, message: str, customer: Dict[str, Any]):
         """
         Extract missing info from message and update customer profile.
@@ -400,6 +411,11 @@ RULES:
             )
         return text
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True
+    )
     async def summarize_customer(self, conversation_text: str) -> str:
         """Generate a summary of customer interests"""
         prompt_template = get_system_prompt("summary_generator")
@@ -433,7 +449,7 @@ class GeminiPersonaEngine:
             raise ValueError("GEMINI_API_KEY is required")
 
         self.client = genai.Client(api_key=self.api_key)
-        self.model_name = "gemini-3.1-flash-preview"
+        self.model_name = "gemini-2.0-flash"
         logger.info("GeminiPersonaEngine initialized successfully")
 
     def _build_dynamic_prompt(

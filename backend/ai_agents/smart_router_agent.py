@@ -4,8 +4,12 @@ Smart Router Agent - Determines the optimal AI model and strategy for each reque
 Wraps the core ModelRouter in an ADK-compatible interface while maintaining
 Modular Integrity by not leaking routing logic into the AI Engine directly.
 """
+# Standard library
 import logging
 from typing import Dict, Any, List, Optional
+
+# Third-party
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 try:
     from google import adk
@@ -14,6 +18,7 @@ except ImportError:
     adk = None
     ADK_AVAILABLE = False
 
+# Local / first-party
 from backend.core.model_router import model_router
 
 logger = logging.getLogger(__name__)
@@ -66,6 +71,11 @@ You must output a JSON object ONLY, with the following schema:
 }
 """
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True
+    )
     def determine_strategy(self, message: str, db_override: Optional[str] = None) -> Dict[str, Any]:
         """
         Determines the optimal execution strategy for a given message.
