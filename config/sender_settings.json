@@ -1,0 +1,39 @@
+{
+    "sender": {
+        "delay_between_messages_min": 5,
+        "delay_between_messages_max": 15,
+        "batch_size": 50,
+        "batch_delay_minutes": 10,
+        "max_messages_per_day": 500,
+        "typing_simulation": true,
+        "typing_speed_ms": 50
+    },
+    "warmer": {
+        "enabled": false,
+        "warmup_days": 7,
+        "messages_day_1": 10,
+        "messages_day_7": 100,
+        "increment_rate": 1.5
+    },
+    "grabber": {
+        "scroll_count": 20,
+        "scroll_delay_ms": 500,
+        "export_format": "excel"
+    },
+    "filter": {
+        "check_profile_pic": true,
+        "check_status": true,
+        "remove_duplicates": true
+    },
+    "browser": {
+        "headless": true,
+        "disable_local_runs": true,
+        "use_azure_only": true,
+        "timeout_ms": 30000
+    },
+    "azure": {
+        "function_app_name": "antigravitybot77",
+        "region": "northeurope",
+        "timer_schedule": "0 */5 * * * *"
+    }
+}
