@@ -1,5 +1,5 @@
 reviews:
   path_filters:
-    - "tests/**"
+    - "frontend_flutter/lib/**"
     - "!**/*.md"
 
