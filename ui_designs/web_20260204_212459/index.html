@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="صفحة تسجيل دخول عصرية وبسيطة بألوان زرقاء وتصميم جذاب لمستخدمي الويب.">
+    <meta name="keywords" content="تسجيل دخول, لوحة تحكم, حساب, أزرق, مودرن, UI/UX, تصميم ويب, عربي">
+    <meta name="author" content="UI/UX Designer">
+    <meta name="theme-color" content="#007bff">
+    <title>تسجيل الدخول - صفحة عصرية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* تعريف المتغيرات لتسهيل التعديل على الألوان والظلال */
+        :root {
+            --primary-blue: #007bff;
+            --light-blue: #00c6ff;
+            --dark-blue: #0056b3;
+            --text-dark: #333;
+            --text-light: #fff;
+            --gradient-start: #4facfe; /* أزرق سماوي فاتح */
+            --gradient-end: #00f2fe;   /* أزرق فيروزي */
+            --card-bg: #ffffff;
+            --shadow-light: rgba(0, 0, 0, 0.08);
+            --shadow-medium: rgba(0, 0, 0, 0.15);
+            --border-color: #e0e0e0;
+            --input-bg-focus: #eef7ff; /* خلفية أفتح قليلاً عند التركيز */
+        }
+
+        /* إعادة تعيين الأنماط الأساسية للمتصفح */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* أنماط الجسم (Body) - الخلفية والخطوط الأساسية */
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            /* تدرج لوني حيوي للخلفية */
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            color: var(--text-dark);
+            direction: rtl; /* لدعم اللغة العربية من اليمين لليسار */
+            text-align: right; /* محاذاة النص الافتراضية لليمين */
+            overflow: hidden; /* لمنع ظهور scrollbar غير مرغوب فيه */
+        }
+
+        /* حاوية تسجيل الدخول الرئيسية */
+        .login-container {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 18px; /* حواف أكثر دائرية */
+            box-shadow: 0 15px 40px var(--shadow-medium); /* ظل أعمق لإحساس ثلاثي الأبعاد */
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            animation: fadeInScale 0.8s ease-out forwards; /* تأثير دخول ناعم */
+            transform: scale(0.95);
+            opacity: 0;
+            position: relative;
+            z-index: 1; /* للتأكد من أنها فوق أي عناصر خلفية محتملة */
+        }
+
+        /* مفتاح الإطار الرئيسي لتأثيرات الـ WOW */
+        @keyframes fadeInScale {
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* رأس صفحة تسجيل الدخول */
+        .login-header h1 {
+            font-family: 'Poppins', sans-serif; /* خط Poppins للعناوين الكبيرة */
+            font-size: 2.8rem; /* حجم أكبر للعنوان */
+            color: var(--dark-blue);
+            margin-bottom: 12px;
+            font-weight: 700;
+            letter-spacing: -0.5px; /* تتبع حروف خفيف لتحسين القراءة */
+        }
+
+        .login-header p {
+            font-size: 1.15rem;
+            color: #666;
+            margin-bottom: 35px;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        /* أنماط النموذج */
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 22px; /* مسافة أكبر بين حقول النموذج */
+        }
+
+        .form-group {
+            position: relative;
+            margin-bottom: 15px;
+            text-align: right; /* المحاذاة لليمين ضمن سياق RTL */
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 1rem;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .form-group input[type="email"],
+        .form-group input[type="password"] {
+            width: 100%;
+            padding: 16px 22px; /* زيادة حجم الحشو */
+            border: 1px solid var(--border-color);
+            border-radius: 12px; /* حواف أكثر دائرية للحقول */
+            font-size: 1.05rem;
+            color: var(--text-dark);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+            outline: none;
+            background-color: #f9fbfd; /* خلفية فاتحة للحقول */
+            font-family: 'Inter', sans-serif;
+        }
+
+        .form-group input[type="email"]:focus,
+        .form-group input[type="password"]:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.2); /* ظل التركيز بلون أزرق خفيف */
+            background-color: var(--input-bg-focus); /* تغيير لون الخلفية عند التركيز */
+        }
+
+        .form-group input::placeholder {
+            color: #a0a0a0;
+            font-weight: 300;
+        }
+
+        /* رابط "هل نسيت كلمة المرور؟" */
+        .forgot-password {
+            display: block;
+            text-align: left; /* المحاذاة لليسار في سياق RTL لوضع الرابط على الجانب الأيسر */
+            margin-top: -8px; /* تعديل الهامش العلوي */
+            margin-bottom: 25px; /* مسافة سفلية أكبر */
+        }
+
+        .forgot-password a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.3s ease, text-decoration 0.3s ease;
+        }
+
+        .forgot-password a:hover {
+            color: var(--dark-blue);
+            text-decoration: underline;
+        }
+
+        /* زر تسجيل الدخول */
+        .login-button {
+            width: 100%;
+            padding: 18px 25px; /* حجم أكبر للزر */
+            border: none;
+            border-radius: 12px;
+            /* تدرج لوني حيوي للزر */
+            background: linear-gradient(90deg, var(--primary-blue) 0%, var(--light-blue) 100%);
+            color: var(--text-light);
+            font-size: 1.25rem; /* حجم خط أكبر للزر */
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease; /* انتقال سلس لجميع التأثيرات */
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.35); /* ظل أنيق للزر */
+            margin-top: 15px;
+            letter-spacing: 0.5px;
+        }
+
+        .login-button:hover {
+            /* تغيير التدرج والظل عند التحويم */
+            background: linear-gradient(90deg, var(--dark-blue) 0%, var(--primary-blue) 100%);
+            box-shadow: 0 8px 25px rgba(0, 123, 255, 0.5);
+            transform: translateY(-3px) scale(1.01); /* رفع خفيف وتكبير بسيط */
+        }
+
+        /* رابط "سجل الآن" */
+        .signup-link {
+            margin-top: 35px; /* مسافة علوية أكبر */
+            font-size: 1.05rem;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .signup-link a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease, text-decoration 0.3s ease;
+        }
+
+        .signup-link a:hover {
+            color: var(--dark-blue);
+            text-decoration: underline;
+        }
+
+        /* تصميم متجاوب (Responsive Design) */
+        @media (max-width: 600px) {
+            .login-container {
+                padding: 30px;
+                width: 95%;
+                border-radius: 15px;
+                box-shadow: 0 8px 25px var(--shadow-medium);
+            }
+
+            .login-header h1 {
+                font-size: 2.2rem;
+                margin-bottom: 8px;
+            }
+
+            .login-header p {
+                font-size: 1rem;
+                margin-bottom: 25px;
+            }
+
+            .form-group label {
+                font-size: 0.9rem;
+                margin-bottom: 6px;
+            }
+
+            .form-group input[type="email"],
+            .form-group input[type="password"] {
+                padding: 14px 18px;
+                font-size: 0.95rem;
+                border-radius: 10px;
+            }
+
+            .forgot-password {
+                margin-bottom: 20px;
+            }
+
+            .forgot-password a {
+                font-size: 0.85rem;
+            }
+
+            .login-button {
+                padding: 15px 20px;
+                font-size: 1.1rem;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+                margin-top: 10px;
+            }
+
+            .login-button:hover {
+                transform: translateY(-2px) scale(1.0;);
+                box-shadow: 0 5px 18px rgba(0, 123, 255, 0.4);
+            }
+
+            .signup-link {
+                margin-top: 25px;
+                font-size: 0.95rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .login-container {
+                padding: 25px;
+            }
+            .login-header h1 {
+                font-size: 1.9rem;
+            }
+            .login-header p {
+                font-size: 0.9rem;
+                margin-bottom: 20px;
+            }
+            .form-group input {
+                padding: 12px 15px;
+                font-size: 0.9rem;
+            }
+            .login-button {
+                padding: 12px 15px;
+                font-size: 1rem;
+            }
+            .signup-link, .forgot-password a {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="login-container">
+        <header class="login-header">
+            <h1>أهلاً بك مجدداً!</h1>
+            <p>سجل الدخول للمتابعة إلى حسابك واستكشاف المزيد.</p>
+        </header>
+        <form class="login-form" aria-label="نموذج تسجيل الدخول">
+            <div class="form-group">
+                <label for="email">البريد الإلكتروني</label>
+                <input type="email" id="email" name="email" placeholder="ادخل بريدك الإلكتروني" required autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="password">كلمة المرور</label>
+                <input type="password" id="password" name="password" placeholder="ادخل كلمة المرور" required autocomplete="current-password">
+            </div>
+            <div class="forgot-password">
+                <a href="#" aria-label="هل نسيت كلمة المرور؟">هل نسيت كلمة المرور؟</a>
+            </div>
+            <button type="submit" class="login-button">تسجيل الدخول</button>
+        </form>
+        <div class="signup-link">
+            <span>لا تمتلك حساباً بعد؟</span> <a href="#" aria-label="انتقل إلى صفحة التسجيل">سجل الآن</a>
+        </div>
+    </main>
+</body>
+</html>

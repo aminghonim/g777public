@@ -1,0 +1,42 @@
+# Spec-Kit Plan for Task C-09: Implement System Notifications in Flutter
+## Mission Overview
+Add local notification service that shows system alerts when 'Member Extraction' or 'Map Extraction' operations complete successfully.
+
+## Objectives
+1. **Local Notifications**: Implement flutter_local_notifications for desktop alerts
+2. **Task Completion Alerts**: Show notifications on successful member/map extraction
+3. **User Experience**: Non-intrusive alerts that inform without interrupting workflow
+4. **Platform Support**: Linux-focused with extensible design for other platforms
+
+## Execution Steps
+1. **Service Review**: Confirm NotificationService is properly initialized
+2. **Members Grabber Integration**: Add notifications to _fetchMembers and _exportMembers success
+3. **Maps Extractor Integration**: Add notifications to triggerScan and exportResults success
+4. **Permission Handling**: Ensure notification permissions are requested
+5. **Testing**: Verify notifications appear on task completion
+
+## Risk Assessment
+- **Low Risk**: Notifications are additive, won't break existing functionality
+- **Mitigation**: Test on Linux desktop environment
+- **Fallback**: Graceful degradation if notifications fail
+
+## Success Criteria
+- Notifications appear on successful member extraction
+- Notifications appear on successful map extraction
+- No UI blocking or performance impact
+- Clean integration with existing error handling
+
+## Timeline
+- Analysis: 10 min
+- Integration: 20 min
+- Testing: 10 min
+- Polish: 5 min
+
+## Dependencies
+- flutter_local_notifications: ^18.0.1 (already in pubspec.yaml)
+- NotificationService initialized in main.dart
+
+## Artifacts
+- Updated members_grabber_page.dart with notifications
+- Updated maps_extractor_page.dart with notifications
+- Updated .agent/MEMORY.md with notification implementation
