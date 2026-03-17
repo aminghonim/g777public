@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:g777_client/core/services/api_service.dart';
 import 'package:g777_client/l10n/app_localizations.dart';
+// Note: Some imports might be needed for the actual app context
 import 'package:g777_client/core/providers/system_stream_provider.dart';
 import 'package:g777_client/shared/providers/logs_provider.dart';
-import 'package:go_router/go_router.dart';
-import 'package:g777_client/core/theme/theme.dart'; // Unified theme system
+import 'package:g777_client/core/theme/theme.dart';
 
 class OpportunityHunterPage extends ConsumerStatefulWidget {
   const OpportunityHunterPage({super.key});
@@ -19,11 +19,11 @@ class OpportunityHunterPage extends ConsumerStatefulWidget {
 class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
   final ApiService _api = ApiService();
   final _keywordController = TextEditingController();
-  String _selectedSource = 'maps';
+  final String _selectedSource = 'social'; // Fixed to social
   bool _isScanning = false;
   bool _isLoadingData = false;
   List<dynamic> _opportunities = [];
-  int _scrollingDepth = 2; // (Gap 3: Depth Control)
+  int _scrollingDepth = 2;
   String _latestLog = "Idle - Waiting for scan...";
 
   @override
@@ -70,7 +70,6 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
     final notifier = ref.read(logsProvider.notifier);
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final accent = colors.grabberAccent;
 
     final sanitized = _sanitizeKeyword(_keywordController.text);
     if (sanitized.isEmpty) {
@@ -91,7 +90,7 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
 
     setState(() => _isScanning = true);
     notifier.addLog(
-      'Launching $_selectedSource scan for: "$sanitized"',
+      'Launching social scan for: "$sanitized"',
       type: LogType.info,
     );
 
@@ -105,15 +104,13 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
         'Scan job initiated. Depth: $_scrollingDepth. Results will populate automatically.',
         type: LogType.success,
       );
-      // In a real app, we might poll or listen to SSE.
-      // For now, we manually refresh after a delay or let user refresh.
     } catch (e) {
       notifier.addLog('Scan failed: $e', type: LogType.error);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Scan failed. Please try again.'),
-            backgroundColor: accent.withValues(alpha: 0.9),
+            backgroundColor: colors.statusError,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -151,7 +148,6 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
   Widget _buildLiveProgress(ThemeData theme, bool isDark) {
     final colors = theme.colorScheme;
     final accent = colors.grabberAccent;
-    // Listen to real-time logs from the unified SSE stream (Gap 3)
     ref.listen(campaignStreamProvider, (prev, next) {
       next.whenData((event) {
         if (event['type'] == 'LOG') {
@@ -214,24 +210,23 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
           children: [
             Icon(Icons.travel_explore, color: accent, size: 32),
             const SizedBox(width: 12),
-            Text(
+            const Text(
               "OPPORTUNITY HUNTER",
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: accent,
+                color: Colors.pinkAccent, // Pink for social
                 letterSpacing: 2,
                 fontFamily: 'Oxanium',
-                shadows: [Shadow(color: accent, blurRadius: 15)],
               ),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
-          "AI-Powered Lead Generation Engine",
+          "AI-Powered Social Media Intelligence Engine",
           style: TextStyle(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            color: colors.onSurface.withValues(alpha: 0.5),
             fontSize: 12,
             letterSpacing: 0.5,
           ),
@@ -246,7 +241,7 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
     bool isDark,
   ) {
     final colors = theme.colorScheme;
-    final accent = colors.grabberAccent;
+    final accent = Colors.pinkAccent; // Pink for social
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -255,21 +250,12 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: accent.withValues(alpha: 0.25)),
-        boxShadow: isDark
-            ? [
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.06),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "START DISCOVERY",
+            "SOCIAL DISCOVERY",
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -285,11 +271,6 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
                 child: TextField(
                   controller: _keywordController,
                   style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                      RegExp(r'[a-zA-Z0-9\u0600-\u06FF\s,.\-_/]'),
-                    ),
-                  ],
                   decoration: InputDecoration(
                     hintText: 'Search Keyword (e.g. Real Estate Dubai)',
                     hintStyle: TextStyle(color: colors.inputPlaceholder),
@@ -308,81 +289,22 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
                 ),
               ),
               const SizedBox(width: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: colors.inputBackground,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedSource,
-                    dropdownColor: colors.surfaceContainerHigh,
-                    icon: Icon(
-                      Icons.arrow_drop_down,
-                      color: accent,
-                    ),
-                    style: TextStyle(
-                      color: colors.onSurface.withValues(alpha: 0.8),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                    onChanged: (v) {
-                      if (v != null) setState(() => _selectedSource = v);
-                    },
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'maps',
-                        child: Row(
-                          children: [
-                            Icon(Icons.map, size: 14, color: Colors.blueAccent),
-                            SizedBox(width: 8),
-                            Text('Google Maps'),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'social',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.public,
-                              size: 14,
-                              color: Colors.pinkAccent,
-                            ),
-                            SizedBox(width: 8),
-                            Text('Social Media'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
               ElevatedButton.icon(
                 onPressed: _isScanning ? null : _startScan,
                 icon: _isScanning
-                    ? SizedBox(
+                    ? const SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: ThemeData.estimateBrightnessForColor(accent) ==
-                                  Brightness.dark
-                              ? Colors.white
-                              : Colors.black,
+                          color: Colors.white,
                         ),
                       )
                     : const Icon(Icons.radar, size: 18),
-                label: const Text("START DISCOVERY"),
+                label: const Text("START SCAN"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accent,
-                  foregroundColor:
-                      ThemeData.estimateBrightnessForColor(accent) ==
-                              Brightness.dark
-                          ? Colors.white
-                          : Colors.black,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 18,
@@ -409,27 +331,15 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 2,
-                    thumbShape: const RoundSliderThumbShape(
-                      enabledThumbRadius: 6,
-                    ),
-                    overlayShape: const RoundSliderOverlayShape(
-                      overlayRadius: 14,
-                    ),
-                  ),
-                  child: Slider(
-                    value: _scrollingDepth.toDouble(),
-                    min: 1,
-                    max: 10,
-                    divisions: 9,
-                    label: _scrollingDepth.toString(),
-                    activeColor: accent,
-                    inactiveColor: colors.outlineVariant.withValues(alpha: 0.25),
-                    onChanged: (v) =>
-                        setState(() => _scrollingDepth = v.toInt()),
-                  ),
+                child: Slider(
+                  value: _scrollingDepth.toDouble(),
+                  min: 1,
+                  max: 10,
+                  divisions: 9,
+                  label: _scrollingDepth.toString(),
+                  activeColor: accent,
+                  onChanged: (v) =>
+                      setState(() => _scrollingDepth = v.toInt()),
                 ),
               ),
               const SizedBox(width: 12),
@@ -441,14 +351,6 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
                   color: accent,
                 ),
               ),
-              const Spacer(),
-              Text(
-                "Increases data quantity but takes longer",
-                style: TextStyle(
-                  fontSize: 10,
-                  color: colors.onSurface.withValues(alpha: 0.35),
-                ),
-              ),
             ],
           ),
         ],
@@ -457,8 +359,7 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
   }
 
   Widget _buildResultsHeader(AppLocalizations l10n, ThemeData theme) {
-    final colors = theme.colorScheme;
-    final accent = colors.grabberAccent;
+    const accent = Colors.pinkAccent;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -487,7 +388,6 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
 
   Widget _buildResultsList(ThemeData theme, bool isDark) {
     final colors = theme.colorScheme;
-    final accent = colors.grabberAccent;
     if (_opportunities.isEmpty) {
       return Center(
         child: Padding(
@@ -496,7 +396,7 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
             'No opportunities found yet.\nStart a scan above.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+              color: colors.onSurface.withValues(alpha: 0.3),
               height: 1.5,
             ),
           ),
@@ -510,8 +410,8 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
       itemCount: _opportunities.length,
       itemBuilder: (context, index) {
         final item = _opportunities[index];
-        final source = item['platform'] ?? 'Unknown';
-        final isMaps = source.toString().toLowerCase().contains('maps');
+        const sourceIcon = Icons.public;
+        const sourceColor = Colors.pinkAccent;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -529,14 +429,12 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isMaps
-                      ? Colors.blueAccent.withValues(alpha: 0.2)
-                      : Colors.pinkAccent.withValues(alpha: 0.2),
+                  color: sourceColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  isMaps ? Icons.place : Icons.public,
-                  color: isMaps ? Colors.blueAccent : Colors.pinkAccent,
+                child: const Icon(
+                  sourceIcon,
+                  color: sourceColor,
                   size: 20,
                 ),
               ),
@@ -569,27 +467,6 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
                             color: colors.onSurface.withValues(alpha: 0.8),
                           ),
                         ),
-                        if (item['address'] != null &&
-                            item['address'].toString().isNotEmpty) ...[
-                          const SizedBox(width: 12),
-                          Icon(
-                            Icons.location_on,
-                            size: 12,
-                            color: colors.onSurface.withValues(alpha: 0.35),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              item['address'],
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: colors.onSurface.withValues(alpha: 0.55),
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ],
@@ -599,32 +476,11 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    item['timestamp_scanned']?.toString().split('T')[0] ?? '',
+                    item['_scraped_at']?.toString().split('T')[0] ?? '',
                     style: TextStyle(
                       fontSize: 10,
                       color: colors.onSurface.withValues(alpha: 0.35),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    onPressed: () {
-                      final phone = item['phone']?.toString() ?? '';
-                      final name = item['name']?.toString() ?? 'Lead';
-                      // (Gap 3: Data Bridge Mapping)
-                      // Mapping: Name -> {{name}}, Phone -> Campaign Recipient
-                      context.go(
-                        '/group-sender?phone=${Uri.encodeComponent(phone)}&name=${Uri.encodeComponent(name)}',
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 30),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      side: BorderSide(
-                        color: accent.withValues(alpha: 0.3),
-                      ),
-                      foregroundColor: accent,
-                    ),
-                    child: const Text('ENGAGE', style: TextStyle(fontSize: 10)),
                   ),
                 ],
               ),

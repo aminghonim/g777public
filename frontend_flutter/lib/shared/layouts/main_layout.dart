@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:g777_client/core/theme/theme.dart';
 import 'package:g777_client/l10n/app_localizations.dart';
-import 'package:g777_client/shared/painters/custom_painters.dart';
-import 'package:g777_client/shared/providers/locale_provider.dart';
+import 'package:g777_client/shared/painters/custom_painters.dart'; // Ensure this exists
 
 class MainLayout extends ConsumerWidget {
   final Widget child;
@@ -13,22 +12,15 @@ class MainLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(localeProvider); // Trigger rebuild on locale change
+    final location = GoRouterState.of(context).uri.toString();
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final location = GoRouterState.of(context).uri.path;
 
-    return SelectionArea(
-      child: Scaffold(
-        backgroundColor: colorScheme.surface,
-        body: Stack(
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Stack(
           children: [
-            if (isDark)
-              CustomPaint(
-                painter: CircuitBackgroundPainter(isDark: isDark),
-                size: Size.infinite,
-              ),
             Row(
               children: [
                 _Sidebar(location: location),
@@ -89,51 +81,9 @@ class _Sidebar extends ConsumerWidget {
                     isActive: location == '/dashboard',
                   ),
                   _HexNavItem(
-                    icon: Icons.people_alt_rounded,
-                    label: 'العملاء (CRM)',
-                    accentColor: Colors.greenAccent,
-                    route: '/crm',
-                    isActive: location == '/crm',
-                  ),
-                  _HexNavItem(
-                    icon: Icons.rocket_launch_rounded,
-                    label: l10n.groupSender,
-                    accentColor: colorScheme.groupSenderAccent,
-                    route: '/group-sender',
-                    isActive: location == '/group-sender',
-                  ),
-                  _HexNavItem(
-                    icon: Icons.groups_rounded,
-                    label: l10n.dataGrabber,
-                    accentColor: colorScheme.membersAccent,
-                    route: '/members-grabber',
-                    isActive: location == '/members-grabber',
-                  ),
-                  _HexNavItem(
-                    icon: Icons.link_rounded,
-                    label: l10n.lblLinksGrabber,
-                    accentColor: colorScheme.grabberAccent,
-                    route: '/links-grabber',
-                    isActive: location == '/links-grabber',
-                  ),
-                  _HexNavItem(
-                    icon: Icons.filter_alt_rounded,
-                    label: l10n.numberValidator,
-                    accentColor: colorScheme.secondary,
-                    route: '/number-filter',
-                    isActive: location == '/number-filter',
-                  ),
-                  _HexNavItem(
-                    icon: Icons.whatshot_rounded,
-                    label: l10n.accountWarmer,
-                    accentColor: colorScheme.statusWarning,
-                    route: '/warmer',
-                    isActive: location == '/warmer',
-                  ),
-                  _HexNavItem(
                     icon: Icons.travel_explore_rounded,
                     label: l10n.opportunityHunter,
-                    accentColor: colorScheme.tertiary,
+                    accentColor: Colors.pinkAccent, // Pink for social
                     route: '/opportunity-hunter',
                     isActive: location == '/opportunity-hunter',
                   ),

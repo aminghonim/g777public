@@ -18,7 +18,8 @@ Future<Dio> dio(DioRef ref) async {
   if (sessionState.hasValue && sessionState.value != null) {
     final session = sessionState.value!;
     if (session.containsKey('port')) {
-      baseUrl = 'http://127.0.0.1:${session['port']}';
+      // Route through Nginx (Port 80) for Docker support
+      baseUrl = 'http://127.0.0.1';
     }
     handshakeToken = session['token'];
   } else {
@@ -28,7 +29,8 @@ Future<Dio> dio(DioRef ref) async {
       final session = await PortDiscovery.getActiveSession();
       if (session != null) {
         if (session.containsKey('port')) {
-          baseUrl = 'http://127.0.0.1:${session['port']}';
+          // Route through Nginx (Port 80) for Docker support
+          baseUrl = 'http://127.0.0.1';
         }
         handshakeToken = session['token'];
       }

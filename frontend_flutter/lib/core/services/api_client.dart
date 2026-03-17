@@ -19,7 +19,7 @@ class ApiClient {
 
   static const String _baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://127.0.0.1:8000',
+    defaultValue: 'http://127.0.0.1',
   );
 
   static const Duration _defaultTimeout = Duration(seconds: 15);
@@ -49,7 +49,8 @@ class ApiClient {
   Future<String> get resolvedBaseUrl async {
     await _ensureInitialized();
     if (_dynamicPort != null) {
-      return 'http://127.0.0.1:$_dynamicPort';
+      // Force Nginx (Port 80) in Docker environment
+      return 'http://127.0.0.1';
     }
     return _baseUrl;
   }
