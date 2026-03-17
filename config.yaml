@@ -1,0 +1,218 @@
+# 🛡️ Antigravity G777 - Configuration System
+# Strict Mandate: No hardcoded parameters in implementation files.
+
+system:
+  app_name: "Antigravity G777"
+  version: "2.2.0"
+  environment: "production"
+
+evolution_api:
+  url: "http://evolution-api:8080"
+  api_key: "antigravity_secret_key_2024"
+  instance_name: "G777"
+  baileys_api_url: "http://baileys-bridge:3000"
+
+network:
+  host: "0.0.0.0"
+  default_port: 8000
+
+delays:
+  # Random delay between messages during campaigns
+  campaign:
+    min: 5
+    max: 15
+  # Delay between extraction steps (Maps, Social)
+  scraping:
+    min: 2
+    max: 5
+
+working_hours:
+  # 24h format (9 AM to 10 PM)
+  start: 9
+  end: 22
+
+security:
+  # Toggle for Strictly Enforced Authentication
+  auth_required: true
+  # Allow "Direct Access" mode via a Guest Link/Button
+  allow_guest_access: true
+  guest_username: "guest_admin"
+  guest_instance_name: "G777_Guest"
+  guest_email: "guest@localhost"
+  # Max retry attempts for API calls
+  max_retries: 3
+  # Ban protection: Max messages per hour
+  max_msg_per_hour: 200
+
+features:
+  google_maps:
+    max_results_default: 50
+    api_key: "" # Optional: If using official API
+  whatsapp_warmer:
+    messages_per_day: 50
+    inter_message_delay_range: [60, 300]
+
+updates:
+  check_url: "https://api.g777.com/v1/updates/check"
+  download_base_url: "https://storage.g777.com/binaries/"
+  channel: "stable"
+  enable_auto_check: true
+  bootstrapper_path: "scripts/updater_bootstrapper.py"
+
+scraper_settings:
+  engine: "scrapling"
+  headless: true
+  stealth_mode: true
+  adaptive: true
+  timeout: 45
+  max_concurrency: 5
+  
+  # Selectors - Zero Hardcoding Compliance
+  selectors:
+    whatsapp:
+      dialog_selector: "div[role='dialog']"
+      member_list_selector: "div[role='listitem']"
+      group_name_selector: "div[id='pane-side'] div[aria-selected='true'] span[title], #main header span[title]"
+      scroll_container: "div[role='dialog'] div[style*='overflow-y']"
+      member_item: "div[role='listitem'], div[data-testid*='cell'], div[class*='x1n2onr6']"
+      
+  # JavaScript Templates - Config-Driven
+  js_templates:
+    member_extraction: |
+      var dialog = document.querySelector('{{dialog_selector}}');
+      if (!dialog) return [];
+      var members = [];
+      var items = dialog.querySelectorAll('{{member_item_selector}}');
+      
+      items.forEach(function(item, index) {
+          try {
+              var fullText = item.innerText || item.textContent || '';
+              var phoneRegex = /\+\d[\d\s\-\(\)]{8,}/g;
+              var phoneMatches = fullText.match(phoneRegex);
+              if (phoneMatches) {
+                  phoneMatches.forEach(function(rawPhone) {
+                      var cleanPhone = rawPhone.replace(/\D/g, '');
+                      if (cleanPhone.length >= 10) {
+                          var nameText = fullText.replace(rawPhone, '').split('\n')[0].trim();
+                          members.push({
+                              name: nameText || 'Unknown',
+                              phone: cleanPhone,
+                              index: index
+                          });
+                      }
+                  });
+              }
+          } catch(e) {}
+      });
+      return members;
+      
+    smart_scroll: |
+      var container = document.querySelector('{{scroll_container}}');
+      if (!container) return false;
+      container.scrollTop = container.scrollHeight;
+      return true;
+  
+  identity:
+    session_vault: "local"
+    session_path: ".antigravity/sessions/"
+    auto_inject: true
+  
+  telemetry:
+    enabled: true
+    failure_threshold: 3
+    track_latency: true
+    
+  validation:
+    strict_schema: true
+    pii_encryption: true
+    
+  proxy:
+    enabled: false
+    rotation: "cyclic"
+    list: []
+  
+  targets:
+    whatsapp_groups:
+      base_url: "https://web.whatsapp.com"
+      member_list_selector: 'div[role="listitem"]'
+      group_name_selector: "div[id='pane-side'] div[aria-selected='true'] span[title], #main header span[title]"
+    facebook_search:
+      search_url: "https://www.google.com"
+      search_query_template: "site:facebook.com \"chat.whatsapp.com\" {keyword} {country}"
+      result_selector: "div[id='search']"
+      facebook_link_selector: "//a[contains(@href, 'facebook.com') and not(contains(@href, 'google'))]"
+    google_maps:
+      search_url: "https://www.google.com/maps"
+      result_selector: "div[data-result-index]"
+      business_name_selector: "h3, div[class*='headline']"
+      phone_selector: "[data-item-id*='phone'], [href*='tel']"
+      address_selector: "[data-item-id*='address']"
+
+# 🌐 Site Difficulty Configuration for Dynamic Browser Selection
+site_difficulty:
+  default: "medium"  # Default difficulty level for unknown sites
+  sites:
+    # Easy sites - Regular Fetcher (fast HTTP requests)
+    "google.com": "easy"
+    "google.com/maps": "easy"
+    "whatsapp.com": "easy"
+    "wikipedia.org": "easy"
+    
+    # Medium sites - Dynamic Fetcher (JavaScript rendering needed)
+    "linkedin.com": "medium"
+    "twitter.com": "medium"
+    "x.com": "medium"
+    "instagram.com": "medium"
+    
+    # Hard sites - Stealthy Fetcher (anti-bot protection)
+    "facebook.com": "hard"
+    "fb.com": "hard"
+    "cloudflare.com": "hard"
+    "akamai.com": "hard"
+    "datadome.com": "hard"
+    "perimeterx.com": "hard"
+
+# 🔄 Proxy Rotation Configuration
+proxy_rotation:
+  enabled: false  # Set to true to enable proxy rotation
+  rotation_strategy: "round_robin"  # round_robin, random, health_based
+  retry_on_failure: true
+  blacklist_duration: 900  # seconds (15 minutes)
+  health_check_interval: 300  # seconds (5 minutes)
+  
+  # Proxy list - Add your proxies here
+  proxies:
+    # Example HTTP proxy
+    # - type: "http"
+    #   host: "proxy1.example.com"
+    #   port: 8080
+    #   username: "user1"
+    #   password: "pass1"
+    
+    # Example SOCKS5 proxy
+    # - type: "socks5"
+    #   host: "proxy2.example.com"
+    #   port: 1080
+    #   username: "user2"
+    #   password: "pass2"
+    
+    # Add more proxies as needed
+
+# 🧠 Smart Task Router - Model Selection Logic
+model_routing:
+  default: "gemini-2.0-flash" # Fallback
+  tasks:
+    intent_analysis: "gemini-3-flash-preview"
+    customer_chat: "gemini-3-flash-preview"
+    extraction: "gemini-3.1-flash-lite-preview"
+    complex_problem_solving: "gemini-3.1-pro-preview"
+    computer_use: "gemini-2.5-computer-use-preview"
+    content_generation: "gemini-2.5-flash-image"
+    market_research: "deep-research-pro-preview-12-2025"
+
+  
+  # Thinking Mode Configuration
+  thinking_config:
+    include_thinking: true
+    models_supported: ["gemini-3.1-flash-preview", "gemini-3.1-pro-preview"]
+

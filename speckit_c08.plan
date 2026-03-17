@@ -1,0 +1,45 @@
+# Spec-Kit Plan for Task C-08: Optimize Large Data Sets Rendering in Flutter
+## Mission Overview
+Enhance performance for displaying large member lists (>1000 extracted members) in Flutter UI with zero jank and smooth scrolling.
+
+## Objectives
+1. **Smooth Rendering**: Ensure ListView handles 1000+ items without UI freezing
+2. **Memory Efficiency**: Implement pagination/virtualization to load items on-demand
+3. **Zero Jank**: Eliminate frame drops and stuttering during scroll
+4. **Scalability**: Support unlimited member lists with progressive loading
+
+## Execution Steps
+1. **Analysis**: Review current ListView.separated implementation in members_grabber_page.dart
+2. **Pagination Implementation**: Add page-based loading with API support
+3. **Virtual Scrolling**: Implement infinite scroll with item recycling
+4. **Performance Testing**: Test with 1000+ mock members
+5. **Optimization**: Add keys, const constructors, and minimize rebuilds
+6. **UI Polish**: Ensure smooth animations and loading states
+
+## Risk Assessment
+- **High Risk**: Large lists can cause OOM or UI freeze
+- **Mitigation**: Implement pagination first, then virtualization
+- **Fallback**: Limit display to 500 items with warning
+
+## Success Criteria
+- Smooth scroll with 1000+ items
+- <16ms frame time during scroll
+- Memory usage stable during navigation
+- No UI jank or freezing
+
+## Timeline
+- Analysis: 10 min
+- Pagination: 30 min
+- Virtualization: 30 min
+- Testing: 20 min
+- Polish: 10 min
+
+## Dependencies
+- Flutter SDK
+- Riverpod for state management
+- API endpoint supporting pagination
+
+## Artifacts
+- Updated members_grabber_page.dart with pagination
+- Performance test results
+- Updated .agent/MEMORY.md with optimizations
