@@ -10,6 +10,7 @@ data/
 *.log
 backend/bridge.log
 baileys-service/bridge.log
+baileys-service/package-lock.json
 scraper_results.json
 
 # Flutter Noise
