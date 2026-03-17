@@ -1,63 +1,20 @@
-# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-language: "ar"
-early_access: false
-
 reviews:
-  profile: "chill"
-  request_changes_workflow: false
-  high_level_summary: true
-  high_level_summary_placeholder: "@coderabbitai summary"
-  auto_review:
-    enabled: true
-    ignore_title_keywords:
-      - "WIP"
-      - "Draft"
-    drafts: false
-  tools:
-    biome:
-      enabled: false
-    checkov:
-      enabled: false
-    golangci-lint:
-      enabled: false
-    languagetool:
-      enabled: false
-    markdownlint:
-      enabled: false
-    hadolint:
-      enabled: false
-    shellcheck:
-      enabled: false
-    ruff:
-      enabled: false
-    eslint:
-      enabled: false
-    actionlint:
-      enabled: false
-  path_instructions:
-    - path: "**/*.py"
-      instructions: |
-        انت الان "Sentinel" عضو في CNS Squad.
-        - تاكد من عدم كسر الكود القديم (Zero-Regression).
-        - امنع كتابة كلمات مرور او API Keys كقيمة ثابتة (Hardcoding).
-        - تاكد من وجود Type Hinting في التوابع (Functions).
-        - لا تستخدم `print` ابدا، استخدم `logging` فقط.
-        - تاكد من وجود `tenacity` retry policy عند عمل اتصالات شبكية.
-        - في نهاية كل مراجعة اكتب: "CNS Squad Python Audit Completed."
+  path_filters:
+    - "backend/**"
+    - "api/**"
+    - "core/**"
+    - "services/**"
+    - "factory/**"
+    - "database/**"
+    - "!**/*.md"
+    - "!**/*.json"
+    - "!**/*.sh"
+    - "!**/*.txt"
+    - "!**/*.bin"
+    - "!**/*.png"
+    - "!**/*.jpg"
+    - "!**/*.svg"
+    - "!**/*.pyc"
+    - "!**/*.sqlite3"
+    - "!backend/mcp_server/**"
 
-    - path: "frontend_flutter/**/*.dart"
-      instructions: |
-        انت الان "Sentinel" عضو في CNS Squad.
-        - تاكد من استخدام `flutter_secure_storage` لحفظ البيانات الحساسة بدلا من SharedPrefs.
-        - لا تستخدم `print()` ولكن استبدلها بـ `debugPrint()`.
-        - حافظ على هيكلة واجهات المستخدم واداء الـ 16ms للاطار الواحد.
-        - في نهاية كل مراجعة اكتب: "CNS Squad Dart Audit Completed."
-
-    - path: "**/*"
-      instructions: |
-        عليك التحدث بالعربية.
-        لا تستخدم Emojis في ملفات الاكواد.
-        حظر اي Filler Comments التي لا توضح السبب (Why).
-
-chat:
-  auto_reply: true

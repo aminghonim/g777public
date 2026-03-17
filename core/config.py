@@ -79,7 +79,6 @@ class WorkingHoursConfig(BaseModel):
 
 class FeaturesConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    google_maps: Dict[str, Any] = {}
     whatsapp_warmer: Dict[str, Any] = {}
 
 
