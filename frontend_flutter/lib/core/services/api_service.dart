@@ -366,7 +366,7 @@ class ApiService {
     await init();
     final uri = Uri.parse('$baseUrl/intelligence/trigger_scan').replace(
       queryParameters: {
-        'type': type,
+        'scan_type': type,
         'keyword': keyword,
         'scrolling_depth': scrollingDepth.toString(),
       },
@@ -381,7 +381,7 @@ class ApiService {
   /// Opportunity Hunter - Fetch
   Future<Map<String, dynamic>> getOpportunities({
     int limit = 20,
-    String source = 'all',
+    String source = 'social',
   }) async {
     await init();
     final uri = Uri.parse(
