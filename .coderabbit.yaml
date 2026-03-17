@@ -1,6 +1,10 @@
 reviews:
   path_filters:
-    - "!tests/**"
-    - "!skills/**"
-    - "!docs/**"
-    - "!*.md"
+    - "frontend_flutter/lib/**"
+    - "frontend_flutter/pubspec.yaml"
+    - "!frontend_flutter/android/**"
+    - "!frontend_flutter/ios/**"
+    - "!frontend_flutter/web/**"
+    - "!frontend_flutter/linux/**"
+    - "!frontend_flutter/macos/**"
+    - "!frontend_flutter/windows/**"
