@@ -19,7 +19,7 @@ class OpportunityHunterPage extends ConsumerStatefulWidget {
 class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
   final ApiService _api = ApiService();
   final _keywordController = TextEditingController();
-  String _selectedSource = 'maps';
+  String _selectedSource = 'social';
   bool _isScanning = false;
   bool _isLoadingData = false;
   List<dynamic> _opportunities = [];
@@ -332,16 +332,6 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
                     },
                     items: const [
                       DropdownMenuItem(
-                        value: 'maps',
-                        child: Row(
-                          children: [
-                            Icon(Icons.map, size: 14, color: Colors.blueAccent),
-                            SizedBox(width: 8),
-                            Text('Google Maps'),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
                         value: 'social',
                         child: Row(
                           children: [
@@ -529,14 +519,12 @@ class _OpportunityHunterPageState extends ConsumerState<OpportunityHunterPage> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isMaps
-                      ? Colors.blueAccent.withValues(alpha: 0.2)
-                      : Colors.pinkAccent.withValues(alpha: 0.2),
+                  color: Colors.pinkAccent.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  isMaps ? Icons.place : Icons.public,
-                  color: isMaps ? Colors.blueAccent : Colors.pinkAccent,
+                child: const Icon(
+                  Icons.public,
+                  color: Colors.pinkAccent,
                   size: 20,
                 ),
               ),
