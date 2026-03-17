@@ -12,9 +12,13 @@ import 'core/theme/theme_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/providers/shared_prefs_provider.dart';
 import 'package:window_manager/window_manager.dart';
+import 'core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize System Services
+  await NotificationService().init();
 
   // Initialize Shared Preferences synchronously for Theme and Settings
   final sharedPrefs = await SharedPreferences.getInstance();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:g777_client/core/theme/semantic_colors.dart';
 import 'package:g777_client/core/theme/theme_extensions.dart';
+import 'package:g777_client/core/services/notification_service.dart';
 
 import '../providers/maps_extractor_provider.dart';
 
@@ -39,6 +40,12 @@ class _MapsExtractorPageState extends ConsumerState<MapsExtractorPage> {
         content: Text('Exporting ${results.length} results...'),
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
+    );
+
+    // Show export completion notification
+    await NotificationService().notifyTaskComplete(
+      'Map Export',
+      'Successfully exported ${results.length} locations',
     );
   }
 

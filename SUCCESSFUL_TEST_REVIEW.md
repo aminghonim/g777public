@@ -23,8 +23,6 @@ The following modules have achieved **100% Line Coverage** via surgical unit tes
 | **Account Warmer** | `backend/warmer.py` | ✅ **100%** | Warming cycles logic. |
 | **Number Filter** | `backend/filter.py` | ✅ **100%** | Validation logic. |
 | **AI Service** | `backend/ai_service.py` | ✅ **100%** | Google Gemini Integration wrapper. |
-| **Function Bridge** | `backend/function_app_bridge.py` | ✅ **100%** | Azure Functions Trigger logic. |
-| **Search Service** | `backend/search_service.py` | ✅ **100%** | Azure AI Search integration. |
 | **Maps Extractor** | `backend/maps_extractor.py` | ✅ **100%** | Business extraction skeleton. |
 
 ## 📊 Market Intelligence Coverage
@@ -38,5 +36,5 @@ The following modules have achieved **100% Line Coverage** via surgical unit tes
 
 The **G777 Backend** is now robust, fully tested, and ready for production deployment. The surgical testing strategy has successfully isolated and verified core logic across the entire system, ensuring:
 - **Zero Regression** in critical flows.
-- **Full mocking** of expensive/external services (Azure, OpenAI, WhatsApp).
+- **Full mocking** of expensive/external services (Any AI, WhatsApp).
 - **Maintainable** test suite architecture.

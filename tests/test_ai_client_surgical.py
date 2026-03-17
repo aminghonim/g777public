@@ -32,15 +32,18 @@ class TestAIClientSurgical:
 
     @pytest.fixture
     def gemini_mock(self):
-        with patch('google.genai.Client') as mock_client:
+        with patch('backend.ai_client.genai.Client') as mock_client:
             yield mock_client
 
     def test_gemini_init_success(self, gemini_mock):
         with patch.dict(os.environ, {"GEMINI_API_KEY": "test_key"}):
-            client = GeminiAIClient()
-            assert client.api_key == "test_key"
-            assert client.client is not None
-            gemini_mock.assert_called_with(api_key="test_key")
+            with patch('backend.ai_client.logger') as mock_logger:
+                client = GeminiAIClient()
+                assert client.api_key == "test_key"
+                assert client.client is not None
+                gemini_mock.assert_called_with(api_key="test_key")
+                # Verify logger was called (instead of print)
+                mock_logger.info.assert_called()
 
     def test_gemini_init_no_key(self, gemini_mock):
         with patch.dict(os.environ, {}, clear=True):
@@ -77,13 +80,10 @@ class TestAIClientSurgical:
             "AZURE_OPENAI_API_KEY": "azure_key",
             "AZURE_OPENAI_ENDPOINT": "https://test.azure.com"
         }):
-            # Mock the class inside the openai module
-            mock_azure_class = MagicMock()
-            mock_openai_module.AsyncAzureOpenAI = mock_azure_class
-            
-            client = AzureAIClient()
-            assert client.client is not None
-            mock_azure_class.assert_called()
+            with patch('backend.ai_client.AsyncAzureOpenAI') as mock_azure_class:
+                client = AzureAIClient()
+                assert client.client is not None
+                mock_azure_class.assert_called()
 
     def test_azure_init_missing_creds(self):
         with patch.dict(os.environ, {}, clear=True):
@@ -154,20 +154,17 @@ class TestAIClientSurgical:
             assert client.azure_client is None
 
     def test_azure_import_error(self):
-        # Mock sys.modules to simulate missing openai (line 77-78)
-        # MUST provide env vars so it moves past line 66
+        # Mock sys.modules to simulate missing openai
         with patch.dict(os.environ, {
             "AZURE_OPENAI_API_KEY": "real_key",
             "AZURE_OPENAI_ENDPOINT": "https://real.endpoint"
         }):
-            with patch.dict('sys.modules', {'openai': None}):
-                with patch('builtins.print') as mock_print:
-                    # In some environments, once imported it stays. 
-                    # But AzureAIClient does 'from openai import ...' INSIDE __init__ if not at top.
-                    # Wait, is it at top? No, it's inside line 70.
+            # To test the 'if not AsyncAzureOpenAI' block
+            with patch('backend.ai_client.AsyncAzureOpenAI', None):
+                with patch('backend.ai_client.logger') as mock_logger:
                     client = AzureAIClient()
                     assert client.client is None
-                    mock_print.assert_any_call("[WARN] openai package not installed")
+                    mock_logger.warning.assert_any_call("openai package not installed")
 
 
 

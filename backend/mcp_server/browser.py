@@ -21,7 +21,8 @@ async def open_whatsapp_web() -> str:
     Launch Chrome and open WhatsApp Web (persistent session).
     """
     try:
-        browser = WhatsAppBrowser(headless=False)
+        headless = os.getenv("BROWSER_HEADLESS", "True").lower() == "true"
+        browser = WhatsAppBrowser(headless=headless)
         # We start it but don't close it so it stays open for the user
         success = browser.load_whatsapp(login_timeout=60)
         return (

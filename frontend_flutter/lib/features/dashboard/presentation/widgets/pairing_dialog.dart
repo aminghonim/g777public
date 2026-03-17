@@ -19,6 +19,7 @@ class _PairingDialogState extends State<PairingDialog> {
   bool _isLoading = false;
   String? _error;
   bool _isUsingPhone = false;
+  String? _status;
 
   @override
   void initState() {
@@ -43,8 +44,10 @@ class _PairingDialogState extends State<PairingDialog> {
       final res = await _api.getQRCode();
       if (!mounted) return;
       if (res['success'] == true) {
+        final data = res['data'];
         setState(() {
-          _qrBase64 = res['data']['base64'];
+          _qrBase64 = data['base64'];
+          _status = data['status'];
           _isLoading = false;
         });
       } else {
@@ -88,6 +91,24 @@ class _PairingDialogState extends State<PairingDialog> {
       if (!mounted) return;
       setState(() {
         _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      await _api.logout();
+      if (!mounted) return;
+      // After logout, wait a bit for bridge to restart and then fetch QR
+      await Future.delayed(const Duration(seconds: 3));
+      _fetchQR();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = "Logout failed: $e";
         _isLoading = false;
       });
     }
@@ -205,52 +226,93 @@ class _PairingDialogState extends State<PairingDialog> {
                 height: 200,
                 child: Center(child: CircularProgressIndicator(color: accent)),
               )
-            else if (_error != null)
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: SelectableText(
-                  'ERROR: $_error',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.redAccent, fontSize: 12),
-                ),
-              )
-            else if (_qrBase64 != null && !_isUsingPhone)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Image.memory(
-                  base64Decode(_qrBase64!.split(',').last),
-                  width: 220,
-                  height: 220,
-                ),
-              )
-            else if (_pairingCode != null && _isUsingPhone)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 32,
-                  horizontal: 24,
-                ),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: accent.withValues(alpha: 0.3)),
-                ),
-                child: SelectableText(
-                  _pairingCode!,
-                  style: TextStyle(
-                    fontSize: 42,
-                    fontWeight: FontWeight.w900,
-                    color: accent,
-                    letterSpacing: 8,
-                    fontFamily: 'monospace',
+            else ...[
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: SelectableText(
+                    'ERROR: $_error',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 12),
                   ),
                 ),
-              ),
+              if (_qrBase64 != null && !_isUsingPhone)
+                Column(
+                  children: [
+                    if (_status == 'ALREADY_CONNECTED')
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        child: Column(
+                          children: [
+                            Icon(Icons.check_circle_outline, color: accent, size: 48),
+                            const SizedBox(height: 16),
+                            Text(
+                              "WHATSAPP ALREADY CONNECTED",
+                              style: TextStyle(color: accent, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Image.memory(
+                          base64Decode(_qrBase64!.split(',').last),
+                          width: 220,
+                          height: 220,
+                        ),
+                      ),
+                  ],
+                )
+              else if (_pairingCode != null && _isUsingPhone)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 32,
+                    horizontal: 24,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: accent.withValues(alpha: 0.3)),
+                  ),
+                  child: SelectableText(
+                    _pairingCode!,
+                    style: TextStyle(
+                      fontSize: 42,
+                      fontWeight: FontWeight.w900,
+                      color: accent,
+                      letterSpacing: 8,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
 
-            const SizedBox(height: 32),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton.icon(
+                    onPressed: _isLoading ? null : _fetchQR,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text("REFRESH", style: TextStyle(fontSize: 10)),
+                    style: TextButton.styleFrom(foregroundColor: accent),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: _isLoading ? null : _handleLogout,
+                    icon: const Icon(Icons.power_settings_new, size: 16),
+                    label: const Text("FORCED RESET", style: TextStyle(fontSize: 10)),
+                    style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                  ),
+                ],
+              ),
+            ],
+
+            const SizedBox(height: 16),
             SelectableText(
               _isUsingPhone
                   ? l10n.pairingCodeInstructions.toUpperCase()

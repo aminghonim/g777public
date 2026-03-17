@@ -1,16 +1,13 @@
-"""
-Evolution API Manager - Core Multi-Tenant Engine
-================================================
-Handles secure instantiation, monitoring, and deletion of WhatsApp instances
-via Evolution API, fully enforcing Tenant Isolation and Cloud-First configs.
-"""
-
+import asyncio
+import logging
+import json
+import traceback
 import os
 import uuid
+from typing import Any, Dict, List, Optional
+from datetime import datetime
+
 import httpx
-from typing import Dict, Any, Optional
-import asyncio
-from backend.core.event_broker import event_broker
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -18,25 +15,25 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-# Import DatabaseManager to strictly link created instances to users
+# Local imports
 from backend.database_manager import db_manager
+from backend.core.event_broker import event_broker
+from core.config import settings
 
-# Constant Configuration defaults from environment
-EVO_BASE_URL = os.getenv("EVOLUTION_API_BASE_URL", "").rstrip("/")
-EVO_GLOBAL_KEY = os.getenv("EVOLUTION_API_GLOBAL_KEY", "")
+# Initialize logger
+logger = logging.getLogger(__name__)
 
-
-class EvolutionIsolationError(Exception):
-    """Raised when Tenant Isolation is breached or violated."""
-
+class EvolutionError(Exception):
+    """Base exception for Evolution API errors."""
     pass
 
-
-class EvolutionAPIError(Exception):
-    """Raised when Evolution API returns an error or fails."""
-
+class EvolutionAPIError(EvolutionError):
+    """Raised when the Evolution API returns an error response."""
     pass
 
+class EvolutionIsolationError(EvolutionError):
+    """Raised when tenant isolation rules are violated."""
+    pass
 
 class EvolutionManager:
     """
@@ -45,18 +42,35 @@ class EvolutionManager:
     """
 
     def __init__(self):
-        if not EVO_BASE_URL or not EVO_GLOBAL_KEY:
-            # We don't throw immediate fatal error because local testing might not have Evolution API.
-            # We log a critical warning and raise it lazily when an API call is attempted.
-            print(
-                "[CRITICAL WARNING] EVOLUTION_API_BASE_URL or EVOLUTION_API_GLOBAL_KEY "
-                "missing from environment variables. Evolution API integrations will fail."
-            )
+        # SAAS-011: Config-First with Intelligence-driven Provider Selection
+        provider = os.getenv("WHATSAPP_PROVIDER", "evolution").lower()
+        
+        # Load defaults
+        self.base_url = os.getenv("EVOLUTION_API_BASE_URL", "").rstrip("/")
+        self.api_key = os.getenv("EVOLUTION_API_GLOBAL_KEY", "")
 
-        if EVO_BASE_URL:
-            print(f"[OK] Evolution API Base URL loaded: {EVO_BASE_URL}")
-        self.base_url = EVO_BASE_URL
-        self.headers = {"apikey": EVO_GLOBAL_KEY, "Content-Type": "application/json"}
+        # Intelligent Override based on Provider
+        if hasattr(settings, "evolution_api") and settings.evolution_api:
+            if provider == "baileys" and settings.evolution_api.baileys_api_url:
+                self.base_url = settings.evolution_api.baileys_api_url.rstrip("/")
+            elif settings.evolution_api.url:
+                self.base_url = settings.evolution_api.url.rstrip("/")
+            
+            if settings.evolution_api.api_key:
+                self.api_key = settings.evolution_api.api_key
+        
+        # Ensure base_url is set if still empty
+        if not self.base_url:
+            self.base_url = "http://baileys-bridge:3000" if provider == "baileys" else "http://evolution-api:8080"
+
+        if not self.api_key and provider != "baileys":
+            logger.critical(
+                "🔥 EVO-CHECK-V3: EVOLUTION_API_GLOBAL_KEY missing. SaaS features will fail."
+            )
+        
+        logger.info(f"✅ EVO-CHECK-V4: EvolutionManager (Provider: {provider}) initialized with {self.base_url}")
+
+        self.headers = {"apikey": self.api_key, "Content-Type": "application/json"}
 
     def _generate_isolated_instance_name(self, user_id: str) -> str:
         """
@@ -64,6 +78,11 @@ class EvolutionManager:
         """
         if not user_id:
             raise EvolutionIsolationError("Cannot generate instance without user_id.")
+        
+        if user_id == "guest_local":
+            from core.config import settings
+            return settings.security.guest_instance_name
+
         short_uuid = uuid.uuid4().hex[:8]
         return f"tenant_{user_id}_inst_{short_uuid}"
 
@@ -76,6 +95,11 @@ class EvolutionManager:
             raise EvolutionIsolationError(
                 "Database connection unavailable. Cannot fetch instance allocation safely."
             )
+
+        if user_id == "guest_local":
+            from core.config import settings
+
+            return settings.security.guest_instance_name
 
         conn = db_manager.get_connection()
         try:
@@ -122,19 +146,20 @@ class EvolutionManager:
     )
     async def create_instance(self, user_id: str) -> Dict[str, Any]:
         """
-        Dynamically creates an isolated Evolution instance for a user.
-        Includes Smart Retry for network resilience.
+        SAAS-011: Provision an isolated instance. 
+        For Baileys local bridge, we return the singleton guest instance.
         """
         self._validate_config()
 
-        # Hybrid Check: Local Bare-metal support (Port 3000)
+        instance_name = self._get_user_instance(user_id)
+        
         if ":3000" in self.base_url:
-            print("[INFO] Using local Bare-metal Baileys bridge.")
-            self._save_user_instance(user_id, "Local_Baileys_Bridge")
+            logger.info(f"ℹ️ EVO-BAILEYS: Using singleton instance '{instance_name}' for local bridge.")
             return {
-                "instance_name": "Local_Baileys_Bridge",
-                "qr_code_base64": "",
-                "status": "CREATED",
+                "instance": {
+                    "instanceName": instance_name,
+                    "status": "created"
+                }
             }
 
         # Generate a truly isolated, unique instance name linked to this user
@@ -151,10 +176,12 @@ class EvolutionManager:
                 f"{self.base_url}/instance/create",
                 headers=self.headers,
                 json=payload,
-                timeout=15.0,
+                timeout=20.0,
             )
+            
+            logger.info(f"Evolution Create Response: {response.status_code} - {response.text}")
 
-            if response.status_code not in (200, 201):
+            if response.status_code != 201:
                 raise EvolutionAPIError(f"Failed to create instance: {response.text}")
 
             data = response.json()
@@ -173,16 +200,26 @@ class EvolutionManager:
                     f"Database sync failed. Cloud instance rolled back. Error: {str(e)}"
                 )
 
-            # The Evolution API might return the qrcode directly upon creation or we must fetch it.
-            # Format varies slightly with API versions, safely traverse dict.
+            data = response.json()
+            
+            # Extract QR from various possible locations in v2 response
             qr_base64 = ""
             if isinstance(data, dict):
-                qrcode_block = data.get("qrcode", {})
-                if isinstance(qrcode_block, dict):
-                    qr_base64 = qrcode_block.get("base64", "")
+                # Try direct base64
+                qr_base64 = data.get("base64")
+                if not qr_base64:
+                    # Try nested qrcode block
+                    qrcode_block = data.get("qrcode", {})
+                    if isinstance(qrcode_block, dict):
+                        qr_base64 = qrcode_block.get("base64", "")
+                
+                if not qr_base64:
+                    # Try direct code/qrcode fields (v1/v2 variants)
+                    qr_base64 = data.get("qrcode") or data.get("code") or ""
 
             # Unified Status Broadcasting
             asyncio.create_task(
+                # pylint: disable=undefined-variable
                 event_broker.publish_status("WHATSAPP", "CREATED", user_id=user_id)
             )
 
@@ -260,11 +297,21 @@ class EvolutionManager:
             raise EvolutionIsolationError(f"No instance bound to user {user_id}.")
 
         async with httpx.AsyncClient() as client:
-            # Hybrid Check: Local Bare-metal support (Port 3000)
+            # Hybrid Check: Local Baileys support (Port 3000)
             if ":3000" in self.base_url:
+                logger.info(f"📡 EVO-QR: Requesting QR from local bridge {self.base_url}/qr")
                 response = await client.get(
                     f"{self.base_url}/qr", headers=self.headers, timeout=15.0
                 )
+                if response.status_code == 404:
+                    # SAAS-011: Already connected or not initialized
+                    return {
+                        "instance_name": instance_name,
+                        "qr_code_base64": "",
+                        "status": "ALREADY_CONNECTED",
+                        "message": "Instance is already connected or not initialized.",
+                    }
+
                 if response.status_code != 200:
                     raise EvolutionAPIError(
                         f"Local bridge QR fetch failed: {response.text}"
@@ -277,6 +324,7 @@ class EvolutionManager:
                         if data.get("qrImage")
                         else ""
                     ),
+                    "status": "CREATED",
                 }
 
             response = await client.get(
@@ -285,13 +333,81 @@ class EvolutionManager:
                 timeout=15.0,
             )
 
+            if response.status_code == 404:
+                # SAAS-011: Auto-create if not found (Self-Healing)
+                logger.info(f"Instance {instance_name} not found. Attempting auto-provisioning...")
+                try:
+                    await self.create_instance(user_id)
+                    # Small delay for Evolution API to stabilize the new instance
+                    await asyncio.sleep(2)
+                    # Retry once more after creation
+                    response = await client.get(
+                        f"{self.base_url}/instance/connect/{instance_name}",
+                        headers=self.headers,
+                        timeout=15.0,
+                    )
+                except Exception as e:
+                    raise EvolutionAPIError(f"Auto-provisioning failed: {str(e)}")
+
             if response.status_code != 200:
                 raise EvolutionAPIError(f"Failed to get QR Code: {response.text}")
 
             data = response.json()
+            # Extract QR with full fallbacks
+            qr_data = (
+                data.get("base64") or 
+                data.get("qrcode") or 
+                data.get("code") or 
+                (data.get("qrcode", {}) if isinstance(data.get("qrcode"), dict) else {}).get("base64") or
+                ""
+            )
+            
             return {
                 "instance_name": instance_name,
-                "qr_code_base64": data.get("base64", ""),
+                "qr_code_base64": qr_data,
+                "status": "CREATED",
+            }
+
+    @retry(
+        retry=retry_if_exception_type((httpx.RequestError, httpx.TimeoutException)),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        stop=stop_after_attempt(3),
+    )
+    async def get_pairing_code(self, user_id: str, phone: str) -> Dict[str, Any]:
+        """
+        Requests a pairing code from the local bridge for phone-based pairing.
+        Only supported for Local Bare-metal (Port 3000).
+        """
+        self._validate_config()
+
+        instance_name = self._get_user_instance(user_id)
+        if not instance_name:
+            raise EvolutionIsolationError(f"No instance bound to user {user_id}.")
+
+        if ":3000" not in self.base_url:
+            raise EvolutionAPIError(
+                "Pairing code is only supported in local bridge mode."
+            )
+
+        async with httpx.AsyncClient() as client:
+            payload = {"phone": phone}
+            response = await client.post(
+                f"{self.base_url}/pairing-code",
+                headers=self.headers,
+                json=payload,
+                timeout=15.0,
+            )
+
+            if response.status_code != 200:
+                raise EvolutionAPIError(
+                    f"Local bridge pairing-code fetch failed: {response.text}"
+                )
+
+            data = response.json()
+            return {
+                "instance_name": instance_name,
+                "code": data.get("code", ""),
+                "status": "CREATED",
             }
 
     @retry(
@@ -335,6 +451,36 @@ class EvolutionManager:
             # Unified Status Broadcasting
             asyncio.create_task(
                 event_broker.publish_status("WHATSAPP", "DELETED", user_id=user_id)
+            )
+            return True
+
+    @retry(
+        retry=retry_if_exception_type((httpx.RequestError, httpx.TimeoutException)),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        stop=stop_after_attempt(3),
+    )
+    async def logout(self, user_id: str) -> bool:
+        """
+        SAAS-011: Forcefully logs out and resets the session.
+        In local mode, this wipes the auth_info directory.
+        """
+        self._validate_config()
+
+        async with httpx.AsyncClient() as client:
+            if ":3000" in self.base_url:
+                # Force reset for local bridge
+                await client.post(f"{self.base_url}/reset", headers=self.headers, timeout=15.0)
+                return True
+            
+            instance_name = self._get_user_instance(user_id)
+            if not instance_name:
+                return True
+
+            # Cloud logout
+            await client.post(
+                f"{self.base_url}/instance/logout/{instance_name}",
+                headers=self.headers,
+                timeout=15.0,
             )
             return True
 

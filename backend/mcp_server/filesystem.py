@@ -7,8 +7,12 @@ from mcp.server.fastmcp import FastMCP
 mcp = FastMCP("filesystem")
 
 # Restricted to project root for safety
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_dir, "../../"))
+allowed_dirs_env = os.getenv("ALLOWED_DIRECTORIES", "")
+if allowed_dirs_env:
+    project_root = os.path.abspath(allowed_dirs_env)
+else:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(current_dir, "../../"))
 
 
 @mcp.tool()
@@ -18,7 +22,7 @@ async def list_files(path: str = ".") -> str:
     """
     target = os.path.abspath(os.path.join(project_root, path))
     if not target.startswith(project_root):
-        return "Permission Denied: Path outside project root."
+        return f"Permission Denied: Path {target} is outside allowed root {project_root}."
 
     try:
         files = os.listdir(target)

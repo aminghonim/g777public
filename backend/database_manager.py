@@ -1,4 +1,4 @@
-﻿"""
+"""
 G777 Database Manager - Supabase PostgreSQL Integration
 ========================================================
 Modular, secure database connector with upsert operations
@@ -7,6 +7,7 @@ and flexible metadata support.
 
 import os
 import json
+import logging
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 import psycopg2
@@ -73,14 +74,14 @@ class DatabaseManager:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 # 1. Scope search strictly to user_id
                 cursor.execute(
-                    "SELECT id, metadata FROM customers WHERE phone = %s AND user_id = %s",
+                    "SELECT id, metadata FROM customer_profiles WHERE phone = %s AND user_id = %s",
                     (phone, user_id),
                 )
                 existing = cursor.fetchone()
 
                 if existing:
                     customer_id = existing["id"]
-                    update_data = {"last_interaction": datetime.now()}
+                    update_data = {"last_conversation_at": datetime.now()}
                     if name:
                         update_data["name"] = name
                     if metadata:
@@ -91,13 +92,13 @@ class DatabaseManager:
                     set_clause = ", ".join([f"{k} = %s" for k in update_data.keys()])
                     values = list(update_data.values()) + [phone, user_id]
                     cursor.execute(
-                        f"UPDATE customers SET {set_clause} WHERE phone = %s AND user_id = %s",
+                        f"UPDATE customer_profiles SET {set_clause} WHERE phone = %s AND user_id = %s",
                         values,
                     )
                 else:
                     cursor.execute(
                         """
-                        INSERT INTO customers (phone, name, metadata, user_id)
+                        INSERT INTO customer_profiles (phone, name, metadata, user_id)
                         VALUES (%s, %s, %s, %s)
                         RETURNING id
                         """,
@@ -129,7 +130,7 @@ class DatabaseManager:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
                     """
-                    INSERT INTO interactions (customer_id, role, message, user_id)
+                    INSERT INTO messages (customer_id, sender_type, content, user_id)
                     VALUES (%s, %s, %s, %s)
                     RETURNING id
                     """,
@@ -200,7 +201,7 @@ class DatabaseManager:
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
-                    "SELECT * FROM customers WHERE phone = %s AND user_id = %s",
+                    "SELECT * FROM customer_profiles WHERE phone = %s AND user_id = %s",
                     (phone, user_id),
                 )
                 result = cursor.fetchone()
@@ -221,11 +222,11 @@ class DatabaseManager:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
                     """
-                    SELECT i.role, i.message, i.timestamp
-                    FROM interactions i
-                    JOIN customers c ON c.id = i.customer_id
-                    WHERE i.customer_id = %s AND c.user_id = %s
-                    ORDER BY i.timestamp DESC
+                    SELECT m.sender_type as role, m.content as message, m.created_at as timestamp
+                    FROM messages m
+                    JOIN customer_profiles c ON c.id = m.customer_id
+                    WHERE m.customer_id = %s AND c.user_id = %s
+                    ORDER BY m.created_at DESC
                     LIMIT %s
                     """,
                     (customer_id, user_id, limit),
@@ -243,10 +244,10 @@ class DatabaseManager:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
                     """
-                    SELECT id, phone, name, last_interaction, metadata
-                    FROM customers
+                    SELECT id, phone, name, last_conversation_at, metadata
+                    FROM customer_profiles
                     WHERE user_id = %s
-                    ORDER BY last_interaction DESC
+                    ORDER BY last_conversation_at DESC
                     LIMIT %s
                     """,
                     (user_id, limit),
@@ -318,6 +319,10 @@ class DatabaseManager:
         if self.pool is None or field not in ["message_count", "instance_count"]:
             return
 
+        # Skip for guest/dev accounts with non-UUID IDs
+        if user_id == "guest_local" or not user_id:
+            return
+
         conn = self.get_connection()
         try:
             with conn.cursor() as cursor:
@@ -339,7 +344,7 @@ class DatabaseManager:
 
     def decrement_instance_usage(self, user_id: str) -> None:
         """SAAS-013: Atomic decrement for active instances."""
-        if self.pool is None:
+        if self.pool is None or user_id == "guest_local" or not user_id:
             return
         conn = self.get_connection()
         try:
@@ -365,11 +370,11 @@ class DatabaseManager:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
                     """
-                    SELECT i.id, i.role, i.message, i.timestamp, c.phone, c.name
-                    FROM interactions i
-                    JOIN customers c ON c.id = i.customer_id
+                    SELECT m.sender_type as role, m.content as message, m.created_at as timestamp, c.phone as customer_phone
+                    FROM messages m
+                    JOIN customer_profiles c ON c.id = m.customer_id
                     WHERE c.user_id = %s
-                    ORDER BY i.timestamp DESC
+                    ORDER BY m.created_at DESC
                     LIMIT %s
                     """,
                     (user_id, limit),
@@ -463,6 +468,37 @@ class DatabaseManager:
         self._ensure_tiers_and_quotas_tables()
         self._ensure_licenses_and_devices_tables()
         self._ensure_multitenancy_columns()
+        self._ensure_error_log_table()
+
+    def _ensure_error_log_table(self):
+        """Create critical_errors table for persistent error logging (Pitfall 4)."""
+        conn = self.get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS critical_errors (
+                        id SERIAL PRIMARY KEY,
+                        service TEXT NOT NULL,
+                        severity TEXT NOT NULL DEFAULT 'ERROR',
+                        message TEXT NOT NULL,
+                        context JSONB DEFAULT '{}',
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_critical_errors_created
+                        ON critical_errors (created_at DESC);
+                    CREATE INDEX IF NOT EXISTS idx_critical_errors_service
+                        ON critical_errors (service);
+                    """
+                )
+                conn.commit()
+        except Exception as e:
+            conn.rollback()
+            logging.getLogger(__name__).warning(
+                f"Error log table migration failed: {e}"
+            )
+        finally:
+            self.release_connection(conn)
 
     def _ensure_users_table(self):
         """Create `users` table if it does not exist (multitenancy support)."""
@@ -593,7 +629,7 @@ class DatabaseManager:
     def _ensure_multitenancy_columns(self):
         """Add user_id column to core tables if missing."""
         conn = self.get_connection()
-        tables = ["customers", "interactions", "messages", "campaigns"]
+        tables = ["customer_profiles", "messages", "campaigns"]
         try:
             with conn.cursor() as cursor:
                 for table in tables:

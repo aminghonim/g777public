@@ -686,12 +686,24 @@
 - **التاريخ:** 2026-03-14
 - **المشكلة:** عقدة Gemini في n8n كانت تطلب موديل **Veo** (المتخصص في توليد الفيديو) بدلاً من تحليل الفيديو المرسل.
 - **السبب الجذري:** ضبط نوع العملية (Operation) في n8n على "Generate Video" بدلاً من "Multimodal Chat".
-- **الحل الهندسي (Task Redefinition):**
-  - تغيير العملية لـ **Multimodal Chat** (أو خيار **Analyze** إن وجد).
-  - ضبط الـ **Input Type** ليكون **Binary File** لاستقبال الفيديو الذي تم فك تشفيره في الخطوة السابقة.
+- **الحل الهندسي3. **Task Redefinition**: Changed the Gemini node "Operation" in n8n to **Multimodal Chat** (or **Analyze**). Set **Input Type** to **Binary File** to pass the decrypted media buffer directly to the model.
+4. **Quoted Media Extractors**: Fixed the issue where media sent as a reply (quoted) was not being detected by adding conditional logic in n8n Switch nodes and smart extraction in the Baileys Bridge.
+في الخطوة السابقة.
 - **الموديل المستخدم:** Gemini 2.5 Flash (يعامل الفيديو كـ Visual Inputs).
 
 ---
 
-**آخر تحديث:** 2026-03-14 (Media & AI Stabilization)
+## [n8n/WhatsApp] لغز الرد المتداخل (Quoted Media Recovery)
+
+- **التاريخ:** 2026-03-14
+- **المشكلة:** البوت لا يستجيب عند الرد (Reply) على فيديو أو صورة؛ عقدة الـ Switch في n8n لا تجد مسار الميديا.
+- **السبب الجذري:** واتساب يغير هيكل الرسالة عند الرد؛ يضع الميديا داخل `extendedTextMessage.contextInfo.quotedMessage` بدلاً من المسار المباشر.
+- **الحل النهائي:** 
+  1. **تحديث العقد (Switch):** إضافة منطق `||` (OR) في n8n لفحص المسار المباشر والمقتبس.
+  2. **حقن ذكي (Bridge Injection):** تعديل `/download` في `server.js` للتعرف تلقائياً على الرسائل المقتبسة واستخراج الميديا منها قبل فك التشفير.
+- **القاعدة الذهبية:** دائماً ضع فرع الميديا (Image/Video) قبل فرع النص في الـ Switch.
+
+---
+
+**آخر تحديث:** 2026-03-14 (Quoted Media Fix)
 **المسؤول:** أنتجرافتي (Senior System Engineer)

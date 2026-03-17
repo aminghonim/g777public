@@ -7,8 +7,8 @@ import logging
 import json
 from typing import List, Dict, Any
 from pathlib import Path
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+from mcp import ClientSession, StdioServerParameters  # pylint: disable=import-error
+from mcp.client.stdio import stdio_client  # pylint: disable=import-error
 from google.genai import types
 from tenacity import (
     retry,
@@ -88,10 +88,8 @@ class MCPManager:
                             env=srv_env,
                         )
                 logger.info("Loaded %d servers from %s", len(servers), config_path)
-            except (json.JSONDecodeError, OSError) as e:
+            except (json.JSONDecodeError, OSError, ValueError) as e:
                 logger.error("Failed to load MCP config from %s: %s", config_path, e)
-            except Exception as e:
-                logger.error("Unexpected error loading MCP config: %s", e)
 
     @retry(
         stop=stop_after_attempt(3),
@@ -125,12 +123,13 @@ class MCPManager:
                             server_funcs.append(func_decl)
 
                         if server_funcs:
-                            # Create one Tool object per MCP Server
                             tool_grp = types.Tool(function_declarations=server_funcs)
                             all_tools.append(tool_grp)
-                            logger.info("Registered %d tools from %s", len(server_funcs), server_name)
+                            logger.info(
+                                "Registered %d tools from %s", len(server_funcs), server_name
+                            )
 
-            except Exception as e:
+            except (OSError, RuntimeError, TimeoutError) as e:
                 logger.error("Failed to fetch tools from %s: %s", server_name, e)
 
         return all_tools
@@ -163,7 +162,7 @@ class MCPManager:
 
                     return "\n".join(output) if output else "Success (No Output)"
 
-        except Exception as e:
+        except (OSError, RuntimeError, TimeoutError) as e:
             logger.error("Error executing %s: %s", tool_name, e)
             return f"Error executing {tool_name}: {str(e)}"
 

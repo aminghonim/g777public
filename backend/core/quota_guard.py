@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Depends, status
 from typing import Dict, Any
 from backend.database_manager import db_manager
-from core.dependencies import get_current_user
+from core.dependencies import get_current_user, get_current_user_or_guest
 
 
 class QuotaGuard:
@@ -20,10 +20,13 @@ class QuotaGuard:
 
     @classmethod
     async def check_message_quota(
-        cls, current_user: Dict[str, Any] = Depends(get_current_user)
+        cls, current_user: Dict[str, Any] = Depends(get_current_user_or_guest)
     ):
         """Verifies if the tenant has daily message budget remaining."""
         user_id = cls._get_effective_user_id(current_user)
+
+        if user_id == "guest_local":
+            return True
 
         # High-performance check
         quota = db_manager.get_user_quota_info(user_id)
@@ -43,10 +46,13 @@ class QuotaGuard:
 
     @classmethod
     async def check_instance_quota(
-        cls, current_user: Dict[str, Any] = Depends(get_current_user)
+        cls, current_user: Dict[str, Any] = Depends(get_current_user_or_guest)
     ):
         """Verifies if the tenant has available WhatsApp instance slots."""
         user_id = cls._get_effective_user_id(current_user)
+
+        if user_id == "guest_local":
+            return True
 
         quota = db_manager.get_user_quota_info(user_id)
         if quota["instance_count"] >= quota["max_instances"]:

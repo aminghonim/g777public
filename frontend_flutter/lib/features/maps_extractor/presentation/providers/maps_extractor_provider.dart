@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:g777_client/core/services/api_service.dart';
+import 'package:g777_client/core/services/notification_service.dart';
 
 /// Maps Extractor Repository Provider
 final mapsExtractorRepositoryProvider = Provider<MapsExtractorRepository>((ref) {
@@ -78,6 +79,11 @@ class MapsExtractorNotifier extends StateNotifier<MapsExtractorState> {
       // Reload results after a delay to get new data
       await Future.delayed(const Duration(seconds: 3));
       await loadResults();
+      
+      NotificationService().notifyTaskComplete(
+        'Maps Extraction',
+        'Successfully extracted business data for $query in $location',
+      );
     } catch (e) {
       state = state.copyWith(
         isScanning: false,

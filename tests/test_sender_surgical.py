@@ -1,19 +1,24 @@
-import pytest
-import time
+"""Tests for the WhatsApp Sender module."""
+
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from backend.whatsapp_sender import WhatsAppSender
 
 
 class TestSenderSurgical:
+    """Surgical tests for WhatsAppSender ensuring correct logic flow."""
 
     @pytest.fixture
     def sender(self):
+        """Fixture providing a mock WhatsAppSender instance."""
         with patch(
-            "backend.whatsapp_sender.AzureCloudService"
-        ) as mock_cloud_class, patch("backend.whatsapp_sender.db_manager") as mock_db:
+            "backend.whatsapp_sender.WAGateway"
+        ) as mock_gateway_class, patch("backend.whatsapp_sender.db_manager") as mock_db:
 
-            # Setup Cloud Mock
-            mock_instance = mock_cloud_class.return_value
+            # Setup Gateway Mock
+            mock_instance = mock_gateway_class.return_value
             mock_instance.warmup = MagicMock(return_value=(True, "Server Ready"))
             mock_instance.start_campaign_cloud = MagicMock(
                 return_value={"success": True}
@@ -40,14 +45,16 @@ class TestSenderSurgical:
         """اختبار استبدال المتغيرات في الرسالة"""
         msg = "Hello {name}"
         data = {"name": "Ahmed"}
+        # pylint: disable=protected-access
         assert await sender._process_message(msg, data) == "Hello Ahmed"
         assert await sender._process_message("H {Name}", data) == "H Ahmed"
         assert await sender._process_message("H {NAME}", data) == "H Ahmed"
         assert await sender._process_message(msg, "not_a_dict") == "Hello العميل"
         assert await sender._process_message(msg, {}) == "Hello العميل"
+        # pylint: enable=protected-access
 
     @patch("time.sleep", return_value=None)
-    def test_run_campaign_success(self, mock_sleep, sender):
+    def test_run_campaign_success(self, _mock_sleep, sender):
         """اختبار تشغيل حملة كاملة بنجاح"""
         mock_members = [
             {"phone": "123", "name": "User1"},
@@ -68,11 +75,11 @@ class TestSenderSurgical:
     # =================================================================
 
     @patch("time.sleep", return_value=None)
-    def test_stop_campaign_midway(self, mock_sleep, sender):
+    def test_stop_campaign_midway(self, _mock_sleep, sender):
         """اختبار إيقاف الحملة في المنتصف"""
         mock_members = [{"phone": "1"}, {"phone": "2"}, {"phone": "3"}]
 
-        def stop_on_second(*args, **kwargs):
+        def stop_on_second(*_args, **_kwargs):
             if sender.cloud.start_campaign_cloud.call_count >= 1:
                 sender.stop_campaign()
             return {"success": True}
@@ -91,7 +98,7 @@ class TestSenderSurgical:
     # =================================================================
 
     @patch("time.sleep", return_value=None)
-    def test_run_campaign_api_error_details_handling(self, mock_sleep, sender):
+    def test_run_campaign_api_error_details_handling(self, _mock_sleep, sender):
         """اختبار التعامل مع حالات خطأ متنوعة من الـ API"""
         mock_members = [{"phone": "123"}]
 
@@ -107,7 +114,7 @@ class TestSenderSurgical:
             assert sender.is_running is False
 
     @patch("time.sleep", return_value=None)
-    def test_run_campaign_exception_in_loop(self, mock_sleep, sender):
+    def test_run_campaign_exception_in_loop(self, _mock_sleep, sender):
         """اختبار الصمود امام استثناء مفاجئ داخل حلقة الإرسال"""
         mock_members = [{"phone": "123"}]
         sender.cloud.start_campaign_cloud = MagicMock(
@@ -122,7 +129,7 @@ class TestSenderSurgical:
             assert sender.is_running is False
 
     @patch("time.sleep", return_value=None)
-    def test_run_campaign_excel_load_failure(self, mock_sleep, sender):
+    def test_run_campaign_excel_load_failure(self, _mock_sleep, sender):
         """تغطية الـ except الكلي للحملة عند فشل قراءة الملف"""
         with patch(
             "backend.excel_processor.ExcelProcessor.read_contacts",
@@ -135,7 +142,7 @@ class TestSenderSurgical:
         """التأكد من أن خطأ في وظيفة الـ Callback لا يعطل الإرسال"""
 
         def bad_callback(msg):
-            raise Exception("UI Crash")
+            raise RuntimeError("UI Crash")
 
         sender.set_callback(bad_callback)
         sender.log("Test Log Notification")

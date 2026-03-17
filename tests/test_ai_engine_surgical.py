@@ -2,7 +2,7 @@ import pytest
 import os
 import json
 from unittest.mock import MagicMock, patch, AsyncMock, mock_open
-from backend.ai_engine import AIEngine
+
 
 
 class TestAIEngineSurgical:
@@ -11,8 +11,20 @@ class TestAIEngineSurgical:
     def ai(self):
         mock_client = MagicMock()
         mock_client.aio.models.generate_content = AsyncMock()
-        with patch("google.genai.Client", return_value=mock_client):
-            with patch("backend.ai_engine.is_excluded", return_value=False):
+        mock_mcp = MagicMock()
+        mock_mcp.get_tools_definitions = AsyncMock(return_value=[])
+        
+        # Patch the function itself in the class, the instance in the modules, AND the class itself
+        with patch("google.genai.Client", return_value=mock_client), \
+             patch("backend.mcp_manager.MCPManager.get_tools_definitions", AsyncMock(return_value=[])), \
+             patch("backend.mcp_manager.mcp_manager", mock_mcp), \
+             patch("backend.ai_engine.mcp_manager", mock_mcp), \
+             patch("backend.agents.orchestrator.mcp_manager", mock_mcp), \
+             patch("backend.agents.orchestrator.VectorStoreManager", MagicMock()), \
+             patch("backend.agents.orchestrator.SystemMonitor", MagicMock()):
+            with patch("backend.ai_engine.is_excluded", return_value=False), \
+                 patch("google.genai.Client", return_value=mock_client):
+                from backend.ai_engine import AIEngine
                 engine = AIEngine()
                 return engine
 
@@ -46,8 +58,8 @@ class TestAIEngineSurgical:
         mock_response.text = json.dumps({"name": "Omar"})
         ai.client.aio.models.generate_content = AsyncMock(return_value=mock_response)
 
-        # Patch where the functions are imported FROM (db_service module)
-        with patch("backend.ai_engine.AIEngine._get_settings", return_value={}):
+        # Patch where the functions are imported FROM
+        with patch("backend.ai_engine.get_tenant_settings", return_value={}):
             # Also patch the actual import inside the function
             with patch.dict("sys.modules", {"backend.db_service": MagicMock()}):
                 import sys
@@ -65,14 +77,18 @@ class TestAIEngineSurgical:
     @pytest.mark.asyncio
     async def test_generate_response_training_mode(self, ai):
         """تغطية وضع التدريب (بدون أمثلة تعليمية)"""
-        with patch("backend.ai_engine.get_customer_by_phone", return_value=None), patch(
+        real_open = open
+        def open_side_effect(path, *args, **kwargs):
+            if "trips_db.json" in str(path):
+                raise FileNotFoundError()
+            return real_open(path, *args, **kwargs)
+
+        with patch(
             "backend.ai_engine.is_excluded", return_value=False
         ), patch("backend.ai_engine.get_tenant_settings", return_value={}), patch(
             "backend.ai_engine.get_system_prompt", return_value="prompt"
         ), patch(
-            "backend.ai_engine.format_offerings_for_prompt", return_value="offerings"
-        ), patch(
-            "builtins.open", MagicMock(side_effect=FileNotFoundError())
+            "builtins.open", side_effect=open_side_effect
         ):  # Force KB load fail -> Fallback
 
             mock_response = MagicMock()
@@ -88,12 +104,14 @@ class TestAIEngineSurgical:
     async def test_generate_response_normal_flow(self, ai):
         """تغطية الرد الطبيعي مع تحميل الـ KB بنجاح"""
         kb_data = json.dumps({"trips": [], "faq": {}})
-        with patch(
-            "backend.ai_engine.get_customer_by_phone", return_value={"name": "User"}
-        ), patch("backend.ai_engine.is_excluded", return_value=False), patch(
-            "backend.ai_engine.get_training_samples", return_value="Samples"
-        ), patch(
-            "builtins.open", mock_open(read_data=kb_data)
+        real_open = open
+        def open_side_effect(path, *args, **kwargs):
+            if "trips_db.json" in str(path):
+                return mock_open(read_data=kb_data)(path, *args, **kwargs)
+            return real_open(path, *args, **kwargs)
+
+        with patch("backend.ai_engine.is_excluded", return_value=False), patch(
+            "builtins.open", side_effect=open_side_effect
         ):
 
             mock_response = MagicMock()
@@ -115,6 +133,7 @@ class TestAIEngineSurgical:
             return real_open(filename, *args, **kwargs)
 
         with patch("builtins.open", side_effect=open_mock):
+            from backend.ai_engine import AIEngine
             engine = AIEngine()
             assert engine.instructions == {}
 
@@ -153,9 +172,15 @@ class TestAIEngineSurgical:
     @pytest.mark.asyncio
     async def test_generate_response_api_error(self, ai):
         """تغطية الـ except في مولد الردود"""
-        with patch("backend.ai_engine.get_customer_by_phone", return_value=None), patch(
+        real_open = open
+        def open_side_effect(path, *args, **kwargs):
+            if "trips_db.json" in str(path):
+                raise FileNotFoundError()
+            return real_open(path, *args, **kwargs)
+
+        with patch(
             "backend.ai_engine.is_excluded", return_value=False
-        ), patch("builtins.open", MagicMock(side_effect=FileNotFoundError())):
+        ), patch("builtins.open", side_effect=open_side_effect):
 
             ai.client.aio.models.generate_content = AsyncMock(
                 side_effect=Exception("Gemini Offline")

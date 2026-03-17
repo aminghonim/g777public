@@ -8,16 +8,16 @@ import random
 from datetime import datetime
 from backend.core.i18n import t
 from backend.database_manager import db_manager
-from .cloud_service import AzureCloudService
+from .wa_gateway import WAGateway
 
 
 class WhatsAppSender:
-    """محرك إرسال رسائل WhatsApp (يعتمد على السحابة)"""
+    """محرك إرسال رسائل WhatsApp (يعتمد على البوابة المحلية)"""
 
     def __init__(
         self, _config_path=None, instance_name: str = None, user_id: str = None  # pylint: disable=unused-argument
     ):
-        self.cloud = AzureCloudService()
+        self.cloud = WAGateway()
         self.db_manager = db_manager  # Use module level as default for SaaS consistency
         self.instance_name = instance_name  # SaaS Instance
         self.user_id = (
@@ -148,8 +148,8 @@ class WhatsAppSender:
                     "INFO"
                 )
                 try:
-                    from backend.ai_client import AzureAIClient  # pylint: disable=import-outside-toplevel
-                    ai = AzureAIClient()
+                    from backend.ai_client import UnifiedAIClient  # pylint: disable=import-outside-toplevel
+                    ai = UnifiedAIClient()
 
                     base_msgs = "\n---\n".join(message_templates)
                     prompt = (

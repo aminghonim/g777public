@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:g777_client/core/services/api_client.dart';
 import 'package:g777_client/l10n/app_localizations.dart';
-import 'package:g777_client/core/theme/theme.dart'; // Unified theme system
+import 'package:g777_client/core/theme/theme.dart';
+import 'package:g777_client/core/services/notification_service.dart';
 
 class MembersGrabberPage extends ConsumerStatefulWidget {
   const MembersGrabberPage({super.key});
@@ -23,6 +24,33 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
   final ScrollController _scrollController = ScrollController();
 
   ApiClient get _api => ref.read(apiClientProvider);
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMore &&
+        _hasMorePages &&
+        _selectedGroupName != null) {
+      final selectedGroup = _groups.firstWhere(
+        (g) => g['name'] == _selectedGroupName,
+        orElse: () => null,
+      );
+      if (selectedGroup != null) {
+        _fetchMembers(selectedGroup['jid'], _selectedGroupName!, loadMore: true);
+      }
+    }
+  }
 
   Future<void> _fetchGroups() async {
     setState(() => _isLoading = true);
@@ -53,11 +81,11 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
 
     try {
       final page = loadMore ? _currentPage + 1 : 1;
-      final res = await _api.get('/api/members-grabber/groups/$jid/members?page=$page&limit=$_pageSize');
+      final res =
+          await _api.get('/api/members-grabber/groups/$jid/members?page=$page&limit=$_pageSize');
       final newMembers = res.data['members'] as List<dynamic>? ?? [];
       final totalCount = res.data['total'] as int? ?? 0;
 
-      // Export all loaded members (paginated)
       setState(() {
         if (!loadMore) {
           _members = newMembers;
@@ -69,6 +97,14 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
         _isLoading = false;
         _isLoadingMore = false;
       });
+
+      // Show success notification for member extraction
+      if (!loadMore && _members.isNotEmpty) {
+        await NotificationService().notifyTaskComplete(
+          'Member Extraction',
+          'Successfully extracted ${_members.length} members from $name',
+        );
+      }
     } catch (e) {
       _showError('Fetch Members Error: $e');
       setState(() {
@@ -88,6 +124,10 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
       );
       if (res.isSuccess) {
         _showSuccess('Members exported successfully: ${res.data['filename']}');
+        NotificationService().notifyTaskComplete(
+          'Member Export',
+          'Successfully exported ${_members.length} members to ${res.data['filename']}',
+        );
       }
     } catch (e) {
       _showError('Export Error: $e');
@@ -107,25 +147,15 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
       ),
     );
   }
-@override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
-        !_isLoadingMore &&
-        _hasMorePages &&
-        _selectedGroupName != null) {
-      _fetchMembers(_groups.firstWhere((g) => g['name'] == _selectedGroupName)['jid'], _selectedGroupName!, loadMore: true);
-    }),
+  void _showSuccess(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Theme.of(context).colorScheme.statusOnline,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
@@ -203,17 +233,16 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
             colorScheme: colorScheme,
             borderColor: borderColor,
           ),
-          Expandedkey: ValueKey(group['jid']),
-                  (
+          Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: _groups.length,
-              separatorBuilder: (context, index) =>
-                  Divider(height: 1, color: borderColor),
+              separatorBuilder: (context, index) => Divider(height: 1, color: borderColor),
               itemBuilder: (context, index) {
                 final group = _groups[index];
                 final isSelected = _selectedGroupName == group['name'];
-                return _buildDataTile(
+                return GroupTile(
+                  key: ValueKey(group['jid']),
                   title: group['name'] ?? 'UNKNOWN_GROUP',
                   subtitle: group['jid'] ?? 'ID_PENDING',
                   isSelected: isSelected,
@@ -240,8 +269,7 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
       child: Column(
         children: [
           _buildConsoleHeader(
-            _selectedGroupName?.toUpperCase() ??
-                l10n.membersStream.toUpperCase(),
+            _selectedGroupName?.toUpperCase() ?? l10n.membersStream.toUpperCase(),
             Icons.person_search_rounded,
             _members.isEmpty ? null : _exportMembers,
             actionIcon: Icons.download_rounded,
@@ -256,94 +284,85 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
                     ),
                   )
                 : _members.isEmpty
-                ? Center(
-                    child: Text(
-                      l10n.noDataStreaming.toUpperCase(),
-                      style: TextStyle(
-                        color: colorScheme.onSurface.withValues(alpha: 0.3),
-                        fontSize: 10,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  Column(
-                    children: [
-                      Expanded(
-                        child: ListView.separated(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: _members.length + (_hasMorePages ? 1 : 0),
-                          separatorBuilder: (context, index) =>
-                              Divider(height: 1, color: borderColor),
-                          itemBuilder: (context, index) {
-                            if (index == _members.length) {
-                              // Loading indicator for next page
-                              return Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: CircularProgressIndicator(
-                                    color: colorScheme.membersAccent,
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              );
-                            }
-                            final member = _members[index];
-                            return _buildDataTile(
-                              key: ValueKey('${member['phone']}_${index}'),
-                              title: member['name'] ?? 'ANONYMOUS_USER',
-                              subtitle: member['phone'] ?? 'NO_PHONE',
-                              isSelected: false,
-                              onTap: null,
-                              accentColor: colorScheme.statusOnline,
-                              icon: Icons.alternate_email_rounded,
-                              colorScheme: colorScheme,
-                            );
-                          },
-                        ),
-                      ),
-                      if (_members.length > _pageSize)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            border: Border(top: BorderSide(color: borderColor)),
+                    ? Center(
+                        child: Text(
+                          l10n.noDataStreaming.toUpperCase(),
+                          style: TextStyle(
+                            color: colorScheme.onSurface.withValues(alpha: 0.3),
+                            fontSize: 10,
+                            letterSpacing: 2,
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '${l10n.showing} ${_members.length} ${l10n.members.toLowerCase()}',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: colorScheme.onSurface.withValues(alpha: 0.6),
-                                ),
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          Expanded(
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              itemCount: _members.length + (_hasMorePages ? 1 : 0),
+                              itemExtent: 65.0, // Fixed height including border
+                              addRepaintBoundaries: true,
+                              itemBuilder: (context, index) {
+                                if (index == _members.length) {
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      color: colorScheme.membersAccent,
+                                      strokeWidth: 2,
+                                    ),
+                                  );
+                                }
+                                final member = _members[index];
+                                return MemberTile(
+                                  key: ValueKey('${member['phone']}_$index'),
+                                  name: member['name'] ?? 'ANONYMOUS_USER',
+                                  phone: member['phone'] ?? 'NO_PHONE',
+                                  colorScheme: colorScheme,
+                                  borderColor: borderColor,
+                                );
+                              },
+                            ),
+                          ),
+                          if (_members.length > 10)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                border: Border(top: BorderSide(color: borderColor)),
                               ),
-                              if (_hasMorePages)
-                                Text(
-                                  l10n.loadMore ?? 'Load More',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: colorScheme.membersAccent,
-                                    fontWeight: FontWeight.bold,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '${l10n.showing} ${_members.length} ${l10n.members.toLowerCase()}',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                                    ),
                                   ),
-                                ),
-                            ],
-                          ),
-                        ),
-                    ] );
-                    },
-                  ),
+                                  if (_hasMorePages)
+                                    Text(
+                                      l10n.loadMore ?? 'Load More',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: colorScheme.membersAccent,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
           ),
-    Key? key,
-    required String title,
-    required String subtitle,
-    required bool isSelected,
-    required VoidCallback? onTap,
-    required Color accentColor,
-    required ColorScheme colorScheme,
-    IconData? icon,
-  }) {
-    return InkWell(
-      key: key,nAction, {
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConsoleHeader(
+    String title,
+    IconData icon,
+    VoidCallback? onAction, {
     IconData? actionIcon,
     required ColorScheme colorScheme,
     required Color borderColor,
@@ -381,44 +400,49 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
       ),
     );
   }
+}
 
-  Widget _buildDataTile({
-    required String title,
-    required String subtitle,
-    required bool isSelected,
-    required VoidCallback? onTap,
-    required Color accentColor,
-    required ColorScheme colorScheme,
-    IconData? icon,
-  }) {
+class GroupTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color accentColor;
+  final ColorScheme colorScheme;
+
+  const GroupTile({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.isSelected,
+    required this.onTap,
+    required this.accentColor,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected
-              ? accentColor.withValues(alpha: 0.05)
-              : Colors.transparent,
-          border: isSelected
-              ? Border(left: BorderSide(color: accentColor, width: 2))
-              : null,
+          color: isSelected ? accentColor.withValues(alpha: 0.05) : Colors.transparent,
+          border: isSelected ? Border(left: BorderSide(color: accentColor, width: 2)) : null,
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: (isSelected ? accentColor : colorScheme.onSurface)
-                    .withValues(alpha: 0.1),
+                color: (isSelected ? accentColor : colorScheme.onSurface).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                icon ?? Icons.hub_rounded,
+                Icons.hub_rounded,
                 size: 14,
-                color: isSelected
-                    ? accentColor
-                    : colorScheme.onSurface.withValues(alpha: 0.5),
+                color: isSelected ? accentColor : colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(width: 16),
@@ -453,6 +477,74 @@ class _MembersGrabberPageState extends ConsumerState<MembersGrabberPage> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class MemberTile extends StatelessWidget {
+  final String name;
+  final String phone;
+  final ColorScheme colorScheme;
+  final Color borderColor;
+
+  const MemberTile({
+    super.key,
+    required this.name,
+    required this.phone,
+    required this.colorScheme,
+    required this.borderColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: borderColor)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: colorScheme.statusOnline.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.alternate_email_rounded,
+              size: 14,
+              color: colorScheme.statusOnline.withValues(alpha: 0.8),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  phone,
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: colorScheme.onSurface.withValues(alpha: 0.4),
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

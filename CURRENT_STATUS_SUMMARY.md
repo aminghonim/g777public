@@ -1,30 +1,21 @@
-# G777 Project Status Summary - 2026-02-16
+# G777 Project Status Summary - 2026-03-15
 
-## 🎯 Current Milestone: Local WhatsApp Tunnel Stabilization
+## 🎯 Current Milestone: Production Audit & Scalability
 
-Status: **Ready for Integration Test**
+Status: **Sprint Initialization**
 
-## 🏗️ Architectural Changes (Modular Handshake)
+## 🏗️ Architectural Changes (Scrapling Finalized)
 
-- **main.py**: Fully decoupled. Now uses `core.lifespan` for startup/shutdown and `core.middleware` for security.
-- **Port Realignment**:
-  - Backend: `8080` (via config.yaml)
-  - Baileys: `3000` (via server.js)
-- **Config**: Added `baileys_api_url` to `evolution_api` block and `exempt_paths` to `system` block.
-- **Router Registry**: Created `api/router_registry.py` to handle all module registrations.
-
-## 🛠️ Components Status
-
-- **Backend (Python)**: ✅ Lifespan fixed to generate `secure_session.json` even with uvicorn reload.
-- **Baileys (Node.js)**: ✅ Port changed to 3000 to avoid conflict with Backend at 8080.
-- **Flutter Frontend**: ✅ PortDiscovery updated to find session file in `.antigravity/`.
+- **Scrapling Engine**: Now the default engine for all extraction tasks.
+- **Session Injection**: Fully implemented in `GroupFinder` for stealth persistent sessions.
+- **QA Gate**: Passed. Full suite of `pytest` integration tests successful.
 
 ## ⏭️ Next Steps
 
-1. Start Baileys Service (`node baileys-service/server.js`).
-2. Start Backend (`python main.py --dev`).
-3. Confirm Flutter app displays QR Code and connection status correctly.
-4. Test message sending through the local tunnel.
+1. **Windsurf**: Implement Dynamic Browser Selection (Stealth vs Regular).
+2. **VS Code**: Optimize UI for Large Data Sets rendering.
+3. **OpenCode**: Create Google API Health Checker script.
+4. **Antigravity**: Finalize Docker hardening and production health checks.
 
 **DANGER ZONE**:
 

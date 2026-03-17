@@ -4,7 +4,7 @@ Handles Authentication, User Identity Verification, and Middleware Dependencies.
 """
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -29,25 +29,55 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing authorization token",
         )
+    
     token = credentials.credentials
-    # Check if Clerk is configured
+    
+    # 1. Try Clerk Verification (if configured)
     if os.getenv("CLERK_SECRET_KEY"):
         try:
-            # Attempt Clerk Verification
-            user = await ClerkAuth.verify_token(credentials)
-            return user
-        except HTTPException:
-            # If Clerk fail, we might want to fallback to local for migration phase
-            # or strictly enforce Clerk. Rule 4 (Zero-Regression) suggests caution.
-            pass
+            return await ClerkAuth.verify_token(credentials)
+        except HTTPException as e:
+            if e.status_code != status.HTTP_401_UNAUTHORIZED:
+                raise e
+            # If Clerk gives 401, we fall back to local/manual decoding
+            logger.debug("Clerk token invalid, checking local fallback...")
 
+    # 2. Fallback: The legacy SecurityEngine (V7.4.1) or Manual JWT
     try:
-        # Fallback: The legacy SecurityEngine (V7.4.1)
         payload = SecurityEngine.decode_token(token)
         return payload
     except Exception as exc:
-        logger.error(f"Authentication failed: {str(exc)}")
+        logger.warning(f"Authentication failed: {str(exc)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication failed. Please login via Clerk.",
+            detail="Authentication failed. Please login via Clerk or use a valid local token.",
         ) from exc
+
+
+async def get_current_user_or_guest(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer_scheme),
+) -> Dict[str, Any]:
+    """
+    SAAS-007: Fallback dependency for local/config mode.
+    Allows guest access if enabled in settings.
+    """
+    from core.config import settings
+
+    if credentials:
+        try:
+            return await get_current_user(credentials)
+        except HTTPException:
+            pass
+
+    if settings.security.allow_guest_access:
+        return {
+            "user_id": "guest_local",
+            "username": settings.security.guest_username,
+            "instance_name": settings.security.guest_instance_name,
+            "role": "guest",
+        }
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required.",
+    )

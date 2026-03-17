@@ -31,7 +31,7 @@
 │                                         │ HTTP Requests                            │
 │                                         ▼                                          │
 │   ┌───────────────────────────────────────────────────────────────────────────┐    │
-│   │                    AZURE VM (127.0.0.1) - السحابة                       │    │
+│   │                    LOCAL MACHINE (127.0.0.1)                              │    │
 │   │                                                                           │    │
 │   │   ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐        │    │
 │   │   │  EVOLUTION API  │   │  BAILEYS        │   │     N8N         │        │    │
@@ -163,7 +163,7 @@
 │            ↓                                                               │
 │   🔧 cloud_service.py (يتواصل مع Evolution API)                           │
 │            ↓                                                               │
-│   🌐 Evolution API (Port 8080 على Azure)                                  │
+│   🌐 Evolution API (Port 8080 - Local)                                    │
 │            ↓                                                               │
 │   📲 WhatsApp يتصل                                                        │
 │            ↓                                                               │
@@ -310,9 +310,9 @@ WEBHOOK_URL=http://localhost:8080/webhook/whatsapp
 
 | Port | الخدمة | الوظيفة |
 |------|--------|---------|
-| **8080** (Azure) | Evolution API | WhatsApp Business API |
-| **3000** (Azure) | Baileys Service | WhatsApp Web Engine |
-| **5678** (Azure) | N8N | Workflow Automation |
+| **8080** (Local) | Evolution API | WhatsApp Business API |
+| **3000** (Local) | Baileys Service | WhatsApp Web Engine |
+| **5678** (Local) | N8N | Workflow Automation |
 | **8080** (Local) | Antigravity Suite | UI + Backend |
 
 ---

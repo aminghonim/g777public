@@ -126,8 +126,6 @@ class WAGateway(CampaignHandler, ConnectionHandler, GroupHandler, WebhookHandler
 
 # Backward-compatibility aliases to prevent import failures in existing modules
 # during the refactor transition. Remove once all callers are updated.
-AzureCloudService = WAGateway
-G777CloudService = WAGateway
 
 wa_gateway = WAGateway()
 
