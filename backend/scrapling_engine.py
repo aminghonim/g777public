@@ -7,8 +7,8 @@ element tracking and automatic retry logic.
 
 Architecture:
     ScraplingEngine reads settings from config.yaml (scraper_settings block)
-    and exposes fetch/extract/stealth_fetch methods that the grabber,
-    group_finder, and maps_extractor modules consume.
+    and exposes fetch/extract/stealth_fetch methods that the grabber and
+    group_finder modules consume.
 """
 
 import logging
