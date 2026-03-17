@@ -28,9 +28,9 @@ reviews:
     - "!docs/**"
     - "!skills/**"
     - "!rules/**"
-    - "!*.md"
-    - "!*.mdc"
-    - "!*.mdx"
+    - "!**/*.md"
+    - "!**/*.mdc"
+    - "!**/*.mdx"
     
     # ❌ IGNORE: Infrastructure, Scripts & Build Configs
     - "!Dockerfile"
