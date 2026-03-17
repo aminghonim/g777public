@@ -1,119 +1,28 @@
-# G777 ELECTRA .gitignore (CNS Squad - Public Repo Edition)
-# ===============================================================
-
-# --- G777 SPECIFIC SECRETS (NEVER REMOVE) ---
-.env
-.env.*
-!.env.example
-*.backup
-*.json.backup
-auth_info/
-baileys-service/auth_info/
-chrome_profile/
-GITHUB_SECRETS_*.json
-SENTINEL_AUDIT_*.md
-
-# --- SECRETS & CONFIG OVERRIDES ---
-secrets.yaml
-secrets.yml
-docker-compose.override.yml
-
-# --- DATABASE & DATA ---
-data/
-*.sqlite
-*.db
-docker-volumes/
-uploads/
-data/*.xlsx
-data/*.csv
-trips_db.json
-G777_HYBRID_SCHEMA.sql
-database/schema.sql
-
-# --- AUDITS & MISSION LOGS ---
-*AUDIT_REPORT.md
-*PRODUCTION_AUDIT.md
-SENTINEL_MISSION_SUMMARY.md
-SOLVED_ISSUES.md
-
-# --- LOGS ---
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# --- PYTHON & BACKEND BOILERPLATE ---
-venv/
-.venv/
+# Python Noise
 __pycache__/
 *.py[cod]
 *$py.class
-*.egg-info/
-dist/
-build/
-.pytest_cache/
-.coverage
-htmlcov/
-.nox/
-.tox/
+venv/
+.venv/
 
-# --- NODE MODULES ---
-node_modules/
-baileys-service/node_modules/
+# G777 Data (The Heavy Stuff)
+data/
+*.log
+backend/bridge.log
+baileys-service/bridge.log
+scraper_results.json
 
-# --- AGENT PERSISTENCE & LOCALS ---
-.gemini/
-.antigravity/
-.specify/
-.agent/
-.cursor/
-.n8n/
-backops/n8n_vault_export/
-
-# --- OS & IDE ---
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-.git_old_private_backup/
-*~
-
-# --- FLUTTER & DART BOILERPLATE ---
+# Flutter Noise
 frontend_flutter/build/
 frontend_flutter/.dart_tool/
-frontend_flutter/.flutter-plugins
-frontend_flutter/.flutter-plugins-dependencies
 frontend_flutter/.packages
-frontend_flutter/.pub-cache/
-frontend_flutter/.pub/
-frontend_flutter/coverage/
-frontend_flutter/macos/Flutter/ephemeral/
-frontend_flutter/ios/Flutter/.last_build_id
-frontend_flutter/ios/Flutter/App.framework
-frontend_flutter/ios/Flutter/Flutter.framework
-frontend_flutter/ios/Flutter/Flutter.podspec
-frontend_flutter/ios/Flutter/Generated.xcconfig
-frontend_flutter/ios/Flutter/app.flx
-frontend_flutter/ios/Flutter/app.zip
-frontend_flutter/ios/Flutter/flutter_assets/
-frontend_flutter/ios/Flutter/flutter_export_environment.sh
-frontend_flutter/ios/Runner/GeneratedPluginRegistrant.*
-frontend_flutter/android/app/build/
-frontend_flutter/android/.gradle/
-frontend_flutter/android/captures/
-frontend_flutter/android/gradlew
-frontend_flutter/android/gradlew.bat
-frontend_flutter/android/local.properties
-frontend_flutter/android/app/src/main/res/drawable-v21/launch_background.xml
-frontend_flutter/android/app/src/main/res/drawable/launch_background.xml
-frontend_flutter/linux/flutter/ephemeral/
-frontend_flutter/windows/flutter/ephemeral/
-frontend_flutter/windows/flutter/generated_plugin_registrant.cc
-frontend_flutter/windows/flutter/generated_plugin_registrant.h
-frontend_flutter/windows/flutter/generated_plugins.cmake
+frontend_flutter/generated/
 
-# --- ASSETS EXCLUSIONS (Optional if Large) ---
-# frontend_flutter/assets/**/*.png
-# frontend_flutter/assets/**/*.svg
+# OS Specific
+.DS_Store
+Thumbs.db
+
+# Environment Secrets (CRITICAL)
+.env
+config.yaml
+# ملاحظة: اترك config.yaml.example فقط لو متاح
