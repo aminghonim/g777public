@@ -108,10 +108,22 @@ You must output a JSON object ONLY, with the following schema:
 
     def _enrich_strategy(self, model_name: str, task_type: str) -> Dict[str, Any]:
         """Adds provider, token limits, and fallbacks based on the model."""
+        
+        # Determine provider based on model name prefix/content
+        model_lower = model_name.lower()
+        if "gpt" in model_lower:
+            provider = "openai"
+        elif "claude" in model_lower:
+            provider = "anthropic"
+        elif "azure" in model_lower:
+            provider = "azure"
+        else:
+            provider = "gemini"
+
         strategy: Dict[str, Any] = {
             "task_type": task_type,
             "primary_model": model_name,
-            "provider": "gemini",  # Default assumption
+            "provider": provider,
             "max_tokens": 1024,
             "alternatives": ["claude"]
         }
