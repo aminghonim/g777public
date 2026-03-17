@@ -9,7 +9,6 @@ from core.config import settings
 
 # Logic Imports
 from backend.market_intelligence.core import MarketIntelligenceManager
-from backend.market_intelligence.sources.maps_extractor import MapsExtractor
 from backend.market_intelligence.sources.social_scraper import SocialScraper
 from core.dependencies import get_current_user
 
@@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
 @router.get("/opportunities")
 async def get_opportunities(
     limit: int = 20,
-    source: str = Query("all", pattern="^(all|maps|social)$"),
+    source: str = Query("all", pattern="^(social)$"),  # Restricted to social only
     user: Dict[str, Any] = Depends(get_current_user),
 ):
     """
@@ -45,25 +44,7 @@ async def get_opportunities(
         }
 
     try:
-        # 1. Google Maps Data
-        if source in ["all", "maps"]:
-            maps_files = [
-                f for f in os.listdir(data_dir) if f.startswith("maps_results_")
-            ]
-            for f in maps_files:
-                with open(data_dir / f, "r", encoding="utf-8") as file:
-                    try:
-                        data = json.load(file)
-                        # Enrich with source type
-                        if isinstance(data, dict) and "results" in data:
-                            for item in data["results"]:
-                                item["_source"] = "maps"
-                                item["_scraped_at"] = data.get("timestamp")
-                            results.extend(data["results"])
-                    except json.JSONDecodeError:
-                        continue
-
-        # 2. Social Media Data
+        # 1. Social Media Data
         if source in ["all", "social"]:
             social_files = [
                 f for f in os.listdir(data_dir) if f.startswith("social_results_")
@@ -94,7 +75,7 @@ async def get_opportunities(
 @router.post("/trigger_scan")
 async def trigger_scan(
     background_tasks: BackgroundTasks,
-    type: str = Query(..., pattern="^(maps|social)$"),
+    type: str = Query(..., pattern="^(social)$"),  # Restricted to social only
     keyword: str = Query(...),
     scrolling_depth: int = Query(2),
     user: Dict[str, Any] = Depends(get_current_user),
@@ -105,10 +86,7 @@ async def trigger_scan(
 
     async def _run_scraper():
         try:
-            if type == "maps":
-                scraper = MapsExtractor(headless=True)
-                await scraper.scrape(keyword, limit=20, scrolling_depth=scrolling_depth)
-            elif type == "social":
+            if type == "social":
                 scraper = SocialScraper()
                 await scraper.scrape(keyword, limit=20, scrolling_depth=scrolling_depth)
             logger.info(f"Scraping job finished: {type} for {keyword}")
