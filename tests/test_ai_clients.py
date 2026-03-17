@@ -1,8 +1,7 @@
 
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
-from backend.ai_client import GeminiAIClient, AzureAIClient, UnifiedAIClient
-from backend.ai_service import call_gemini_direct
+from backend.ai_client import GeminiAIClient, UnifiedAIClient
 
 class TestAIClients:
     @pytest.mark.asyncio
@@ -29,16 +28,3 @@ def test_unified_client_routing():
     with patch('backend.ai_client.GeminiAIClient'):
         client = UnifiedAIClient(provider="gemini", api_key="test")
         assert client.primary == "gemini"
-
-@pytest.mark.asyncio
-async def test_azure_ai_client():
-    """تغطية AzureAIClient (Mocked)"""
-    # Mock sys.modules to simulate openai presence or just mock the class used
-    with patch.dict('sys.modules', {'openai': MagicMock()}):
-        with patch('backend.ai_client.AzureAIClient') as MockClient:
-            # We treat the client as a box here since we can't import the real one easily without the lib
-            client = MockClient()
-            client.generate_response = AsyncMock(return_value="Azure")
-            
-            resp = await client.generate_response("Hi")
-            assert resp == "Azure"

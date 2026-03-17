@@ -1,7 +1,7 @@
 """
 Unified AI Client - Provides a resilient, multi-provider interface for AI generation.
 
-Supports Gemini, Azure OpenAI, and Anthropic Claude with automatic fallback
+Supports Gemini and Anthropic Claude with automatic fallback
 so that a failure in any single provider does not halt response generation.
 """
 import os
@@ -14,11 +14,6 @@ try:
     from google import genai
 except ImportError:
     genai = None
-
-try:
-    from openai import AsyncAzureOpenAI
-except ImportError:
-    AsyncAzureOpenAI = None
 
 try:
     from anthropic import AsyncAnthropic
@@ -68,7 +63,7 @@ class GeminiAIClient:
         return response.text
 
     def generate_response_sync(self, prompt: str, system_message: str = "") -> str:
-        """نسخة متزامنة للاستخدام في Azure Functions"""
+        """نسخة متزامنة للاستخدام في السكربتات المحلية"""
         full_prompt = (
             f"{system_message}\n\nUser Question: {prompt}" if system_message else prompt
         )
@@ -77,56 +72,6 @@ class GeminiAIClient:
             model=self.model_name, contents=full_prompt
         )
         return response.text
-
-
-class AzureAIClient:
-    """
-    Azure OpenAI Client - للعمل الاحترافي والـ Stability
-    """
-
-    def __init__(self):
-        self.api_key = os.getenv("AZURE_OPENAI_API_KEY")
-        self.endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-        self.api_version = "2024-02-15-preview"
-        self.client = None
-
-        if not AsyncAzureOpenAI:
-            logger.warning("openai package not installed")
-            return
-
-        if (
-            not self.api_key
-            or not self.endpoint
-            or "your_" in self.api_key
-            or self.api_key == "not_used"
-        ):
-            return
-
-        try:
-            self.client = AsyncAzureOpenAI(
-                api_key=self.api_key,
-                azure_endpoint=self.endpoint,
-                api_version=self.api_version,
-            )
-            logger.info("Azure OpenAI connected to: %s", self.endpoint)
-        except Exception as e:
-            logger.error("Failed to init Azure OpenAI: %s", e)
-
-    async def generate_response(
-        self, prompt: str, system_message: str = "You are a helpful assistant."
-    ) -> str:
-        """توليد رد باستخدام Azure OpenAI"""
-        if not self.client:
-            return "Error: Azure OpenAI is not configured."
-
-        try:
-            # Call the Azure client's chat completion API and extract content
-            resp = await self.client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}]
-            )
-            return resp.choices[0].message.content
-        except Exception as e:
-            return f"Error: {str(e)}"
 
 
 class ClaudeAIClient:
@@ -167,16 +112,17 @@ class ClaudeAIClient:
             return message.content[0].text
         except Exception as e:
             return f"Error: {str(e)}"
+        except Exception as e:
+            return f"Error: {str(e)}"
 
 
 class UnifiedAIClient:
     """
-    Unified Client - يختار تلقائياً بين Gemini و Azure
+    Unified Client - يختار تلقائياً بين Gemini و Claude
     """
 
     def __init__(self, provider: Optional[str] = None, api_key: Optional[str] = None):
         self.gemini_client = None
-        self.azure_client = None
         self.claude_client = None
         self.primary = None
 
@@ -191,19 +137,12 @@ class UnifiedAIClient:
         except Exception as e:
             logger.debug("Claude init failed: %s", e)
 
-        try:
-            self.azure_client = AzureAIClient()
-        except Exception as e:
-            logger.debug("Azure init failed: %s", e)
-
         # 2. Determine Primary (Requested -> Auto-detect)
         requested_client = None
         if provider == "gemini":
             requested_client = self.gemini_client
         elif provider == "claude":
             requested_client = self.claude_client
-        elif provider == "azure":
-            requested_client = self.azure_client
 
         if requested_client and getattr(requested_client, "client", None):
             self.primary = provider
@@ -213,8 +152,6 @@ class UnifiedAIClient:
                 self.primary = "gemini"
             elif self.claude_client and self.claude_client.client:
                 self.primary = "claude"
-            elif self.azure_client and self.azure_client.client:
-                self.primary = "azure"
             else:
                 self.primary = None
 
@@ -226,12 +163,11 @@ class UnifiedAIClient:
         providers = [
             ("gemini", self.gemini_client),
             ("claude", self.claude_client),
-            ("azure", self.azure_client),
         ]
 
         # 1. Re-order based on primary selection
         ordered_providers = []
-        if self.primary != "none":
+        if self.primary and self.primary != "none":
             # Finding the primary in the list
             primary_tuple = next((p for p in providers if p[0] == self.primary), None)
             if primary_tuple:

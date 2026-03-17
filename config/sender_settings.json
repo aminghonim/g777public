@@ -27,13 +27,7 @@
     },
     "browser": {
         "headless": true,
-        "disable_local_runs": true,
-        "use_azure_only": true,
+        "disable_local_runs": false,
         "timeout_ms": 30000
-    },
-    "azure": {
-        "function_app_name": "antigravitybot77",
-        "region": "northeurope",
-        "timer_schedule": "0 */5 * * * *"
     }
 }

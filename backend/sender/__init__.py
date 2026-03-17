@@ -11,6 +11,5 @@ MIGRATION PATH:
 """
 
 from backend.whatsapp_sender import WhatsAppSender  # noqa: F401
-from backend.cloud_service import AzureCloudService  # noqa: F401
 
-__all__ = ["WhatsAppSender", "AzureCloudService"]
+__all__ = ["WhatsAppSender"]

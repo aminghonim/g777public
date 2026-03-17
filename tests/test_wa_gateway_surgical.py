@@ -3,10 +3,10 @@ import os
 import io
 import requests
 from unittest.mock import MagicMock, patch, mock_open
-from backend.wa_gateway import WAGateway as AzureCloudService
+from backend.wa_gateway import WAGateway
 
 
-class TestCloudServiceSurgical:
+class TestWAGatewaySurgical:
 
     @pytest.fixture
     def cloud(self):

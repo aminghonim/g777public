@@ -11,8 +11,8 @@
 ## 🔍 التحليل الحالي
 
 ### 1. **UnifiedAIClient** (ai_client.py)
-- **الوظيفة:** موحد بين Gemini و Azure و Claude
-- **الاختيار التلقائي:** Gemini → Claude → Azure
+- **الوظيفة:** موحد بين Gemini و Claude
+- **الافتيار التلقائي:** Gemini → Claude
 - **نقطة الضعف:** لا يوجد تمرير لحالة المزود (Provider Health)
 - **التبديل:** يدوي فقط عند الفشل
 
@@ -106,7 +106,6 @@ class ProviderHealthManager:
     def __init__(self):
         self.providers = {
             "gemini": {"health": "unknown", "last_check": None},
-            "azure": {"health": "unknown", "last_check": None},
             "claude": {"health": "unknown", "last_check": None}
         }
     

@@ -1,6 +1,6 @@
 """
 WhatsApp Gateway - The bridge between the application layer and Evolution API.
-Refactored from legacy 'AzureCloudService' naming into the correct local-first architecture.
+Simplified local-first architecture.
 """
 
 import os
@@ -124,10 +124,5 @@ class WAGateway(CampaignHandler, ConnectionHandler, GroupHandler, WebhookHandler
             return []
 
 
-# Backward-compatibility aliases to prevent import failures in existing modules
-# during the refactor transition. Remove once all callers are updated.
-
+# Global gateway instance
 wa_gateway = WAGateway()
-
-# Legacy alias: used by existing controllers
-cloud_service = wa_gateway

@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import os
 import asyncio
 from typing import Optional
@@ -11,7 +11,7 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 from mcp.server.fastmcp import FastMCP
-from backend.cloud_service import AzureCloudService
+from backend.wa_gateway import WAGateway
 
 # تهيئة خادم MCP
 # Initialize MCP Server
@@ -20,16 +20,16 @@ mcp = FastMCP("Antigravity G777")
 @mcp.tool()
 async def send_whatsapp_message(phone: str, message: str) -> str:
     """
-    Send a WhatsApp message to a specific phone number using the G777 Cloud System.
+    Send a WhatsApp message to a specific phone number using the G777 System.
     
     Args:
         phone: The phone number including country code (e.g., 201xxxxxxx)
         message: The text message to send
     """
     try:
-        service = AzureCloudService()
-        # محاولة الإرسال باستخدام الخدمة السحابية
-        success, response = service._send_evolution_text(phone, message)
+        service = WAGateway()
+        # محاولة الإرسال باستخدام بوابة واتساب
+        success, response = service.send_whatsapp_message(phone, message)
         
         if success:
             return f" Message sent successfully to {phone}\nResponse: {response}"
@@ -42,10 +42,10 @@ async def send_whatsapp_message(phone: str, message: str) -> str:
 @mcp.tool()
 async def check_system_status() -> str:
     """
-    Check the connection status of the WhatsApp cloud service.
+    Check the connection status of the WhatsApp service.
     """
     try:
-        service = AzureCloudService()
+        service = WAGateway()
         is_connected = service._verify_connection()
         status = "Connected " if is_connected else "Disconnected "
         return f"System Status: {status}\nInstance: {service.instance_name}"

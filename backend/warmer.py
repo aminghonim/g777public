@@ -1,22 +1,21 @@
 """
-Account Warmer Module - Azure AI Enhanced
-Handles WhatsApp account warming through simulated conversations using Azure AI.
+Account Warmer Module - Local-First AI
+Handles WhatsApp account warming through simulated conversations using local phrases and Unified AI.
 """
 
 import time
 import random
 from pathlib import Path
-from .ai_client import AzureAIClient
 
 
 class AccountWarmer:
     """
-    Handles WhatsApp account warming operations using Azure AI Foundry.
+    Handles WhatsApp account warming operations using local Arabic memory.
     """
 
-    def __init__(self, ai_client: AzureAIClient = None):
+    def __init__(self, ai_client=None):
         """Initialize the AccountWarmer with local Arabic phrases."""
-        self.ai = ai_client or AzureAIClient()
+        self.ai = ai_client
         self.is_running = False
         self.phrases = self._load_local_phrases()
 

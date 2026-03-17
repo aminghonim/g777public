@@ -113,16 +113,16 @@ You must output a JSON object ONLY, with the following schema:
             "primary_model": model_name,
             "provider": "gemini",  # Default assumption
             "max_tokens": 1024,
-            "alternatives": ["claude", "azure"]
+            "alternatives": ["claude"]
         }
 
         # Specific model overrides
         if "pro" in model_name:
             strategy["max_tokens"] = 8192
-            # Prefer Azure for complex reasoning tasks
-            strategy["alternatives"] = ["azure", "claude"]
+            # Prefer Claude as fallback for complex reasoning tasks
+            strategy["alternatives"] = ["claude"]
         elif "lite" in model_name or "flash" in model_name:
             strategy["max_tokens"] = 2048
-            strategy["alternatives"] = ["claude", "azure"]
+            strategy["alternatives"] = ["claude"]
 
         return strategy

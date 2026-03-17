@@ -10,14 +10,14 @@ import asyncio
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # pylint: disable=wrong-import-position
-from backend.ai_client import AzureAIClient
+from backend.ai_client import UnifiedAIClient
 
 async def generate_offline_warmer_data(count: int = 50):
     """
-    Generate phrases via Azure AI Client.
+    Generate phrases via the Intelligent AI Client.
     """
     print(f"Generating {count} Egyptian Arabic casual phrases for Warmer...")
-    ai = AzureAIClient()
+    ai = UnifiedAIClient()
     prompt = (
         f"قم بتوليد {count} رسالة قصيرة (3-7 كلمات) تصلح لبدء محادثة أو الرد العشوائي بين أصدقاء مصريين على واتساب.\n"  # pylint: disable=line-too-long
         "الرسائل يجب أن تكون عامية مصرية طبيعية جداً، ولا تبدو كأنها من بوت.\n"
