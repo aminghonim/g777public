@@ -55,6 +55,15 @@ reviews:
     - "!frontend_flutter/linux/**"
     - "!frontend_flutter/assets/**"
     
+    # ❌ IGNORE: Deleted/Obsolete Features (To reduce file count for review)
+    - "!frontend_flutter/lib/features/maps_extractor/**"
+    - "!frontend_flutter/lib/features/members_grabber/**"
+    - "!frontend_flutter/lib/features/links_grabber/**"
+    - "!frontend_flutter/lib/features/poll_sender/**"
+    - "!frontend_flutter/lib/features/status_saver/**"
+    - "!frontend_flutter/lib/l10n/**"
+    - "!backend/market_intelligence/sources/maps_extractor.py"
+    
     # ✅ FOCUS: Implicitly, everything else is included:
     # - backend/**/*.py
     # - frontend_flutter/lib/**/*.dart
