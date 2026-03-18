@@ -1,28 +1,28 @@
 {
   "mcpServers": {
     "antigravity-core": {
-      "command": "/home/g777/MYCOMPUTER/work/2/venv/bin/python3",
+      "command": "/home/g777/MYCOMPUTER/work/2/.venv/bin/python3",
       "args": ["/home/g777/MYCOMPUTER/work/2/backend/mcp_server/mcp_core.py"],
       "env": {
         "PYTHONPATH": "/home/g777/MYCOMPUTER/work/2"
       }
     },
     "chrome-devtools": {
-      "command": "/home/g777/MYCOMPUTER/work/2/venv/bin/python3",
+      "command": "/home/g777/MYCOMPUTER/work/2/.venv/bin/python3",
       "args": ["/home/g777/MYCOMPUTER/work/2/backend/mcp_server/browser.py"],
       "env": {
         "PYTHONPATH": "/home/g777/MYCOMPUTER/work/2"
       }
     },
     "filesystem": {
-      "command": "/home/g777/MYCOMPUTER/work/2/venv/bin/python3",
+      "command": "/home/g777/MYCOMPUTER/work/2/.venv/bin/python3",
       "args": ["/home/g777/MYCOMPUTER/work/2/backend/mcp_server/filesystem.py"],
       "env": {
         "PYTHONPATH": "/home/g777/MYCOMPUTER/work/2"
       }
     },
     "GitKraken": {
-      "command": "/home/g777/MYCOMPUTER/work/2/venv/bin/python3",
+      "command": "/home/g777/MYCOMPUTER/work/2/.venv/bin/python3",
       "args": ["/home/g777/MYCOMPUTER/work/2/backend/mcp_server/git_tools.py"],
       "env": {
         "PYTHONPATH": "/home/g777/MYCOMPUTER/work/2"
