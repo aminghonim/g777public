@@ -5,18 +5,23 @@ Modular, secure database connector with upsert operations
 and flexible metadata support.
 """
 
-import os
+# Standard library
 import json
 import logging
-from typing import Dict, Any, Optional, List
+import os
+import uuid
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+# Third-party
 import psycopg2
-from psycopg2.extras import RealDictCursor, Json
-from psycopg2 import pool
 from dotenv import load_dotenv
+from psycopg2 import pool
+from psycopg2.extras import Json, RealDictCursor
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
 
 class DatabaseManager:
     """Handles all database operations for G777 CRM"""
@@ -30,7 +35,7 @@ class DatabaseManager:
         if self.database_url.startswith("sqlite") or self.database_url.startswith(
             "mock"
         ):
-            print(" Running in DATABASE MOCK MODE (No actual DB connection)")
+            logger.info("Running in DATABASE MOCK MODE (No actual DB connection)")
             self.pool = None
             return
 
@@ -39,9 +44,9 @@ class DatabaseManager:
             self.pool = pool.ThreadedConnectionPool(
                 minconn=1, maxconn=20, dsn=self.database_url
             )
-            print("[OK] Threaded Database pool created successfully")
-        except Exception as e:
-            print(f"[ERROR] Database connection failed: {e}")
+            logger.info("Threaded Database pool created successfully")
+        except psycopg2.Error as e:
+            logger.error("Database connection failed: %s", e)
             raise
 
     def get_connection(self):
@@ -70,6 +75,9 @@ class DatabaseManager:
         if self.pool is None:
             return "mock-customer-id"
         conn = self.get_connection()
+        if not conn:
+            logger.warning("Failed to obtain database connection from pool")
+            return "mock-customer-id"
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 # 1. Scope search strictly to user_id
@@ -81,7 +89,7 @@ class DatabaseManager:
 
                 if existing:
                     customer_id = existing["id"]
-                    update_data = {"last_conversation_at": datetime.now()}
+                    update_data = {"last_conversation_at": datetime.now(timezone.utc)}
                     if name:
                         update_data["name"] = name
                     if metadata:
@@ -110,9 +118,9 @@ class DatabaseManager:
                 conn.commit()
                 return str(customer_id)
 
-        except Exception as e:
+        except psycopg2.Error as e:
             conn.rollback()
-            print(f"Error in upsert_customer: {e}")
+            logger.error("Error in upsert_customer: %s", e)
             raise
         finally:
             self.release_connection(conn)
@@ -126,6 +134,9 @@ class DatabaseManager:
         if self.pool is None:
             return "mock-interaction-id"
         conn = self.get_connection()
+        if not conn:
+            logger.warning("Failed to obtain database connection from pool")
+            return "mock-interaction-id"
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
@@ -144,9 +155,9 @@ class DatabaseManager:
                 result = cursor.fetchone()
                 conn.commit()
                 return str(result["id"])
-        except Exception as e:
+        except psycopg2.Error as e:
             conn.rollback()
-            print(f"Error in save_interaction: {e}")
+            logger.error("Error in save_interaction: %s", e)
             raise
         finally:
             self.release_connection(conn)
@@ -165,6 +176,9 @@ class DatabaseManager:
         if self.pool is None:
             return "mock-analytics-id"
         conn = self.get_connection()
+        if not conn:
+            logger.warning("Failed to obtain database connection from pool")
+            return "mock-analytics-id"
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
@@ -184,9 +198,9 @@ class DatabaseManager:
                 result = cursor.fetchone()
                 conn.commit()
                 return str(result["id"])
-        except Exception as e:
+        except psycopg2.Error as e:
             conn.rollback()
-            print(f"Error in save_analytics: {e}")
+            logger.error("Error in save_analytics: %s", e)
             raise
         finally:
             self.release_connection(conn)
@@ -198,6 +212,8 @@ class DatabaseManager:
         if self.pool is None:
             return None
         conn = self.get_connection()
+        if not conn:
+            return None
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
@@ -207,7 +223,8 @@ class DatabaseManager:
                 result = cursor.fetchone()
                 return dict(result) if result else None
         finally:
-            self.release_connection(conn)
+            if conn:
+                self.release_connection(conn)
 
     def get_customer_interactions(
         self, customer_id: str, user_id: str, limit: int = 50
@@ -218,6 +235,8 @@ class DatabaseManager:
         if self.pool is None:
             return []
         conn = self.get_connection()
+        if not conn:
+            return []
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
@@ -233,13 +252,16 @@ class DatabaseManager:
                 )
                 return [dict(row) for row in cursor.fetchall()]
         finally:
-            self.release_connection(conn)
+            if conn:
+                self.release_connection(conn)
 
     def get_customers_by_user(self, user_id: str, limit: int = 100) -> List[Dict]:
         """SaaS-first: Get all customers scoped to a specific user_id."""
         if self.pool is None:
             return []
         conn = self.get_connection()
+        if not conn:
+            return []
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
@@ -257,10 +279,7 @@ class DatabaseManager:
             self.release_connection(conn)
 
     def get_user_quota_info(self, user_id: str) -> Dict[str, Any]:
-        """
-        SAAS-013: High-Performance Quota Retrieval.
-        Returns combined tier limits and current daily usage.
-        """
+        """SAAS-008: Get usage quota strictly for the target tenant."""
         if self.pool is None:
             return {
                 "daily_limit": 1000,
@@ -268,12 +287,23 @@ class DatabaseManager:
                 "max_instances": 1,
                 "instance_count": 0,
             }
-
         conn = self.get_connection()
+        if not conn:
+            return {
+                "daily_limit": 1000,
+                "message_count": 0,
+                "max_instances": 1,
+                "instance_count": 0,
+            }
+        if not conn:
+            return {
+                "daily_limit": 1000,
+                "message_count": 0,
+                "max_instances": 1,
+                "instance_count": 0,
+            }
         try:
             # Validate UUID syntax to avoid PostgreSQL errors (InvalidTextRepresentation)
-            import uuid
-
             try:
                 # If it's a dev string like 'dev_master_007', we treat it as a guest or return default
                 # to prevent breaking the SQL query which expects a UUID format.
@@ -336,17 +366,19 @@ class DatabaseManager:
                     (user_id,),
                 )
                 conn.commit()
-        except Exception as e:
+        except psycopg2.Error as e:
             conn.rollback()
-            print(f"Error incrementing quota: {e}")
+            logger.error("Error incrementing quota: %s", e)
         finally:
             self.release_connection(conn)
 
     def decrement_instance_usage(self, user_id: str) -> None:
-        """SAAS-013: Atomic decrement for active instances."""
-        if self.pool is None or user_id == "guest_local" or not user_id:
+        """SAAS-008: Decrement active instances for user_id."""
+        if self.pool is None or user_id in ["guest_user", "dev_account"]:
             return
         conn = self.get_connection()
+        if not conn:
+            return
         try:
             with conn.cursor() as cursor:
                 cursor.execute(
@@ -361,12 +393,18 @@ class DatabaseManager:
         finally:
             self.release_connection(conn)
 
-    def get_interactions_by_user(self, user_id: str, limit: int = 200) -> List[Dict]:
-        """SaaS-first: Get all interactions scoped to a specific user_id."""
+    def get_interactions_by_user(self, user_id: str, limit: int = 100) -> List[Dict]:
+        """SaaS-scoped: Get all messages for all customers belonging to user_id."""
         if self.pool is None:
             return []
         conn = self.get_connection()
+        if not conn:
+            logger.warning("Failed to obtain database connection from pool")
+            return []
         try:
+            if not conn:
+                logger.warning("Failed to obtain database connection from pool")
+                return []
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
                     """
@@ -390,8 +428,9 @@ class DatabaseManager:
         """
         if self.pool is None:
             return {}
-
         conn = self.get_connection()
+        if not conn:
+            return {}
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 # 1. Total Messages Sent (Lifetime)
@@ -451,11 +490,11 @@ class DatabaseManager:
         finally:
             self.release_connection(conn)
 
-    def close(self):
+    def close(self) -> None:
         """Close all connections"""
         if self.pool:
             self.pool.closeall()
-            print("[OK] Database pool closed")
+            logger.info("Database pool closed")
 
     # ----------------------------
     # User management helpers
@@ -473,6 +512,8 @@ class DatabaseManager:
     def _ensure_error_log_table(self):
         """Create critical_errors table for persistent error logging (Pitfall 4)."""
         conn = self.get_connection()
+        if not conn:
+            return
         try:
             with conn.cursor() as cursor:
                 cursor.execute(
@@ -492,11 +533,9 @@ class DatabaseManager:
                     """
                 )
                 conn.commit()
-        except Exception as e:
+        except psycopg2.Error as e:
             conn.rollback()
-            logging.getLogger(__name__).warning(
-                f"Error log table migration failed: {e}"
-            )
+            logger.warning("Error log table migration failed: %s", e)
         finally:
             self.release_connection(conn)
 
@@ -656,8 +695,8 @@ class DatabaseManager:
                         """
                     )
                 conn.commit()
-        except Exception as e:
-            print(f"[WARN] Migration failed: {e}")
+        except psycopg2.Error as e:
+            logger.warning("Migration failed: %s", e)
         finally:
             self.release_connection(conn)
 
@@ -771,6 +810,9 @@ class DatabaseManager:
 # Singleton instance
 try:
     db_manager = DatabaseManager()
-except Exception as e:
-    print(f"[WARNING] Could not initialize DatabaseManager: {e}")
+except psycopg2.Error as e:
+    logger.warning("Could not initialize DatabaseManager: %s", e)
+    db_manager = None
+except ValueError as e:
+    logger.error("Invalid database configuration: %s", e)
     db_manager = None

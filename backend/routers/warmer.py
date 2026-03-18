@@ -7,8 +7,8 @@ Ensures data isolation via user_id from JWT.
 import asyncio
 import logging
 import random
-from typing import Dict, Any, List
-from datetime import datetime, timedelta
+from typing import Dict, Any, List, Optional
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -105,7 +105,7 @@ async def create_warmer_config(
 
 @router.get("/configs", response_model=List[WarmerConfigResponse])
 async def get_warmer_configs(
-    is_active: bool = None,
+    is_active: Optional[bool] = None,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ) -> List[WarmerConfigResponse]:
     """
@@ -182,7 +182,7 @@ async def start_warmer(
             "status": "started",
             "config_id": request.config_id,
             "message": "Warmer automation started",
-            "started_at": datetime.utcnow().isoformat(),
+            "started_at": datetime.now(timezone.utc).isoformat(),
         }
 
     except HTTPException:
@@ -239,13 +239,13 @@ async def stop_warmer(
             if not task.done():
                 task.cancel()
                 logger.info(f"Stopped warmer task for {task_key}")
-            del _active_warmers[task_key]
+            _active_warmers.pop(task_key, None)
 
         return {
             "status": "stopped",
             "config_id": request.config_id,
             "message": "Warmer automation stopped",
-            "stopped_at": datetime.utcnow().isoformat(),
+            "stopped_at": datetime.now(timezone.utc).isoformat(),
         }
 
     except HTTPException:
@@ -322,12 +322,12 @@ async def _warmer_loop(user_id: str, config_id: str, config: Dict) -> None:
 
     try:
         sent_today = 0
-        reset_time = datetime.utcnow().replace(hour=0, minute=0, second=0) + timedelta(days=1)
+        reset_time = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0) + timedelta(days=1)
 
         while True:
             # Check if we've exceeded daily limit
             if sent_today >= message_limit:
-                seconds_until_reset = (reset_time - datetime.utcnow()).total_seconds()
+                seconds_until_reset = (reset_time - datetime.now(timezone.utc)).total_seconds()
                 if seconds_until_reset > 0:
                     logger.info(
                         f"Daily limit reached for {user_id}. "
@@ -336,7 +336,7 @@ async def _warmer_loop(user_id: str, config_id: str, config: Dict) -> None:
                     await asyncio.sleep(min(seconds_until_reset, delay_interval))
                     # Reset counter
                     sent_today = 0
-                    reset_time = datetime.utcnow().replace(hour=0, minute=0, second=0) + timedelta(days=1)
+                    reset_time = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0) + timedelta(days=1)
                     continue
 
             # Fetch queued messages for this warmer config

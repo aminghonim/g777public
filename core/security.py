@@ -1,3 +1,4 @@
+import logging
 import socket
 import uuid
 import json
@@ -8,7 +9,10 @@ from core.config import settings
 
 # JWT configuration
 from jose import jwt, JWTError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Dict, Set, Optional, Any
+
+logger = logging.getLogger(__name__)
 
 
 class SecurityEngine:
@@ -25,34 +29,34 @@ class SecurityEngine:
     )  # Security: Reduced to 60 Minutes (ASVS V3.2.1)
 
     # In-memory Token Blocklist (for ASVS V7.4.1 Session Revocation)
-    _token_blocklist = set()
+    _token_blocklist: Set[str] = set()
 
     @classmethod
-    def revoke_token(cls, jti: str):
+    def revoke_token(cls, jti: str) -> None:
         """Adds a JWT ID to the blocklist."""
         if jti:
             cls._token_blocklist.add(jti)
 
     # ASVS V6.1.1 & V6.3.1: Brute Force & Credential Stuffing Protection
-    _failed_logins = (
-        {}
-    )  # Format: {"ip_or_user": {"count": int, "lockout_until": datetime}}
+    _failed_logins: Dict[str, Dict[str, Any]] = {}  # Format: {"ip_or_user": {"count": int, "lockout_until": datetime}}
     MAX_FAILED_ATTEMPTS = 5
     LOCKOUT_DURATION_MINUTES = 15
 
     @classmethod
-    def check_rate_limit(cls, identifier: str):
+    def check_rate_limit(cls, identifier: str) -> None:
         """Checks if a user/IP is currently locked out."""
         record = cls._failed_logins.get(identifier)
         if not record:
             return
 
-        if record["count"] >= cls.MAX_FAILED_ATTEMPTS:
-            if datetime.utcnow() < record["lockout_until"]:
-                mins_left = int(
-                    (record["lockout_until"] - datetime.utcnow()).total_seconds() / 60
-                )
-                raise Exception(
+        count = record.get("count", 0)
+        lockout_until = record.get("lockout_until", datetime.now(timezone.utc))
+
+        if count >= cls.MAX_FAILED_ATTEMPTS:
+            now = datetime.now(timezone.utc)
+            if now < lockout_until:
+                mins_left = int((lockout_until - now).total_seconds() / 60)
+                raise RuntimeError(
                     f"Account locked due to multiple failed attempts. Try again in {max(1, mins_left)} minutes."
                 )
             else:
@@ -60,23 +64,21 @@ class SecurityEngine:
                 cls.clear_login_attempts(identifier)
 
     @classmethod
-    def record_failed_login(cls, identifier: str):
+    def record_failed_login(cls, identifier: str) -> None:
         """Records a failed login attempt for an identifier."""
-        record = cls._failed_logins.get(
-            identifier, {"count": 0, "lockout_until": datetime.utcnow()}
-        )
+        now = datetime.now(timezone.utc)
+        record = cls._failed_logins.get(identifier, {"count": 0, "lockout_until": now})
+        
         record["count"] += 1
         if record["count"] >= cls.MAX_FAILED_ATTEMPTS:
-            record["lockout_until"] = datetime.utcnow() + timedelta(
-                minutes=cls.LOCKOUT_DURATION_MINUTES
-            )
+            record["lockout_until"] = now + timedelta(minutes=cls.LOCKOUT_DURATION_MINUTES)
+            
         cls._failed_logins[identifier] = record
 
     @classmethod
-    def clear_login_attempts(cls, identifier: str):
+    def clear_login_attempts(cls, identifier: str) -> None:
         """Clears failed login attempts after a successful login."""
-        if identifier in cls._failed_logins:
-            del cls._failed_logins[identifier]
+        cls._failed_logins.pop(identifier, None)
 
     @staticmethod
     def find_free_port():
@@ -108,21 +110,21 @@ class SecurityEngine:
             # bcrypt.checkpw expects (password_bytes, hashed_bytes)
             return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
         except Exception as e:
-            print(f"[ERROR] Password verification error: {e}")
+            logger.error("Password verification error: %s", e)
             return False
 
     # ---------------------
     # JWT helpers
     # ---------------------
     @classmethod
-    def create_access_token(cls, data: dict, expires_delta: timedelta = None) -> str:
+    def create_access_token(cls, data: dict, expires_delta: Optional[timedelta] = None) -> str:
         to_encode = data.copy()
-        expire = datetime.utcnow() + (
+        expire = datetime.now(timezone.utc) + (
             expires_delta or timedelta(minutes=cls.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
         # SAAS-006 & V7.4.1: Inject a unique `jti` for revocation
         to_encode.update(
-            {"exp": expire, "iat": datetime.utcnow(), "jti": str(uuid.uuid4())}
+            {"exp": expire, "iat": datetime.now(timezone.utc), "jti": str(uuid.uuid4())}
         )
         encoded = jwt.encode(to_encode, cls.SECRET_KEY, algorithm=cls.ALGORITHM)
         return encoded
@@ -140,7 +142,7 @@ class SecurityEngine:
 
             # SAAS-006: Strict validation of tenant isolation claims
             if "sub" not in payload or "instance_name" not in payload:
-                print(f"[ERROR] Token missing claims: {payload.keys()}")
+                logger.error("Token missing claims: %s", list(payload.keys()))
                 raise JWTError("Invalid token: Missing tenant identification")
 
             return payload
@@ -170,8 +172,8 @@ class SecurityEngine:
         with open(lock_file, "w") as f:
             json.dump(session_data, f)
 
-        print(f"[SECURE] Session file created at: {lock_file.absolute()}")
-        print(f"[SECURE] Session established on port {port}")
+        logger.info("Session file created at: %s", lock_file.absolute())
+        logger.info("Session established on port %s", port)
         return session_data
 
     @classmethod
@@ -180,7 +182,7 @@ class SecurityEngine:
         lock_file = Path(settings.security.temp_dir) / settings.security.session_file
         if lock_file.exists():
             lock_file.unlink()
-            print("[SECURE] Session lock cleaned up.")
+            logger.info("Session lock cleaned up.")
 
     @staticmethod
     def get_current_session():

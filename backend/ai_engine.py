@@ -92,15 +92,20 @@ class AIEngine:
         return val if isinstance(val, str) else default
 
     def _load_instructions(self) -> Dict[str, Any]:
-        """Load AI instructions from YAML config"""
+        """Load AI instructions from consolidated root config.yaml"""
         try:
             config_path = os.path.join(
-                os.path.dirname(__file__), "..", "config", "ai_instructions.yaml"
+                os.path.dirname(__file__), "..", "config.yaml"
             )
+            if not os.path.exists(config_path):
+                logger.warning(f"Consolidated config not found at {config_path}")
+                return {}
+                
             with open(config_path, "r", encoding="utf-8") as f:
-                return yaml.safe_load(f)
+                full_config = yaml.safe_load(f)
+                return full_config.get("ai_instructions", {})
         except Exception as e:
-            print(f"Warning: Could not load AI instructions: {e}")
+            logger.error(f"Failed to load AI instructions from {config_path}: {e}")
             return {}
 
     def _get_settings(self):
