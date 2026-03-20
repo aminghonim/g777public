@@ -1,4 +1,4 @@
-﻿"""
+"""
 WhatsApp Group Finder - FACEBOOK HUNTER EDITION (Selenium Based)
 Method: Real Browser Automation (Undetected Chrome)
 Target: Facebook Public Posts & Groups via Google Cache
@@ -90,7 +90,7 @@ class GroupFinder:
                 self.driver.current_url
                 return
             except:
-                print(
+                self.logger.info(
                     t(
                         "hunter.logs.launching",
                         "    Browser disconnected. Restarting...",
@@ -98,17 +98,17 @@ class GroupFinder:
                 )
                 self.driver = None
 
-        print(t("hunter.logs.launching", " [System] Launching Hunter Browser..."))
+        self.logger.info(t("hunter.logs.launching", " [System] Launching Hunter Browser..."))
         try:
             browser = WhatsAppBrowser(headless=False)
             self.driver = browser.initialize_driver()
         except Exception as e:
-            print(
+            self.logger.error(
                 t(
                     "hunter.logs.launch_failed", "    Failed to launch browser: {err}"
                 ).format(err=e)
             )
-            print(
+            self.logger.info(
                 t(
                     "hunter.logs.browser_tip",
                     "   🔧 Tip: Close all Chrome windows and try again.",
@@ -158,7 +158,7 @@ class GroupFinder:
 
         # Broaden the search query slightly to catch more results
         search_term = f'site:facebook.com "chat.whatsapp.com" {keyword} {country}'
-        print(
+        self.logger.info(
             t("hunter.logs.hunting", "🕵️‍♂️ [Hunter] Hunting for: {kw}...").format(
                 kw=keyword
             )
@@ -172,7 +172,7 @@ class GroupFinder:
             time.sleep(random.uniform(2, 4))
 
             # IMPORTANT: Wait for user to solve CAPTCHA or login if needed
-            print(
+            self.logger.info(
                 t(
                     "hunter.logs.ready_wait",
                     "[Hunter] Browser ready. You have 15 seconds to solve CAPTCHA or login...",
@@ -195,7 +195,7 @@ class GroupFinder:
                     el = self.driver.find_element(By.CSS_SELECTOR, selector)
                     if el.is_displayed() and el.is_enabled():
                         search_box = el
-                        print(
+                        self.logger.info(
                             t(
                                 "hunter.logs.found_box",
                                 "       Found search box: {sel}",
@@ -209,14 +209,14 @@ class GroupFinder:
                 # Last resort: active element
                 try:
                     search_box = self.driver.switch_to.active_element
-                    print(
+                    self.logger.info(
                         t(
                             "hunter.logs.using_active",
                             "       Using active element as search box",
                         )
                     )
                 except:
-                    print(
+                    self.logger.warning(
                         t(
                             "hunter.logs.box_not_found",
                             "       Search box not found. Skipping...",
@@ -232,7 +232,7 @@ class GroupFinder:
             # 3. Process Pages
             max_pages = 2  # Focus on quality pages
             for page in range(max_pages):
-                print(
+                self.logger.info(
                     t(
                         "hunter.logs.scanning_page",
                         "    Scanning Page {curr}/{total}...",
@@ -244,7 +244,7 @@ class GroupFinder:
                         EC.presence_of_element_located((By.ID, "search"))
                     )
                 except:
-                    print(
+                    self.logger.warning(
                         t("hunter.logs.timeout", "       Timeout waiting for results.")
                     )
                     break
@@ -258,7 +258,7 @@ class GroupFinder:
                         if link not in self.found_links:
                             self.found_links.add(link)
                             new_links.append(link)
-                            print(
+                            self.logger.info(
                                 t(
                                     "hunter.logs.found_box", "       Snippet: {link}"
                                 ).format(link=link[:40])
@@ -267,7 +267,7 @@ class GroupFinder:
                     pass
 
                 # B. DEEP HUNT (Visit Facebook Pages)
-                print(t("hunter.logs.deep_hunt_start", "      🕷️ Starting Deep Hunt..."))
+                self.logger.info(t("hunter.logs.deep_hunt_start", "      🕷️ Starting Deep Hunt..."))
 
                 # Robust XPath to find Facebook links
                 try:
@@ -283,7 +283,7 @@ class GroupFinder:
 
                     # Remove duplicates and limit
                     fb_urls = list(dict.fromkeys(fb_urls))
-                    print(
+                    self.logger.info(
                         t(
                             "hunter.logs.found_pages",
                             "      🎯 Found {count} potential Facebook pages.",
@@ -317,7 +317,7 @@ class GroupFinder:
                                     found_here += 1
 
                             if found_here > 0:
-                                print(
+                                self.logger.info(
                                     t(
                                         "hunter.logs.deep_hunt_result",
                                         "      💎 Deep Hunt [{idx}]: Found {count} links!",
@@ -329,7 +329,6 @@ class GroupFinder:
                             self.driver.switch_to.window(original_window)
 
                         except Exception as e:
-                            # print(f"       Deep Hunt Error: {e}")
                             try:
                                 if len(self.driver.window_handles) > 1:
                                     self.driver.close()
@@ -338,7 +337,7 @@ class GroupFinder:
                                 pass
 
                 except Exception as e:
-                    print(f"       Deep Hunt Loop Error: {e}")
+                    self.logger.error(f"       Deep Hunt Loop Error: {e}")
 
                 # C. Next Google Page
                 try:
@@ -346,7 +345,7 @@ class GroupFinder:
                     if next_btn:
                         next_btn[0].click()
                         delay = random.uniform(8, 12)
-                        print(
+                        self.logger.info(
                             t(
                                 "hunter.logs.waiting_google",
                                 "    Waiting {sec}s for Google...",
@@ -354,13 +353,13 @@ class GroupFinder:
                         )
                         time.sleep(delay)
                     else:
-                        print(t("hunter.logs.no_more_pages", "   ⏹️ No more pages."))
+                        self.logger.info(t("hunter.logs.no_more_pages", "   ⏹️ No more pages."))
                         break
                 except:
                     break
 
         except Exception as e:
-            print(
+            self.logger.error(
                 t("hunter.logs.launch_failed", "    Search Error: {err}").format(err=e)
             )
 
@@ -379,7 +378,7 @@ class GroupFinder:
         if not links:
             return []
 
-        print(
+        self.logger.info(
             t("hunter.logs.validating", "\n🔍 Validating {count} links...").format(
                 count=len(links)
             )
@@ -390,7 +389,7 @@ class GroupFinder:
                 valid.append(link)
             time.sleep(0.1)
 
-        print(
+        self.logger.info(
             t(
                 "hunter.logs.validation_complete", " Final Validated: {count} groups."
             ).format(count=len(valid))
@@ -404,10 +403,10 @@ class GroupFinder:
         if isinstance(keywords, str):
             keywords = [keywords]
 
-        print("\n" + "=" * 60)
-        print(" FACEBOOK GROUP HUNTER (Auto-Healing)")
-        print("=" * 60)
-        print(f" Target: {max_links} groups maximum")
+        self.logger.info("\n" + "=" * 60)
+        self.logger.info(" FACEBOOK GROUP HUNTER (Auto-Healing)")
+        self.logger.info("=" * 60)
+        self.logger.info(f" Target: {max_links} groups maximum")
 
         all_results = []
 
@@ -420,9 +419,9 @@ class GroupFinder:
             time.sleep(2)
 
         unique_links = list(set(all_results))
-        print(
-            t("hunter.logs.total_raw", "\n🎯 Total Raw Links: {count}").format(
-                count=len(unique_links)
+        self.logger.info(
+            t("hunter.logs.searching", "🔍 Searching for {keywords} in {country}...").format(
+                keywords=", ".join(keywords), country=country
             )
         )
 
@@ -579,11 +578,13 @@ class GroupFinder:
         with open(filename, "w", encoding="utf-8") as f:
             for l in links:
                 f.write(l + "\n")
-        print(t("hunter.logs.saved_to", "💾 Saved to {path}").format(path=filename))
-
+        self.logger.info(t("hunter.logs.saved_to", "💾 Saved to {path}").format(path=filename))
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
     # Test
     finder = GroupFinder()
+    logger.info("Starting GroupFinder Test...")
     links = finder.find_groups(["ملابس جملة", "مكتب ملابس"], country="القاهرة")
     finder.save(links)
