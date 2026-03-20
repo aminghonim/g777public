@@ -64,4 +64,4 @@ if __name__ == "__main__":
     meta = MetaProgrammer()
     # Self-analyze this file
     meta.analyze_module(__file__)
-    print(meta.propose_tool("Parse Python AST", "ast.parse(code)"))
+    logger.info(meta.propose_tool("Parse Python AST", "ast.parse(code)"))

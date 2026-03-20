@@ -1,7 +1,11 @@
 import yaml
+import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 class NicheConfigModel(BaseModel):
     niche: str = "general"
@@ -36,7 +40,7 @@ class ConfigLoader:
                 data = yaml.safe_load(f) or {}
                 self._config = NicheConfigModel(**data)
         except Exception as e:
-            print(f"[MarketIntelligence] Error loading config: {e}")
+            logger.error(f"Error loading niche config: {e}")
             # Fallback to default
             self._config = NicheConfigModel()
             
