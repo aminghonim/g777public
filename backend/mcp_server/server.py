@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import os
 import asyncio
 from typing import Optional
@@ -59,8 +59,12 @@ async def get_recent_logs(count: int = 10) -> str:
     """
     return "Logs functionality not fully linked to database yet."
 
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
+
 if __name__ == "__main__":
     # تشغيل الخادم
-    print(f" Starting Antigravity MCP Server...", file=sys.stderr)
+    logger.info("Starting Antigravity MCP Server...")
     mcp.run()
-

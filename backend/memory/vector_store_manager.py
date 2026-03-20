@@ -15,7 +15,9 @@ class VectorStoreManager:
     Manages the persistent ChromaDB vector store for the CNS.
     """
 
-    def __init__(self, persistence_path: str = "./data/chroma_db"):
+    def __init__(self, persistence_path: Optional[str] = None):
+        if not persistence_path:
+            persistence_path = os.getenv("CHROMA_DB_PATH", "./data/chroma_db")
         self.persistence_path = persistence_path
 
         # Ensure the data directory exists
@@ -37,7 +39,7 @@ class VectorStoreManager:
         collection_name: str,
         document: str,
         metadata: Dict[str, Any],
-        id: str = None,
+        id: Optional[str] = None,
     ):
         """
         Adds a memory (document) to the specified collection.
@@ -95,11 +97,9 @@ if __name__ == "__main__":
     )
 
     # Search for it
-    print(f"\nSearching for 'file path preference'...")
-    results = vs.search_memory(
-        "test_memories", "What does the user prefer for file paths?"
-    )
-    print(f"Results: {results}")
+    logger.info(f"Searching for 'file path preference'...")
+    results = vs.search_memory(collection_name="test_memories", query="file path preference")
+    logger.info(f"Results: {results}")
 
     # Cleanup
     if test_id:
