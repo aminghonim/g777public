@@ -1,9 +1,9 @@
-"""
+\"\"\"
 G777 Database Manager - Supabase PostgreSQL Integration
 ========================================================
 Modular, secure database connector with upsert operations
 and flexible metadata support.
-"""
+\"\"\"
 
 import json
 import logging
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseManager:
-    """Handles all database operations for G777 CRM"""
+    \"\"\"Handles all database operations for G777 CRM\"\"\"
 
     def __init__(self) -> None:
         # Configuration from core settings
@@ -50,7 +50,7 @@ class DatabaseManager:
             self._init_mock_db()
 
     def _init_mock_db(self) -> None:
-        """Initialize in-memory SQLite for testing/mocking"""
+        \"\"\"Initialize in-memory SQLite for testing/mocking\"\"\"
         import sqlite3
         self.mock_conn = sqlite3.connect(":memory:", check_same_thread=False)
         self.mock_conn.row_factory = sqlite3.Row
@@ -63,14 +63,14 @@ class DatabaseManager:
         
         # Seed a test prompt
         cursor.execute(
-            "INSERT INTO system_prompts (id, prompt_name, prompt_text, is_active) VALUES (?, ?, ?, ?)",
-            (str(uuid.uuid4()), "entity_extractor", "Extract entities from: {conversation}", True)
+            \"INSERT INTO system_prompts (id, prompt_name, prompt_text, is_active) VALUES (?, ?, ?, ?)\",
+            (str(uuid.uuid4()), \"entity_extractor\", \"Extract entities from: {conversation}\", True)
         )
         self.mock_conn.commit()
-        logger.info("Mock SQLite DB initialized with test schema.")
+        logger.info(\"Mock SQLite DB initialized with test schema.\")
 
     def get_connection(self):
-        """Get a connection from the pool or return mock connection"""
+        \"\"\"Get a connection from the pool or return mock connection\"\"\"
         if self.is_mock:
             return self.mock_conn
         if self.pool is None:
@@ -78,11 +78,11 @@ class DatabaseManager:
         try:
             return self.pool.getconn()
         except psycopg2.Error as e:
-            logger.error(f"Failed to get connection from pool: {e}")
+            logger.error(f\"Failed to get connection from pool: {e}\")
             return None
 
     def release_connection(self, conn) -> None:
-        """Return connection to pool (NOP for mock)"""
+        \"\"\"Return connection to pool (NOP for mock)\"\"\"
         if self.is_mock or self.pool is None or conn is None:
             return
         self.pool.putconn(conn)
@@ -94,65 +94,65 @@ class DatabaseManager:
         name: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """
+        \"\"\"
         SAAS-008: Isolated Customer Upsert.
         Strictly requires user_id for tenant separation.
-        """
+        \"\"\"
         if self.is_mock:
             cursor = self.mock_conn.cursor()
             cursor.execute(
-                "SELECT id, metadata FROM customers WHERE phone = ? AND user_id = ?",
+                \"SELECT id, metadata FROM customers WHERE phone = ? AND user_id = ?\",
                 (phone, user_id),
             )
             existing = cursor.fetchone()
 
             if existing:
-                customer_id = existing["id"]
-                current_meta = json.loads(existing["metadata"]) if existing["metadata"] else {}
+                customer_id = existing[\"id\"]
+                current_meta = json.loads(existing[\"metadata\"]) if existing[\"metadata\"] else {}
                 merged_meta = {**current_meta, **(metadata or {})}
                 cursor.execute(
-                    "UPDATE customers SET name = COALESCE(?, name), metadata = ?, last_interaction = ? WHERE id = ?",
+                    \"UPDATE customers SET name = COALESCE(?, name), metadata = ?, last_interaction = ? WHERE id = ?\",
                     (name, json.dumps(merged_meta), datetime.now(timezone.utc).isoformat(), customer_id),
                 )
             else:
                 customer_id = str(uuid.uuid4())
                 cursor.execute(
-                    "INSERT INTO customers (id, phone, name, metadata, user_id, last_interaction) VALUES (?, ?, ?, ?, ?, ?)",
+                    \"INSERT INTO customers (id, phone, name, metadata, user_id, last_interaction) VALUES (?, ?, ?, ?, ?, ?)\",
                     (customer_id, phone, name, json.dumps(metadata or {}), user_id, datetime.now(timezone.utc).isoformat()),
                 )
             self.mock_conn.commit()
             return customer_id
 
         if self.pool is None:
-            return "mock-customer-id"
+            return \"mock-customer-id\"
         
         conn = self.get_connection()
         if not conn:
-            return "error-no-conn"
+            return \"error-no-conn\"
             
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 # 1. Scope search strictly to user_id
                 cursor.execute(
-                    "SELECT id, metadata FROM customers WHERE phone = %s AND user_id = %s",
+                    \"SELECT id, metadata FROM customers WHERE phone = %s AND user_id = %s\",
                     (phone, user_id),
                 )
                 existing = cursor.fetchone()
 
                 if existing:
-                    customer_id = existing["id"]
-                    update_data: Dict[str, Any] = {"last_interaction": datetime.now(timezone.utc)}
+                    customer_id = existing[\"id\"]
+                    update_data: Dict[str, Any] = {\"last_interaction\": datetime.now(timezone.utc)}
                     if name:
-                        update_data["name"] = name
+                        update_data[\"name\"] = name
                     if metadata:
-                        current_meta = existing.get("metadata", {}) or {}
+                        current_meta = existing.get(\"metadata\", {}) or {}
                         merged_meta = {**current_meta, **metadata}
-                        update_data["metadata"] = Json(merged_meta)
+                        update_data[\"metadata\"] = Json(merged_meta)
 
-                    set_clause = ", ".join([f"{k} = %s" for k in update_data.keys()])
+                    set_clause = \", \".join([f\"{k} = %s\" for k in update_data.keys()])
                     values = list(update_data.values()) + [phone, user_id]
                     cursor.execute(
-                        f"UPDATE customers SET {set_clause} WHERE phone = %s AND user_id = %s",
+                        f\"UPDATE customers SET {set_clause} WHERE phone = %s AND user_id = %s\",
                         values,
                     )
                 else:
@@ -162,17 +162,17 @@ class DatabaseManager:
                         VALUES (%s, %s, %s, %s)
                         RETURNING id
                         \"\"\",
-                        (phone, name, Json(metadata or {}), user_id),
+                        (phone, name, Json(metadata or {})),
                     )
                     result = cursor.fetchone()
-                    customer_id = result["id"] if result else "unknown"
+                    customer_id = result[\"id\"] if result else \"unknown\"
 
                 conn.commit()
                 return str(customer_id)
 
         except psycopg2.Error as e:
             conn.rollback()
-            logger.error(f"Error in upsert_customer: {e}")
+            logger.error(f\"Error in upsert_customer: {e}\")
             raise
         finally:
             self.release_connection(conn)
@@ -187,18 +187,18 @@ class DatabaseManager:
             cursor = self.mock_conn.cursor()
             interaction_id = str(uuid.uuid4())
             cursor.execute(
-                "INSERT INTO interactions (id, customer_id, role, message, user_id) VALUES (?, ?, ?, ?, ?)",
+                \"INSERT INTO interactions (id, customer_id, role, message, user_id) VALUES (?, ?, ?, ?, ?)\",
                 (interaction_id, customer_id, role, message, user_id),
             )
             self.mock_conn.commit()
             return interaction_id
 
         if self.pool is None:
-            return "mock-interaction-id"
+            return \"mock-interaction-id\"
             
         conn = self.get_connection()
         if not conn:
-            return "error-no-conn"
+            return \"error-no-conn\"
             
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -217,10 +217,10 @@ class DatabaseManager:
                 )
                 result = cursor.fetchone()
                 conn.commit()
-                return str(result["id"]) if result else "unknown"
+                return str(result[\"id\"]) if result else \"unknown\"
         except psycopg2.Error as e:
             conn.rollback()
-            logger.error(f"Error in save_interaction: {e}")
+            logger.error(f\"Error in save_interaction: {e}\")
             raise
         finally:
             self.release_connection(conn)
@@ -237,11 +237,11 @@ class DatabaseManager:
         SAAS-008: Saving isolated analytics.
         \"\"\"
         if self.pool is None:
-            return "mock-analytics-id"
+            return \"mock-analytics-id\"
             
         conn = self.get_connection()
         if not conn:
-            return "error-no-conn"
+            return \"error-no-conn\"
             
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -261,10 +261,10 @@ class DatabaseManager:
                 )
                 result = cursor.fetchone()
                 conn.commit()
-                return str(result["id"]) if result else "unknown"
+                return str(result[\"id\"]) if result else \"unknown\"
         except psycopg2.Error as e:
             conn.rollback()
-            logger.error(f"Error in save_analytics: {e}")
+            logger.error(f\"Error in save_analytics: {e}\")
             raise
         finally:
             self.release_connection(conn)
@@ -275,7 +275,7 @@ class DatabaseManager:
         \"\"\"
         if self.is_mock:
             cursor = self.mock_conn.cursor()
-            cursor.execute("SELECT * FROM customers WHERE phone = ? AND user_id = ?", (phone, user_id))
+            cursor.execute(\"SELECT * FROM customers WHERE phone = ? AND user_id = ?\", (phone, user_id))
             row = cursor.fetchone()
             if row:
                 res = dict(row)
@@ -293,7 +293,7 @@ class DatabaseManager:
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
-                    "SELECT * FROM customers WHERE phone = %s AND user_id = %s",
+                    \"SELECT * FROM customers WHERE phone = %s AND user_id = %s\",
                     (phone, user_id),
                 )
                 result = cursor.fetchone()
@@ -310,7 +310,7 @@ class DatabaseManager:
         if self.is_mock:
             cursor = self.mock_conn.cursor()
             cursor.execute(
-                "SELECT role, message, timestamp FROM interactions WHERE customer_id = ? AND user_id = ? ORDER BY timestamp DESC LIMIT ?",
+                \"SELECT role, message, timestamp FROM interactions WHERE customer_id = ? AND user_id = ? ORDER BY timestamp DESC LIMIT ?\",
                 (customer_id, user_id, limit),
             )
             return [dict(row) for row in cursor.fetchall()]
@@ -371,10 +371,10 @@ class DatabaseManager:
         \"\"\"
         if self.pool is None:
             return {
-                "daily_limit": 1000,
-                "message_count": 0,
-                "max_instances": 1,
-                "instance_count": 0,
+                \"daily_limit\": 1000,
+                \"message_count\": 0,
+                \"max_instances\": 1,
+                \"instance_count\": 0,
             }
 
         conn = self.get_connection()
@@ -384,9 +384,9 @@ class DatabaseManager:
         try:
             try:
                 # Validate UUID if needed
-                query_id = str(uuid.UUID(user_id)) if user_id and "-" in user_id else user_id
+                query_id = str(uuid.UUID(user_id)) if user_id and \"-\" in user_id else user_id
             except (ValueError, TypeError):
-                query_id = user_id or "00000000-0000-0000-0000-000000000000"
+                query_id = user_id or \"00000000-0000-0000-0000-000000000000\"
 
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
@@ -408,21 +408,21 @@ class DatabaseManager:
                     dict(result)
                     if result
                     else {
-                        "daily_limit": 1000,
-                        "message_count": 0,
-                        "max_instances": 1,
-                        "instance_count": 0,
+                        \"daily_limit\": 1000,
+                        \"message_count\": 0,
+                        \"max_instances\": 1,
+                        \"instance_count\": 0,
                     }
                 )
         finally:
             self.release_connection(conn)
 
-    def increment_daily_usage(self, user_id: str, field: str = "message_count") -> None:
+    def increment_daily_usage(self, user_id: str, field: str = \"message_count\") -> None:
         \"\"\"
         SAAS-013: Atomic Quota Increment.
         Ensures thread-safe counter updates using Postgres ON CONFLICT.
         \"\"\"
-        if self.pool is None or field not in ["message_count", "instance_count"]:
+        if self.pool is None or field not in [\"message_count\", \"instance_count\"]:
             return
 
         conn = self.get_connection()
@@ -444,7 +444,7 @@ class DatabaseManager:
                 conn.commit()
         except psycopg2.Error as e:
             conn.rollback()
-            logger.error(f"Error incrementing quota: {e}")
+            logger.error(f\"Error incrementing quota: {e}\")
         finally:
             self.release_connection(conn)
 
@@ -476,7 +476,7 @@ class DatabaseManager:
         \"\"\"Close all connections\"\"\"
         if self.pool:
             self.pool.closeall()
-            logger.info("Database pool closed")
+            logger.info(\"Database pool closed\")
 
     # ----------------------------
     # Migrations & Helpers
@@ -495,7 +495,7 @@ class DatabaseManager:
         if not conn: return
         try:
             with conn.cursor() as cursor:
-                cursor.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto;")
+                cursor.execute(\"CREATE EXTENSION IF NOT EXISTS pgcrypto;\")
                 cursor.execute(
                     \"\"\"
                     CREATE TABLE IF NOT EXISTS users (
@@ -590,12 +590,12 @@ class DatabaseManager:
     def _ensure_multitenancy_columns(self) -> None:
         conn = self.get_connection()
         if not conn: return
-        tables = ["customers", "interactions", "messages", "campaigns"]
+        tables = [\"customers\", \"interactions\", \"messages\", \"campaigns\"]
         try:
             with conn.cursor() as cursor:
                 for table in tables:
                     cursor.execute(
-                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = %s)",
+                        \"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = %s)\",
                         (table,),
                     )
                     if not cursor.fetchone()[0]:
@@ -616,7 +616,7 @@ class DatabaseManager:
                     )
                 conn.commit()
         except psycopg2.Error as e:
-            logger.warning(f"Migration failed: {e}")
+            logger.warning(f\"Migration failed: {e}\")
         finally:
             self.release_connection(conn)
 
@@ -628,7 +628,7 @@ class DatabaseManager:
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
-                    "SELECT * FROM users WHERE username = %s OR email = %s",
+                    \"SELECT * FROM users WHERE username = %s OR email = %s\",
                     (username, username),
                 )
                 result = cursor.fetchone()
@@ -636,33 +636,33 @@ class DatabaseManager:
         finally:
             self.release_connection(conn)
 
-    def get_system_prompt(self, prompt_name: str, user_id: str = "default") -> str:
+    def get_system_prompt(self, prompt_name: str, user_id: str = \"default\") -> str:
         \"\"\"
         Retrieves a system prompt by name.
         \"\"\"
         if self.is_mock:
             cursor = self.mock_conn.cursor()
-            cursor.execute("SELECT prompt_text FROM system_prompts WHERE prompt_name = ? AND is_active = 1", (prompt_name,))
+            cursor.execute(\"SELECT prompt_text FROM system_prompts WHERE prompt_name = ? AND is_active = 1\", (prompt_name,))
             row = cursor.fetchone()
             if row:
-                return row["prompt_text"]
-            return "Mock prompt for " + prompt_name
+                return row[\"prompt_text\"]
+            return \"Mock prompt for \" + prompt_name
 
         if self.pool is None:
-            return ""
+            return \"\"
         
         conn = self.get_connection()
         if not conn:
-            return ""
+            return \"\"
             
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
-                    "SELECT prompt_text FROM system_prompts WHERE prompt_name = %s AND is_active = TRUE",
+                    \"SELECT prompt_text FROM system_prompts WHERE prompt_name = %s AND is_active = TRUE\",
                     (prompt_name,),
                 )
                 result = cursor.fetchone()
-                return result["prompt_text"] if result else ""
+                return result[\"prompt_text\"] if result else \"\"
         finally:
             self.release_connection(conn)
 
@@ -674,17 +674,17 @@ class DatabaseManager:
             cursor = self.mock_conn.cursor()
             
             # Handle metadata merging if present
-            if "metadata" in updates:
-                cursor.execute("SELECT metadata FROM customers WHERE id = ? AND user_id = ?", (customer_id, user_id))
+            if \"metadata\" in updates:
+                cursor.execute(\"SELECT metadata FROM customers WHERE id = ? AND user_id = ?\", (customer_id, user_id))
                 row = cursor.fetchone()
-                current_meta = json.loads(row["metadata"]) if row and row["metadata"] else {}
-                new_meta = updates["metadata"]
+                current_meta = json.loads(row[\"metadata\"]) if row and row[\"metadata\"] else {}
+                new_meta = updates[\"metadata\"]
                 merged_meta = {**current_meta, **new_meta}
-                updates["metadata"] = json.dumps(merged_meta)
+                updates[\"metadata\"] = json.dumps(merged_meta)
 
-            set_clause = ", ".join([f"{k} = ?" for k in updates.keys()])
+            set_clause = \", \".join([f\"{k} = ?\" for k in updates.keys()])
             values = list(updates.values()) + [customer_id, user_id]
-            cursor.execute(f"UPDATE customers SET {set_clause} WHERE id = ? AND user_id = ?", values)
+            cursor.execute(f\"UPDATE customers SET {set_clause} WHERE id = ? AND user_id = ?\", values)
             self.mock_conn.commit()
             return True
 
@@ -696,21 +696,21 @@ class DatabaseManager:
         try:
             with conn.cursor() as cursor:
                 # Handle metadata merging if present in updates
-                if "metadata" in updates:
-                    cursor.execute("SELECT metadata FROM customers WHERE id = %s AND user_id = %s", (customer_id, user_id))
+                if \"metadata\" in updates:
+                    cursor.execute(\"SELECT metadata FROM customers WHERE id = %s AND user_id = %s\", (customer_id, user_id))
                     row = cursor.fetchone()
                     current_meta = row[0] if row and row[0] else {}
-                    new_meta = updates["metadata"]
+                    new_meta = updates[\"metadata\"]
                     merged_meta = {**current_meta, **new_meta}
-                    updates["metadata"] = Json(merged_meta)
+                    updates[\"metadata\"] = Json(merged_meta)
 
-                set_clause = ", ".join([f"{k} = %s" for k in updates.keys()])
+                set_clause = \", \".join([f\"{k} = %s\" for k in updates.keys()])
                 values = list(updates.values()) + [customer_id, user_id]
-                cursor.execute(f"UPDATE customers SET {set_clause} WHERE id = %s AND user_id = %s", values)
+                cursor.execute(f\"UPDATE customers SET {set_clause} WHERE id = %s AND user_id = %s\", values)
                 conn.commit()
             return True
         except Exception as e:
-            logger.error(f"Error updating customer {customer_id}: {e}")
+            logger.error(f\"Error updating customer {customer_id}: {e}\")
             if conn: conn.rollback()
             return False
         finally:
@@ -721,5 +721,5 @@ class DatabaseManager:
 try:
     db_manager = DatabaseManager()
 except Exception as e:
-    logger.warning(f"Could not initialize DatabaseManager: {e}")
+    logger.warning(f\"Could not initialize DatabaseManager: {e}\")
     db_manager = None

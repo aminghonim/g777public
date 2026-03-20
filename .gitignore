@@ -1,0 +1,68 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python byte-code
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Test / coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Environment files — NEVER commit secrets
+.env
+.env.*
+!.env.example
+
+# Generated OpenAPI schema — regenerate from source
+openapi.json
+
+# Temporary upload sandbox
+uploads/
+
+# ChromaDB local persistence (generated at runtime)
+data/chroma_db/
+/tmp/chroma/
+
+# Logs
+*.log
+logs/
+
+# macOS metadata
+.DS_Store
+Thumbs.db
+
+# Editor artifacts
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Flutter build artifacts
+frontend_flutter/build/
+frontend_flutter/.dart_tool/
+frontend_flutter/.flutter-plugins
+frontend_flutter/.flutter-plugins-dependencies
+frontend_flutter/pubspec.lock
+
+# Node
+node_modules/
+
+# Docker: local override files
+docker-compose.override.yml
+data/
