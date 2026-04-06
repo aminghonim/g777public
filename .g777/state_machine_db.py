@@ -35,23 +35,34 @@ class G777StateMachineDB:
 
     def current_phase(self) -> Phase:
         try:
+            if not os.path.exists(self.db_path):
+                print(f"DEBUG: DB not found at {self.db_path}")
+                return Phase.INIT
+
             with sqlite3.connect(self.db_path) as conn:
                 # Try exact match first
+                cursor = conn.execute("SELECT project_id, phase FROM project_state")
+                rows = cursor.fetchall()
+                print(f"DEBUG: DB rows found: {rows}")
+                
                 cursor = conn.execute("SELECT phase FROM project_state WHERE project_id = ?", (self.project_id,))
                 row = cursor.fetchone()
                 
                 # Fallback: Try to find ANY phase if exact path doesn't match (common in CI/CD)
                 if not row:
+                    print(f"DEBUG: No match for project_id '{self.project_id}', trying fallback")
                     cursor = conn.execute("SELECT phase FROM project_state LIMIT 1")
                     row = cursor.fetchone()
 
                 if row:
                     phase_str = row[0]
+                    print(f"DEBUG: Found phase string: '{phase_str}'")
                     # Map from 'P1_SPECIFY' back to Phase Enum
                     for p in Phase:
                         if p.name in phase_str:
                             return p
-        except Exception:
+        except Exception as e:
+            print(f"DEBUG: Exception in current_phase: {e}")
             pass
             
         return Phase.INIT
