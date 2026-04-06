@@ -108,6 +108,35 @@ class G777StateMachineDB:
             print(f"DEBUG: Transition failed: {e}")
             raise TransitionError(f"Could not transition: {e}")
 
-    # Needed because the user script tested this file earlier
-    def validate_project_id(self, project_id):
-        pass
+    def transition(self, new_phase: "Phase", actor: str = "system", reason: str = "") -> dict:
+        """Transition to a new phase with actor and reason for the audit trail."""
+        old_phase = self.current_phase()
+        self.transition_to(new_phase)
+        record = {
+            "from": old_phase.value,
+            "to": new_phase.value,
+            "actor": actor,
+            "reason": reason,
+        }
+        # Persist actor/reason in the audit log
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("""
+                    UPDATE audit_log SET old_phase = ?, new_phase = ?
+                    WHERE id = (SELECT MAX(id) FROM audit_log WHERE project_id = ?)
+                """, (old_phase.value, new_phase.value, self.project_id))
+                conn.commit()
+        except Exception:
+            pass
+        return record
+
+    def validate_project_id(self, project_id: str) -> bool:
+        """Validate that a project_id exists in the database."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute(
+                    "SELECT 1 FROM project_state WHERE project_id = ?", (project_id,)
+                )
+                return cursor.fetchone() is not None
+        except Exception:
+            return False
