@@ -9,14 +9,14 @@ from contextlib import contextmanager
 import threading
 
 class Phase(Enum):
-    INIT = auto()
-    SPECIFY = auto()
-    PLAN = auto()
-    TASKS = auto()
-    IMPLEMENT = auto()
-    REVIEW = auto()
-    DEPLOY = auto()
-    SHIP = auto()
+    INIT = "P0_INIT"
+    SPECIFY = "P1_SPECIFY"
+    PLAN = "P2_PLAN"
+    TASKS = "P3_TASKS"
+    IMPLEMENT = "P4_IMPLEMENT"
+    REVIEW = "P5_REVIEW"
+    DEPLOY = "P6_DEPLOY"
+    SHIP = "P7_SHIP"
 
 class TransitionError(Exception):
     pass
@@ -57,9 +57,9 @@ class G777StateMachineDB:
                 if row:
                     phase_str = row[0]
                     print(f"DEBUG: Found phase string: '{phase_str}'")
-                    # Map from 'P1_SPECIFY' back to Phase Enum
+                    # Match exact string value against the Enum
                     for p in Phase:
-                        if p.name in phase_str:
+                        if p.value == phase_str:
                             return p
         except Exception as e:
             print(f"DEBUG: Exception in current_phase: {e}")
