@@ -36,8 +36,15 @@ class G777StateMachineDB:
     def current_phase(self) -> Phase:
         try:
             with sqlite3.connect(self.db_path) as conn:
+                # Try exact match first
                 cursor = conn.execute("SELECT phase FROM project_state WHERE project_id = ?", (self.project_id,))
                 row = cursor.fetchone()
+                
+                # Fallback: Try to find ANY phase if exact path doesn't match (common in CI/CD)
+                if not row:
+                    cursor = conn.execute("SELECT phase FROM project_state LIMIT 1")
+                    row = cursor.fetchone()
+
                 if row:
                     phase_str = row[0]
                     # Map from 'P1_SPECIFY' back to Phase Enum
