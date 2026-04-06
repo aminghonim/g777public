@@ -2,13 +2,40 @@ name: G777 SAAF Governance Check
 
 on:
   push:
-    branches: [ "test-governance" ]
+    branches: [ "main", "test-governance" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  validate:
+  validate_state:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
-      - name: Run Test
-        run: echo "SAAF Governance Passed"
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          
+      - name: Check G777 Phase
+        run: |
+          python3 << 'EOF'
+          import sys, os
+          sys.path.insert(0, '.g777')
+          from state_machine_db import G777StateMachineDB, Phase
+          
+          # Initialize DB
+          sm = G777StateMachineDB()
+          current = sm.current_phase()
+          
+          # Block Push/Merge if not in P4 or P5
+          if current not in [Phase.IMPLEMENT, Phase.SHIP]:
+              print(f"❌ BLOCKED: Current phase is {current.name}")
+              print("   Only P4_IMPLEMENT or P5_SHIP can push to main")
+              sys.exit(1)
+          
+          print(f"✅ ALLOWED: Phase {current.name}")
+          EOF
