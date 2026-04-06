@@ -67,8 +67,46 @@ class G777StateMachineDB:
             
         return Phase.INIT
 
-    def audit_trail(self, limit: int = 10) -> List[Dict]:
-        return []
+    def transition_to(self, new_phase: Phase):
+        """Transition current project to a new phase."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                # Ensure the table exists (simple version)
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS project_state (
+                        project_id TEXT PRIMARY KEY,
+                        phase TEXT,
+                        updated_at TIMESTAMP
+                    )
+                """)
+                # Upsert current state
+                conn.execute("""
+                    INSERT INTO project_state (project_id, phase, updated_at)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(project_id) DO UPDATE SET 
+                        phase = excluded.phase,
+                        updated_at = excluded.updated_at
+                """, (self.project_id, new_phase.value, datetime.now()))
+                
+                # Append to audit log
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS audit_log (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        project_id TEXT,
+                        old_phase TEXT,
+                        new_phase TEXT,
+                        timestamp TIMESTAMP
+                    )
+                """)
+                conn.execute("""
+                    INSERT INTO audit_log (project_id, new_phase, timestamp)
+                    VALUES (?, ?, ?)
+                """, (self.project_id, new_phase.value, datetime.now()))
+                conn.commit()
+                print(f"DEBUG: Successfully transitioned to {new_phase.name}")
+        except Exception as e:
+            print(f"DEBUG: Transition failed: {e}")
+            raise TransitionError(f"Could not transition: {e}")
 
     # Needed because the user script tested this file earlier
     def validate_project_id(self, project_id):
