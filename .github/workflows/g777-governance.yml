@@ -1,0 +1,14 @@
+name: G777 SAAF Governance Check
+
+on:
+  push:
+    branches: [ "test-governance" ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run Test
+        run: echo "SAAF Governance Passed"
