@@ -1,0 +1,10 @@
+{
+    "mcpServers": {
+        "g777-antigravity": {
+            "command": "/usr/bin/python3",
+            "args": [
+                "/home/g777/MYCOMPUTER/work/2/backend/mcp_server/server.py"
+            ]
+        }
+    }
+}
