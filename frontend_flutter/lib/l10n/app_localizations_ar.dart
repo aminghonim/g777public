@@ -9,7 +9,7 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
-  String get appTitle => 'G777 - نظام السيطرة والتحكم';
+  String get appTitle => 'G777 مدير الذكاء الاصطناعي';
 
   @override
   String get dashboard => 'لوحة التحكم';
@@ -24,7 +24,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get failed => 'فشل';
 
   @override
-  String get pending => 'قيد الانتظار';
+  String get pending => 'في الانتظار';
 
   @override
   String get contacts => 'جهات الاتصال';
@@ -48,7 +48,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get refreshStatus => 'تحديث الحالة';
 
   @override
-  String get liveTelemetry => 'القياس الحي';
+  String get liveTelemetry => 'البث المباشر للبيانات';
 
   @override
   String get activeSessions => 'الجلسات النشطة';
@@ -63,7 +63,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ready => 'جاهز';
 
   @override
-  String get standby => 'استعداد';
+  String get standby => 'في الانتظار';
 
   @override
   String get active => 'نشط';
@@ -72,25 +72,68 @@ class AppLocalizationsAr extends AppLocalizations {
   String get live => 'مباشر';
 
   @override
-  String get whatsappLinked => 'تم ربط واتساب';
+  String get whatsappLinked => 'تم ربط الواتساب';
 
   @override
-  String get whatsappDisconnected => 'تم فصل واتساب';
+  String get whatsappDisconnected => 'انقطع اتصال الواتساب';
 
   @override
   String get status => 'الحالة';
 
   @override
-  String get online => 'متصل الآن';
+  String get online => 'نشط الآن';
 
   @override
   String get close => 'إغلاق';
 
   @override
-  String get navCloud => 'لوحة التحكم';
+  String get categoryA => '-A الإرسال المتقدم (Advanced Sender)';
 
   @override
-  String get navAdvancedSender => 'الإرسال المتقدم';
+  String get featureA1 => '-1 المرفقات (Attachments)';
+
+  @override
+  String get featureA2 => 'التخصيص (Variables)';
+
+  @override
+  String get categoryB => '-B أدوات المجموعات (Group Tools)';
+
+  @override
+  String get featureB1 => 'Group Members Grabber-1';
+
+  @override
+  String get featureB2 =>
+      'Group Links Grabber-2 (أداة استخراج روابط المجموعات)';
+
+  @override
+  String get featureB3 => 'Auto Group Joiner-3';
+
+  @override
+  String get categoryC => '-C أدوات البيانات (Data Tools)';
+
+  @override
+  String get featureC1 => 'Google Maps Data Extractor-1';
+
+  @override
+  String get featureC2 => 'Social Media Extractor-2';
+
+  @override
+  String get categoryD => '-D أدوات مساعدة (Utilities)';
+
+  @override
+  String get featureD1 => 'Number Filter-1';
+
+  @override
+  String get featureD2 => 'Warmer-2 (التسخين)';
+
+  @override
+  String get featureD3 => 'Poll Sender-3 (مرسل الاستطلاعات)';
+
+  @override
+  String get featureD4 => 'Opportunity hunter-4 (صائد الفرص)';
+
+  @override
+  String get navSender => 'الإرسال المتقدم';
 
   @override
   String get navGroupTools => 'أدوات المجموعات';
@@ -102,31 +145,34 @@ class AppLocalizationsAr extends AppLocalizations {
   String get navUtilities => 'أدوات مساعدة';
 
   @override
-  String get navFilter => 'فلترة الأرقام';
+  String get navFilter => 'Number Filter';
 
   @override
-  String get navWarmer => 'تسخين الحساب';
+  String get navWarmer => 'التسخين';
 
   @override
-  String get navHunter => 'صياد الفرص';
+  String get navHunter => 'صائد الفرص';
 
   @override
-  String get navPoll => 'إرسال التصويت';
+  String get navPoll => 'مرسل الاستطلاعات';
 
   @override
-  String get navBusiness => 'إعدادات العمل';
+  String get navCloud => 'لوحة التحكم';
 
   @override
-  String get catAdvancedSender => 'إرسال متقدم';
+  String get navBusiness => 'الإعدادات';
+
+  @override
+  String get catAdvancedSender => 'الإرسال المتقدم';
 
   @override
   String get catGroupTools => 'أدوات المجموعات';
 
   @override
-  String get catDataTools => 'استخراج البيانات';
+  String get catDataTools => 'أدوات البيانات';
 
   @override
-  String get catUtilities => 'أدوات عامة';
+  String get catUtilities => 'الأدوات المساعدة';
 
   @override
   String get lblMembersGrabber => 'سحب الأعضاء';
@@ -138,16 +184,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lblGoogleMaps => 'خرائط جوجل';
 
   @override
-  String get lblSocialMedia => 'سوشيال ميديا';
+  String get lblSocialMedia => 'وسائل التواصل';
 
   @override
-  String get lblOppHunter => 'صياد الفرص';
+  String get lblOppHunter => 'صائد الفرص';
 
   @override
-  String get navThemes => 'الثيمات';
+  String get navThemes => 'الأنماط';
 
   @override
-  String get orchestrationTerminal => 'محطة التحكم';
+  String get orchestrationTerminal => 'لوحة التحكم الرئيسية';
 
   @override
   String get secureStorage => 'التخزين الآمن';
@@ -159,10 +205,255 @@ class AppLocalizationsAr extends AppLocalizations {
   String get aiCore => 'نواة الذكاء الاصطناعي';
 
   @override
-  String get telemetry => 'القياسات';
+  String get telemetry => 'بيانات التشغيل';
 
   @override
   String get visualEngine => 'المحرك البصري';
+
+  @override
+  String get neonPink => 'الوردي النيوني';
+
+  @override
+  String get cyberBlue => 'الأزرق السيبراني';
+
+  @override
+  String get industrial => 'الصناعي';
+
+  @override
+  String get instance => 'الجلسة';
+
+  @override
+  String get systemStandby => 'النظام في وضع الاستعداد';
+
+  @override
+  String get disconnectInstance => 'فصل الجلسة';
+
+  @override
+  String get pairingDialogTitle => 'ربط الواتساب';
+
+  @override
+  String get qrCode => 'رمز QR';
+
+  @override
+  String get phoneNumber => 'رقم الهاتف';
+
+  @override
+  String get phoneLabel => 'رقم الهاتف مع رمز الدولة';
+
+  @override
+  String get phoneHint => 'مثال: 971501234567';
+
+  @override
+  String get generateCode => 'إنشاء رمز الربط';
+
+  @override
+  String get pairingCodeInstructions =>
+      'أدخل هذا الرمز في هاتفك: الأجهزة المرتبطة > ربط عبر رقم الهاتف';
+
+  @override
+  String get qrInstructions => 'امسح رمز QR باستخدام واتساب على هاتفك';
+
+  @override
+  String get groupSender => 'مرسل المجموعات';
+
+  @override
+  String get excelDataFeed => 'بيانات إكسل';
+
+  @override
+  String get chooseDataSource => 'اختر مصدر البيانات';
+
+  @override
+  String readyFile(String fileName) {
+    return 'جاهز: $fileName';
+  }
+
+  @override
+  String get targetSegment => 'الفئة المستهدفة';
+
+  @override
+  String get selectDataSheet => 'اختر ورقة البيانات';
+
+  @override
+  String contactsCount(int count) {
+    return '$count جهة اتصال';
+  }
+
+  @override
+  String get campaignSettings => 'إعدادات الحملة';
+
+  @override
+  String msgVariant(int index) {
+    return 'نموذج رسالة $index';
+  }
+
+  @override
+  String typeMsgVariant(int index) {
+    return 'اكتب نموذج رسالة $index';
+  }
+
+  @override
+  String variableHelper(String name) {
+    return 'مساعد: $name';
+  }
+
+  @override
+  String get mediaAttached => 'تم إرفاق الوسائط';
+
+  @override
+  String get attachMedia => 'إرفاق وسائط';
+
+  @override
+  String get groupLinkOptional => 'رابط المجموعة (انضمام اختياري)';
+
+  @override
+  String get minDelay => 'أقل تأخير (ثانية)';
+
+  @override
+  String get maxDelay => 'أقصى تأخير (ثانية)';
+
+  @override
+  String get launchCampaign => 'إطلاق الحملة';
+
+  @override
+  String get executingCampaign => 'جاري تنفيذ الحملة';
+
+  @override
+  String get operationComplete => 'اكتملت العملية';
+
+  @override
+  String get dataGrabber => 'سحب الأعضاء';
+
+  @override
+  String get extractMemberDesc =>
+      'استخراج جميع الأعضاء النشطين من أي مجموعة واتساب تنتمي إليها.';
+
+  @override
+  String get targetGroups => 'المجموعات المستهدفة';
+
+  @override
+  String get membersStream => 'بث الأعضاء';
+
+  @override
+  String get noDataStreaming => 'لا يوجد بيانات حالياً.';
+
+  @override
+  String get numberValidator => 'فلتر الأرقام';
+
+  @override
+  String get numberValidatorDesc =>
+      'تحقق من أرقام الهواتف وتصفية الحسابات غير الصالحة.';
+
+  @override
+  String get readyForScanning => 'جاهز للفحص';
+
+  @override
+  String get scanResults => 'نتائج الفحص';
+
+  @override
+  String get totalScanned => 'إجمالي المفحوص';
+
+  @override
+  String get validAccounts => 'حسابات صالحة';
+
+  @override
+  String get corruptMissing => 'تالف/مفقود';
+
+  @override
+  String get accountWarmer => 'مسخن الحسابات';
+
+  @override
+  String get accountWarmerDesc =>
+      'محاكاة محادثة طبيعية بين حسابين لبناء الثقة.';
+
+  @override
+  String get phoneJid1 => 'معرف الهاتف 1';
+
+  @override
+  String get phoneJid2 => 'معرف الهاتف 2';
+
+  @override
+  String get totalMessages => 'إجمالي الرسائل';
+
+  @override
+  String get averageDelay => 'متوسط التأخير (ثانية)';
+
+  @override
+  String get terminateWarming => 'إنهاء التسخين';
+
+  @override
+  String get startWarming => 'بدء التسخين';
+
+  @override
+  String get warmingTelemetry => 'بيانات التسخين';
+
+  @override
+  String get noActivity => 'لا يوجد نشاط بعد.';
+
+  @override
+  String get systemThemeMode => 'وضع نمط النظام';
+
+  @override
+  String get cyberpunkSFX => 'مؤثرات صوتية سيبرانية';
+
+  @override
+  String get enableSFX => 'تفعيل المؤثرات الصوتية';
+
+  @override
+  String get languageIntegration => 'تكامل اللغة';
+
+  @override
+  String switchLanguage(String lang) {
+    return 'التبديل إلى $lang';
+  }
+
+  @override
+  String get connectivityNode => 'عقدة الاتصال';
+
+  @override
+  String get evolutionApiHost => 'مضيف Evolution API';
+
+  @override
+  String get globalMasterKey => 'المفتاح الرئيسي العالمي';
+
+  @override
+  String get nodeHealthStatus => 'حالة العقدة';
+
+  @override
+  String get pingServer => 'فحص الاتصال بالسيرفر';
+
+  @override
+  String get safetyProtocols => 'بروتوكولات الأمان';
+
+  @override
+  String messageBatchDelay(int min, int max) {
+    return 'التأخير: $min ثانية - $max ثانية';
+  }
+
+  @override
+  String get dailyTransmissionLimit => 'حد الإرسال اليومي';
+
+  @override
+  String get aiPersonaEngine => 'محرك شخصية الذكاء الاصطناعي';
+
+  @override
+  String get coreModel => 'نموذج التفكير الأساسي';
+
+  @override
+  String get creativityThreshold => 'عتبة الإبداع';
+
+  @override
+  String get osVersion => 'إصدار نظام التشغيل';
+
+  @override
+  String get navGrabber => 'سحب الأعضاء';
+
+  @override
+  String get navLinks => 'سحب الروابط';
+
+  @override
+  String swapLanguageToast(String locale) {
+    return 'لغة النظام: $locale';
+  }
 
   @override
   String get systemLogs => 'سجلات النظام';
@@ -171,29 +462,65 @@ class AppLocalizationsAr extends AppLocalizations {
   String get awaitingCommands => 'في انتظار الأوامر...';
 
   @override
-  String get groupSender => 'إرسال المجموعات';
+  String get groupSenderTitle => 'مرسل المجموعات';
 
   @override
-  String get dataGrabber => 'سحب الأعضاء';
+  String get startSending => 'بدء الإرسال';
 
   @override
-  String get navLinks => 'سحب الروابط';
+  String get logs => 'السجلات';
 
   @override
-  String get numberValidator => 'فلترة الأرقام';
+  String get typeMessage => 'اكتب رسالة...';
 
   @override
-  String get accountWarmer => 'تسخين الحساب';
+  String get engineSettings => 'إعدادات المحرك';
 
   @override
-  String get opportunityHunter => 'صياد الفرص';
+  String get running => 'جاري التشغيل';
 
   @override
-  String get neonPink => 'نيون وردي';
+  String get connection => 'الاتصال';
 
   @override
-  String get cyberBlue => 'سايبر أزرق';
+  String get googleMaps => 'خرائط جوجل';
 
   @override
-  String get industrial => 'صناعي';
+  String get crmDashboard => 'لوحة تحكم CRM';
+
+  @override
+  String get opportunityHunter => 'صائد الفرص';
+
+  @override
+  String get businessSettings => 'إعدادات الأعمال';
+
+  @override
+  String get aiAssistant => 'المساعد الذكي';
+
+  @override
+  String get cloudServer => 'السيرفر السحابي';
+
+  @override
+  String get themeSettings => 'إعدادات المظهر';
+
+  @override
+  String get membersGrabber => 'سحب الأعضاء';
+
+  @override
+  String get linksGrabber => 'سحب الروابط';
+
+  @override
+  String get numberFilter => 'فلتر الأرقام';
+
+  @override
+  String get import => 'استيراد';
+
+  @override
+  String get fileUpload => 'رفع الملف';
+
+  @override
+  String get campaignContent => 'محتوى الحملة';
+
+  @override
+  String get groupLink => 'رابط المجموعة';
 }

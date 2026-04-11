@@ -1,72 +1,122 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/semantic_colors.dart';
-import '../../../../l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:g777_client/l10n/app_localizations.dart';
+import 'package:g777_client/core/theme/theme.dart'; // Unified theme system
 
-class CampaignStatsGrid extends StatelessWidget {
+class CampaignStatsGrid extends ConsumerWidget {
   const CampaignStatsGrid({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
+
+    // For now using dummy data, later connect to a provider
+    const stats = {'sent': 1240, 'failed': 12, 'pending': 450};
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          l10n.campaigns.toUpperCase(),
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-            color: colorScheme.onSurface.withValues(alpha: 0.5),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 16),
+          child: Text(
+            l10n.campaigns.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+              color: colors.onSurface.withValues(alpha: 0.5),
+            ),
           ),
         ),
-        const SizedBox(height: 16),
-        Row(
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 3,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 1.2,
           children: [
-            Expanded(child: _buildSimpleStat(l10n.sent, '4,281', colorScheme.statusOnline)),
-            const SizedBox(width: 12),
-            Expanded(child: _buildSimpleStat(l10n.failed, '24', colorScheme.statusError)),
-            const SizedBox(width: 12),
-            Expanded(child: _buildSimpleStat(l10n.pending, '156', colorScheme.statusWarning)),
+            _buildStatCard(
+              context,
+              l10n.sent,
+              stats['sent'].toString(),
+              Icons.send_rounded,
+              colors.sendSuccess,
+            ),
+            _buildStatCard(
+              context,
+              l10n.failed,
+              stats['failed'].toString(),
+              Icons.error_outline_rounded,
+              colors.sendError,
+            ),
+            _buildStatCard(
+              context,
+              l10n.pending,
+              stats['pending'].toString(),
+              Icons.pending_actions_rounded,
+              colors.sendProgress,
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildSimpleStat(String label, String value, Color color) {
+  Widget _buildStatCard(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        color: isDark
+            ? color.withValues(alpha: 0.05)
+            : color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: isDark ? 0.2 : 0.4)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 12),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SelectableText(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: isDark ? color : Color.lerp(color, Colors.black, 0.2),
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
           Text(
             label.toUpperCase(),
             style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.bold,
-              color: color.withValues(alpha: 0.6),
+              color: colors(context).onSurface.withValues(alpha: 0.5),
               letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              color: color,
-              fontFamily: 'monospace',
             ),
           ),
         ],
       ),
     );
   }
+
+  // Helper to get color scheme from context since we are in a helper method
+  ColorScheme colors(BuildContext context) => Theme.of(context).colorScheme;
 }

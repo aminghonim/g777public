@@ -62,7 +62,8 @@ import 'app_localizations_en.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -70,7 +71,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -82,17 +84,18 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ar'),
-    Locale('en')
+    Locale('en'),
   ];
 
   /// No description provided for @appTitle.
@@ -251,17 +254,101 @@ abstract class AppLocalizations {
   /// **'CLOSE'**
   String get close;
 
-  /// No description provided for @navCloud.
+  /// No description provided for @categoryA.
   ///
   /// In en, this message translates to:
-  /// **'Dashboard'**
-  String get navCloud;
+  /// **'-A Advanced Sender'**
+  String get categoryA;
 
-  /// No description provided for @navAdvancedSender.
+  /// No description provided for @featureA1.
+  ///
+  /// In en, this message translates to:
+  /// **'-1 Attachments'**
+  String get featureA1;
+
+  /// No description provided for @featureA2.
+  ///
+  /// In en, this message translates to:
+  /// **'Variables'**
+  String get featureA2;
+
+  /// No description provided for @categoryB.
+  ///
+  /// In en, this message translates to:
+  /// **'-B Group Tools'**
+  String get categoryB;
+
+  /// No description provided for @featureB1.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Members Grabber-1'**
+  String get featureB1;
+
+  /// No description provided for @featureB2.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Links Grabber-2'**
+  String get featureB2;
+
+  /// No description provided for @featureB3.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto Group Joiner-3'**
+  String get featureB3;
+
+  /// No description provided for @categoryC.
+  ///
+  /// In en, this message translates to:
+  /// **'-C Data Tools'**
+  String get categoryC;
+
+  /// No description provided for @featureC1.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Maps Data Extractor-1'**
+  String get featureC1;
+
+  /// No description provided for @featureC2.
+  ///
+  /// In en, this message translates to:
+  /// **'Social Media Extractor-2'**
+  String get featureC2;
+
+  /// No description provided for @categoryD.
+  ///
+  /// In en, this message translates to:
+  /// **'-D Utilities'**
+  String get categoryD;
+
+  /// No description provided for @featureD1.
+  ///
+  /// In en, this message translates to:
+  /// **'Number Filter-1'**
+  String get featureD1;
+
+  /// No description provided for @featureD2.
+  ///
+  /// In en, this message translates to:
+  /// **'Warmer-2'**
+  String get featureD2;
+
+  /// No description provided for @featureD3.
+  ///
+  /// In en, this message translates to:
+  /// **'Poll Sender-3'**
+  String get featureD3;
+
+  /// No description provided for @featureD4.
+  ///
+  /// In en, this message translates to:
+  /// **'Opportunity hunter-4'**
+  String get featureD4;
+
+  /// No description provided for @navSender.
   ///
   /// In en, this message translates to:
   /// **'Advanced Sender'**
-  String get navAdvancedSender;
+  String get navSender;
 
   /// No description provided for @navGroupTools.
   ///
@@ -304,6 +391,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Poll Sender'**
   String get navPoll;
+
+  /// No description provided for @navCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get navCloud;
 
   /// No description provided for @navBusiness.
   ///
@@ -407,54 +500,6 @@ abstract class AppLocalizations {
   /// **'Visual Engine'**
   String get visualEngine;
 
-  /// No description provided for @systemLogs.
-  ///
-  /// In en, this message translates to:
-  /// **'SYSTEM LOGS'**
-  String get systemLogs;
-
-  /// No description provided for @awaitingCommands.
-  ///
-  /// In en, this message translates to:
-  /// **'Awaiting Commands...'**
-  String get awaitingCommands;
-
-  /// No description provided for @groupSender.
-  ///
-  /// In en, this message translates to:
-  /// **'Group Sender'**
-  String get groupSender;
-
-  /// No description provided for @dataGrabber.
-  ///
-  /// In en, this message translates to:
-  /// **'Members Grabber'**
-  String get dataGrabber;
-
-  /// No description provided for @navLinks.
-  ///
-  /// In en, this message translates to:
-  /// **'Links Grabber'**
-  String get navLinks;
-
-  /// No description provided for @numberValidator.
-  ///
-  /// In en, this message translates to:
-  /// **'Number Filter'**
-  String get numberValidator;
-
-  /// No description provided for @accountWarmer.
-  ///
-  /// In en, this message translates to:
-  /// **'Account Warmer'**
-  String get accountWarmer;
-
-  /// No description provided for @opportunityHunter.
-  ///
-  /// In en, this message translates to:
-  /// **'Opportunity Hunter'**
-  String get opportunityHunter;
-
   /// No description provided for @neonPink.
   ///
   /// In en, this message translates to:
@@ -472,9 +517,580 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Industrial'**
   String get industrial;
+
+  /// No description provided for @instance.
+  ///
+  /// In en, this message translates to:
+  /// **'Instance'**
+  String get instance;
+
+  /// No description provided for @systemStandby.
+  ///
+  /// In en, this message translates to:
+  /// **'SYSTEM STANDBY'**
+  String get systemStandby;
+
+  /// No description provided for @disconnectInstance.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect Instance'**
+  String get disconnectInstance;
+
+  /// No description provided for @pairingDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'WHATSAPP PAIRING'**
+  String get pairingDialogTitle;
+
+  /// No description provided for @qrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'QR Code'**
+  String get qrCode;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number'**
+  String get phoneNumber;
+
+  /// No description provided for @phoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number with Country Code'**
+  String get phoneLabel;
+
+  /// No description provided for @phoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 971501234567'**
+  String get phoneHint;
+
+  /// No description provided for @generateCode.
+  ///
+  /// In en, this message translates to:
+  /// **'GENERATE PAIRING CODE'**
+  String get generateCode;
+
+  /// No description provided for @pairingCodeInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter this code on your phone in Linked Devices > Link with Phone Number'**
+  String get pairingCodeInstructions;
+
+  /// No description provided for @qrInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan this QR code using WhatsApp on your phone'**
+  String get qrInstructions;
+
+  /// No description provided for @groupSender.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Sender'**
+  String get groupSender;
+
+  /// No description provided for @excelDataFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'EXCEL DATA FEED'**
+  String get excelDataFeed;
+
+  /// No description provided for @chooseDataSource.
+  ///
+  /// In en, this message translates to:
+  /// **'CHOOSE DATA SOURCE'**
+  String get chooseDataSource;
+
+  /// No description provided for @readyFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready: {fileName}'**
+  String readyFile(String fileName);
+
+  /// No description provided for @targetSegment.
+  ///
+  /// In en, this message translates to:
+  /// **'TARGET SEGMENT'**
+  String get targetSegment;
+
+  /// No description provided for @selectDataSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Data Sheet'**
+  String get selectDataSheet;
+
+  /// No description provided for @contactsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Contacts'**
+  String contactsCount(int count);
+
+  /// No description provided for @campaignSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'CAMPAIGN SETTINGS'**
+  String get campaignSettings;
+
+  /// No description provided for @msgVariant.
+  ///
+  /// In en, this message translates to:
+  /// **'Msg Variant {index}'**
+  String msgVariant(int index);
+
+  /// No description provided for @typeMsgVariant.
+  ///
+  /// In en, this message translates to:
+  /// **'Type Msg Variant {index}'**
+  String typeMsgVariant(int index);
+
+  /// No description provided for @variableHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Helper: {name}'**
+  String variableHelper(String name);
+
+  /// No description provided for @mediaAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'MEDIA ATTACHED'**
+  String get mediaAttached;
+
+  /// No description provided for @attachMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'ATTACH MEDIA'**
+  String get attachMedia;
+
+  /// No description provided for @groupLinkOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Link (Optional Join)'**
+  String get groupLinkOptional;
+
+  /// No description provided for @minDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Min Delay (sec)'**
+  String get minDelay;
+
+  /// No description provided for @maxDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Delay (sec)'**
+  String get maxDelay;
+
+  /// No description provided for @launchCampaign.
+  ///
+  /// In en, this message translates to:
+  /// **'LAUNCH CAMPAIGN'**
+  String get launchCampaign;
+
+  /// No description provided for @executingCampaign.
+  ///
+  /// In en, this message translates to:
+  /// **'EXECUTING CAMPAIGN'**
+  String get executingCampaign;
+
+  /// No description provided for @operationComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'OPERATION COMPLETE'**
+  String get operationComplete;
+
+  /// No description provided for @dataGrabber.
+  ///
+  /// In en, this message translates to:
+  /// **'Members Grabber'**
+  String get dataGrabber;
+
+  /// No description provided for @extractMemberDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Extract all active members from any WhatsApp group you belong to.'**
+  String get extractMemberDesc;
+
+  /// No description provided for @targetGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'TARGET GROUPS'**
+  String get targetGroups;
+
+  /// No description provided for @membersStream.
+  ///
+  /// In en, this message translates to:
+  /// **'MEMBERS STREAM'**
+  String get membersStream;
+
+  /// No description provided for @noDataStreaming.
+  ///
+  /// In en, this message translates to:
+  /// **'No data streaming yet.'**
+  String get noDataStreaming;
+
+  /// No description provided for @numberValidator.
+  ///
+  /// In en, this message translates to:
+  /// **'Number Filter'**
+  String get numberValidator;
+
+  /// No description provided for @numberValidatorDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify phone numbers and filter out corrupt or non-whatsapp accounts.'**
+  String get numberValidatorDesc;
+
+  /// No description provided for @readyForScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'READY FOR SCANNING'**
+  String get readyForScanning;
+
+  /// No description provided for @scanResults.
+  ///
+  /// In en, this message translates to:
+  /// **'SCAN RESULTS'**
+  String get scanResults;
+
+  /// No description provided for @totalScanned.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL SCANNED'**
+  String get totalScanned;
+
+  /// No description provided for @validAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'VALID ACCOUNTS'**
+  String get validAccounts;
+
+  /// No description provided for @corruptMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'CORRUPT/MISSING'**
+  String get corruptMissing;
+
+  /// No description provided for @accountWarmer.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Warmer'**
+  String get accountWarmer;
+
+  /// No description provided for @accountWarmerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate natural conversation between two accounts to build trust.'**
+  String get accountWarmerDesc;
+
+  /// No description provided for @phoneJid1.
+  ///
+  /// In en, this message translates to:
+  /// **'PHONE JID 1'**
+  String get phoneJid1;
+
+  /// No description provided for @phoneJid2.
+  ///
+  /// In en, this message translates to:
+  /// **'PHONE JID 2'**
+  String get phoneJid2;
+
+  /// No description provided for @totalMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL MESSAGES'**
+  String get totalMessages;
+
+  /// No description provided for @averageDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'AVG DELAY (SEC)'**
+  String get averageDelay;
+
+  /// No description provided for @terminateWarming.
+  ///
+  /// In en, this message translates to:
+  /// **'TERMINATE WARMING'**
+  String get terminateWarming;
+
+  /// No description provided for @startWarming.
+  ///
+  /// In en, this message translates to:
+  /// **'START WARMING'**
+  String get startWarming;
+
+  /// No description provided for @warmingTelemetry.
+  ///
+  /// In en, this message translates to:
+  /// **'WARMING TELEMETRY'**
+  String get warmingTelemetry;
+
+  /// No description provided for @noActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity yet.'**
+  String get noActivity;
+
+  /// No description provided for @systemThemeMode.
+  ///
+  /// In en, this message translates to:
+  /// **'System Theme Mode'**
+  String get systemThemeMode;
+
+  /// No description provided for @cyberpunkSFX.
+  ///
+  /// In en, this message translates to:
+  /// **'Cyberpunk SFX'**
+  String get cyberpunkSFX;
+
+  /// No description provided for @enableSFX.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Sound Effects'**
+  String get enableSFX;
+
+  /// No description provided for @languageIntegration.
+  ///
+  /// In en, this message translates to:
+  /// **'Language Integration'**
+  String get languageIntegration;
+
+  /// No description provided for @switchLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to {lang}'**
+  String switchLanguage(String lang);
+
+  /// No description provided for @connectivityNode.
+  ///
+  /// In en, this message translates to:
+  /// **'CONNECTIVITY NODE'**
+  String get connectivityNode;
+
+  /// No description provided for @evolutionApiHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Evolution API Host'**
+  String get evolutionApiHost;
+
+  /// No description provided for @globalMasterKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Global Master Key'**
+  String get globalMasterKey;
+
+  /// No description provided for @nodeHealthStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Node Health Status'**
+  String get nodeHealthStatus;
+
+  /// No description provided for @pingServer.
+  ///
+  /// In en, this message translates to:
+  /// **'PING SERVER'**
+  String get pingServer;
+
+  /// No description provided for @safetyProtocols.
+  ///
+  /// In en, this message translates to:
+  /// **'SAFETY PROTOCOLS'**
+  String get safetyProtocols;
+
+  /// No description provided for @messageBatchDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay: {min}s - {max}s'**
+  String messageBatchDelay(int min, int max);
+
+  /// No description provided for @dailyTransmissionLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Transmission Limit'**
+  String get dailyTransmissionLimit;
+
+  /// No description provided for @aiPersonaEngine.
+  ///
+  /// In en, this message translates to:
+  /// **'AI PERSONA ENGINE'**
+  String get aiPersonaEngine;
+
+  /// No description provided for @coreModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Core Reasoning Model'**
+  String get coreModel;
+
+  /// No description provided for @creativityThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Creativity Threshold'**
+  String get creativityThreshold;
+
+  /// No description provided for @osVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'OS VERSION'**
+  String get osVersion;
+
+  /// No description provided for @navGrabber.
+  ///
+  /// In en, this message translates to:
+  /// **'Members Grabber'**
+  String get navGrabber;
+
+  /// No description provided for @navLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Links Grabber'**
+  String get navLinks;
+
+  /// No description provided for @swapLanguageToast.
+  ///
+  /// In en, this message translates to:
+  /// **'System Language: {locale}'**
+  String swapLanguageToast(String locale);
+
+  /// No description provided for @systemLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'SYSTEM LOGS'**
+  String get systemLogs;
+
+  /// No description provided for @awaitingCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting Commands...'**
+  String get awaitingCommands;
+
+  /// No description provided for @groupSenderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Sender'**
+  String get groupSenderTitle;
+
+  /// No description provided for @startSending.
+  ///
+  /// In en, this message translates to:
+  /// **'START SENDING'**
+  String get startSending;
+
+  /// No description provided for @logs.
+  ///
+  /// In en, this message translates to:
+  /// **'LOGS'**
+  String get logs;
+
+  /// No description provided for @typeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Type Message...'**
+  String get typeMessage;
+
+  /// No description provided for @engineSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'ENGINE SETTINGS'**
+  String get engineSettings;
+
+  /// No description provided for @running.
+  ///
+  /// In en, this message translates to:
+  /// **'RUNNING'**
+  String get running;
+
+  /// No description provided for @connection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get connection;
+
+  /// No description provided for @googleMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Maps'**
+  String get googleMaps;
+
+  /// No description provided for @crmDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'CRM Dashboard'**
+  String get crmDashboard;
+
+  /// No description provided for @opportunityHunter.
+  ///
+  /// In en, this message translates to:
+  /// **'Opportunity Hunter'**
+  String get opportunityHunter;
+
+  /// No description provided for @businessSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Business Settings'**
+  String get businessSettings;
+
+  /// No description provided for @aiAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Assistant'**
+  String get aiAssistant;
+
+  /// No description provided for @cloudServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud Server'**
+  String get cloudServer;
+
+  /// No description provided for @themeSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme Settings'**
+  String get themeSettings;
+
+  /// No description provided for @membersGrabber.
+  ///
+  /// In en, this message translates to:
+  /// **'Members Grabber'**
+  String get membersGrabber;
+
+  /// No description provided for @linksGrabber.
+  ///
+  /// In en, this message translates to:
+  /// **'Links Grabber'**
+  String get linksGrabber;
+
+  /// No description provided for @numberFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Number Filter'**
+  String get numberFilter;
+
+  /// No description provided for @import.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get import;
+
+  /// No description provided for @fileUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'File Upload'**
+  String get fileUpload;
+
+  /// No description provided for @campaignContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Campaign Content'**
+  String get campaignContent;
+
+  /// No description provided for @groupLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Link'**
+  String get groupLink;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -483,25 +1099,26 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['ar', 'en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['ar', 'en'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'ar': return AppLocalizationsAr();
-    case 'en': return AppLocalizationsEn();
+    case 'ar':
+      return AppLocalizationsAr();
+    case 'en':
+      return AppLocalizationsEn();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
+    'that was used.',
   );
 }

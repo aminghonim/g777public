@@ -1,7 +1,7 @@
+import 'package:g777_client/core/theme/semantic_colors.dart';
 import 'package:flutter/material.dart';
-import '../../../../core/theme/theme_controller.dart';
-import '../../../../core/theme/semantic_colors.dart';
-import '../../../../l10n/app_localizations.dart';
+import 'package:g777_client/core/theme/theme_controller.dart';
+import 'package:g777_client/l10n/app_localizations.dart';
 
 class StyleSelector extends StatelessWidget {
   final ThemeController controller;
@@ -15,9 +15,9 @@ class StyleSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -30,12 +30,11 @@ class StyleSelector extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.visualEngine.toUpperCase(),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
+            l10n.visualEngine,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
               letterSpacing: 2,
-              color: colors.primary,
             ),
           ),
           const SizedBox(height: 16),
@@ -64,7 +63,7 @@ class StyleSelector extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           _StyleButton(
-            label: 'Modern Glass',
+            label: 'Modern Glass', // Add missing label if not in l10n
             style: ThemeStyle.modernGlass,
             isSelected: currentStyle == ThemeStyle.modernGlass,
             onScale: () => controller.setThemeStyle(ThemeStyle.modernGlass),

@@ -16,7 +16,6 @@ extension G777SemanticColors on ColorScheme {
   Color get sidebarAccent => primary;
   Color get sidebarBorder => outlineVariant.withValues(alpha: 0.2);
   Color get sidebarLogo => primary;
-  Color get dashboardAccent => primary;
 
   // Sidebar Categories (Functional colors replacing hardcoded assumed names)
   Color get navCloud => primary;
@@ -30,6 +29,8 @@ extension G777SemanticColors on ColorScheme {
   // Dashboard Layout & Gradients
   // ---------------------------------------------------------------------------
   List<Color> get dashboardGradient {
+    // A dynamic gradient that adapts to any of the 4 themes natively
+    // by using the primary surface and a slightly tinted secondary surface.
     return [surface, surfaceContainerLowest];
   }
 
@@ -72,9 +73,11 @@ extension G777SemanticColors on ColorScheme {
   Color get dividerColor => outlineVariant.withValues(alpha: 0.2);
 
   // ---------------------------------------------------------------------------
-  // Theme Style Preview Colors
+  // Theme Style Preview Colors (For StyleSelector & SystemStatsGrid placeholders)
   // ---------------------------------------------------------------------------
-  Color get styleNeon => const Color(0xFFFF4081);
-  Color get styleProfessional => const Color(0xFF2962FF);
-  Color get styleIndustrial => const Color(0xFF455A64);
+  Color get styleNeon => const Color(0xFFFF4081); // Neon Pink Preview
+  Color get styleProfessional =>
+      const Color(0xFF2962FF); // Professional Blue Preview
+  Color get styleIndustrial =>
+      const Color(0xFF455A64); // Industrial Grey Preview
 }

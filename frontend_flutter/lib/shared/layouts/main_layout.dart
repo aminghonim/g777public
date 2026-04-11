@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:g777_client/core/theme/semantic_colors.dart';
+import 'package:g777_client/core/theme/theme.dart';
 import 'package:g777_client/l10n/app_localizations.dart';
 import 'package:g777_client/shared/painters/custom_painters.dart';
+import 'package:g777_client/shared/providers/locale_provider.dart';
 
 class MainLayout extends ConsumerWidget {
   final Widget child;
@@ -12,33 +13,35 @@ class MainLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final String location = GoRouterState.of(context).uri.toString();
+    ref.watch(localeProvider); // Trigger rebuild on locale change
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final location = GoRouterState.of(context).uri.path;
 
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: colorScheme.dashboardGradient,
-          ),
-        ),
-        child: Stack(
+    return SelectionArea(
+      child: Scaffold(
+        backgroundColor: colorScheme.surface,
+        body: Stack(
           children: [
-            Positioned.fill(
-              child: CustomPaint(
-                painter: CircuitBackgroundPainter(
-                  isDark: Theme.of(context).brightness == Brightness.dark,
-                ),
+            if (isDark)
+              CustomPaint(
+                painter: CircuitBackgroundPainter(isDark: isDark),
+                size: Size.infinite,
               ),
-            ),
             Row(
               children: [
                 _Sidebar(location: location),
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(
+                          color: colorScheme.sidebarBorder,
+                          width: 1,
+                        ),
+                      ),
+                    ),
                     child: child,
                   ),
                 ),
@@ -81,55 +84,55 @@ class _Sidebar extends ConsumerWidget {
                   _HexNavItem(
                     icon: Icons.dashboard_rounded,
                     label: l10n.dashboard,
-                    accentColor: colorScheme.primary,
+                    accentColor: colorScheme.dashboardAccent,
                     route: '/dashboard',
                     isActive: location == '/dashboard',
                   ),
                   _HexNavItem(
                     icon: Icons.people_alt_rounded,
-                    label: 'CRM',
-                    accentColor: colorScheme.navDataTools,
+                    label: 'العملاء (CRM)',
+                    accentColor: Colors.greenAccent,
                     route: '/crm',
                     isActive: location == '/crm',
                   ),
                   _HexNavItem(
                     icon: Icons.rocket_launch_rounded,
                     label: l10n.groupSender,
-                    accentColor: colorScheme.navAdvancedSender,
+                    accentColor: colorScheme.groupSenderAccent,
                     route: '/group-sender',
                     isActive: location == '/group-sender',
                   ),
                   _HexNavItem(
                     icon: Icons.groups_rounded,
                     label: l10n.dataGrabber,
-                    accentColor: colorScheme.navGroupTools,
+                    accentColor: colorScheme.membersAccent,
                     route: '/members-grabber',
                     isActive: location == '/members-grabber',
                   ),
                   _HexNavItem(
                     icon: Icons.link_rounded,
-                    label: l10n.navLinks,
-                    accentColor: colorScheme.navGroupTools,
+                    label: l10n.lblLinksGrabber,
+                    accentColor: colorScheme.grabberAccent,
                     route: '/links-grabber',
                     isActive: location == '/links-grabber',
                   ),
                   _HexNavItem(
                     icon: Icons.filter_alt_rounded,
-                    label: l10n.navFilter,
-                    accentColor: colorScheme.navUtilities,
+                    label: l10n.numberValidator,
+                    accentColor: colorScheme.secondary,
                     route: '/number-filter',
                     isActive: location == '/number-filter',
                   ),
                   _HexNavItem(
                     icon: Icons.whatshot_rounded,
-                    label: l10n.navWarmer,
+                    label: l10n.accountWarmer,
                     accentColor: colorScheme.statusWarning,
                     route: '/warmer',
                     isActive: location == '/warmer',
                   ),
                   _HexNavItem(
                     icon: Icons.travel_explore_rounded,
-                    label: l10n.navHunter,
+                    label: l10n.opportunityHunter,
                     accentColor: colorScheme.tertiary,
                     route: '/opportunity-hunter',
                     isActive: location == '/opportunity-hunter',

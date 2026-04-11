@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/theme_extensions.dart';
-import '../../../../shared/painters/custom_painters.dart';
+import 'package:g777_client/core/theme/theme_extensions.dart';
+import 'package:g777_client/shared/painters/custom_painters.dart';
 import 'dart:ui';
-import '../../../../core/theme/semantic_colors.dart';
-import '../../../../l10n/app_localizations.dart';
+import 'package:g777_client/core/theme/semantic_colors.dart';
+import 'package:g777_client/l10n/app_localizations.dart';
 
 class SystemStatsGrid extends StatelessWidget {
   const SystemStatsGrid({super.key});

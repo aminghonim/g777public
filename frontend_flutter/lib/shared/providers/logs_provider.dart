@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/providers/system_stream_provider.dart';
+import 'package:g777_client/core/providers/system_stream_provider.dart';
 
 /// Global Logs Provider
+/// Manages platform-wide system logs in a unified singleton pipeline.
 final logsProvider = StateNotifierProvider<LogsNotifier, List<LogEntry>>((ref) {
   return LogsNotifier();
 });
@@ -24,6 +25,7 @@ class LogsNotifier extends StateNotifier<List<LogEntry>> {
   LogsNotifier() : super([]);
 
   void addLog(String message, {LogType type = LogType.info}) {
+    // Basic deduplication for immediate successive logs
     if (state.isNotEmpty && state.first.message == message) return;
 
     state = [
@@ -31,6 +33,7 @@ class LogsNotifier extends StateNotifier<List<LogEntry>> {
       ...state,
     ];
 
+    // Maintain buffer of last 100 entries
     if (state.length > 100) {
       state = state.sublist(0, 100);
     }
@@ -41,7 +44,9 @@ class LogsNotifier extends StateNotifier<List<LogEntry>> {
   }
 }
 
-/// Unified Log Listener
+/// Unified Log Listener (Gap 2 Compliance).
+/// Attaches to the global SSE pipeline to capture and record logs from
+/// all system modules (Campaigns, API, System Checks).
 final logsStreamListenerProvider = Provider<void>((ref) {
   ref.listen(logsStreamProvider, (prev, next) {
     next.whenData((event) {
@@ -54,10 +59,20 @@ final logsStreamListenerProvider = Provider<void>((ref) {
           if (levelStr == 'success') type = LogType.success;
           if (levelStr == 'warning') type = LogType.warning;
 
-          ref.read(logsProvider.notifier).addLog(
-                data['message'].toString(),
-                type: type,
-              );
+          ref
+              .read(logsProvider.notifier)
+              .addLog(data['message'].toString(), type: type);
+        }
+      } else if (event['type'] == 'CAMPAIGN') {
+        // Also capture legacy campaign logs if present
+        final data = event['data'];
+        if (data != null && data['logs'] != null) {
+          final List<dynamic> logs = data['logs'];
+          if (logs.isNotEmpty) {
+            ref
+                .read(logsProvider.notifier)
+                .addLog(logs.last.toString(), type: LogType.info);
+          }
         }
       }
     });

@@ -27,8 +27,26 @@
   "online": "ONLINE",
   "close": "CLOSE",
 
-  "navCloud": "Dashboard",
-  "navAdvancedSender": "Advanced Sender",
+  "categoryA": "-A Advanced Sender",
+  "featureA1": "-1 Attachments",
+  "featureA2": "Variables",
+
+  "categoryB": "-B Group Tools",
+  "featureB1": "Group Members Grabber-1",
+  "featureB2": "Group Links Grabber-2",
+  "featureB3": "Auto Group Joiner-3",
+
+  "categoryC": "-C Data Tools",
+  "featureC1": "Google Maps Data Extractor-1",
+  "featureC2": "Social Media Extractor-2",
+
+  "categoryD": "-D Utilities",
+  "featureD1": "Number Filter-1",
+  "featureD2": "Warmer-2",
+  "featureD3": "Poll Sender-3",
+  "featureD4": "Opportunity hunter-4",
+
+  "navSender": "Advanced Sender",
   "navGroupTools": "Group Tools",
   "navDataTools": "Data Tools",
   "navUtilities": "Utilities",
@@ -36,6 +54,7 @@
   "navWarmer": "Warmer",
   "navHunter": "Opportunity Hunter",
   "navPoll": "Poll Sender",
+  "navCloud": "Dashboard",
   "navBusiness": "Settings",
   "catAdvancedSender": "ADVANCED SENDER",
   "catGroupTools": "GROUP TOOLS",
@@ -53,18 +72,143 @@
   "aiCore": "AI CORE",
   "telemetry": "TELEMETRY",
   "visualEngine": "Visual Engine",
-  "systemLogs": "SYSTEM LOGS",
-  "awaitingCommands": "Awaiting Commands...",
-  "groupSender": "Group Sender",
-  "dataGrabber": "Members Grabber",
-  "navLinks": "Links Grabber",
-  "numberValidator": "Number Filter",
-  "accountWarmer": "Account Warmer",
-  "opportunityHunter": "Opportunity Hunter",
-  "navWarmer": "Warmer",
-  "navFilter": "Number Filter",
-  "navHunter": "Opportunity Hunter",
   "neonPink": "Neon Pink",
   "cyberBlue": "Cyber Blue",
-  "industrial": "Industrial"
+  "industrial": "Industrial",
+  "instance": "Instance",
+  "systemStandby": "SYSTEM STANDBY",
+  "disconnectInstance": "Disconnect Instance",
+  "pairingDialogTitle": "WHATSAPP PAIRING",
+  "qrCode": "QR Code",
+  "phoneNumber": "Phone Number",
+  "phoneLabel": "Phone Number with Country Code",
+  "phoneHint": "e.g. 971501234567",
+  "generateCode": "GENERATE PAIRING CODE",
+  "pairingCodeInstructions": "Enter this code on your phone in Linked Devices > Link with Phone Number",
+  "qrInstructions": "Scan this QR code using WhatsApp on your phone",
+  "groupSender": "Group Sender",
+  "excelDataFeed": "EXCEL DATA FEED",
+  "chooseDataSource": "CHOOSE DATA SOURCE",
+  "readyFile": "Ready: {fileName}",
+  "@readyFile": {
+    "placeholders": {
+      "fileName": { "type": "String" }
+    }
+  },
+  "targetSegment": "TARGET SEGMENT",
+  "selectDataSheet": "Select Data Sheet",
+  "contactsCount": "{count} Contacts",
+  "@contactsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "campaignSettings": "CAMPAIGN SETTINGS",
+  "msgVariant": "Msg Variant {index}",
+  "@msgVariant": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "typeMsgVariant": "Type Msg Variant {index}",
+  "@typeMsgVariant": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "variableHelper": "Helper: {name}",
+  "@variableHelper": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "mediaAttached": "MEDIA ATTACHED",
+  "attachMedia": "ATTACH MEDIA",
+  "groupLinkOptional": "Group Link (Optional Join)",
+  "minDelay": "Min Delay (sec)",
+  "maxDelay": "Max Delay (sec)",
+  "launchCampaign": "LAUNCH CAMPAIGN",
+  "executingCampaign": "EXECUTING CAMPAIGN",
+  "operationComplete": "OPERATION COMPLETE",
+  "dataGrabber": "Members Grabber",
+  "extractMemberDesc": "Extract all active members from any WhatsApp group you belong to.",
+  "targetGroups": "TARGET GROUPS",
+  "membersStream": "MEMBERS STREAM",
+  "noDataStreaming": "No data streaming yet.",
+  "numberValidator": "Number Filter",
+  "numberValidatorDesc": "Verify phone numbers and filter out corrupt or non-whatsapp accounts.",
+  "readyForScanning": "READY FOR SCANNING",
+  "scanResults": "SCAN RESULTS",
+  "totalScanned": "TOTAL SCANNED",
+  "validAccounts": "VALID ACCOUNTS",
+  "corruptMissing": "CORRUPT/MISSING",
+  "accountWarmer": "Account Warmer",
+  "accountWarmerDesc": "Simulate natural conversation between two accounts to build trust.",
+  "phoneJid1": "PHONE JID 1",
+  "phoneJid2": "PHONE JID 2",
+  "totalMessages": "TOTAL MESSAGES",
+  "averageDelay": "AVG DELAY (SEC)",
+  "terminateWarming": "TERMINATE WARMING",
+  "startWarming": "START WARMING",
+  "warmingTelemetry": "WARMING TELEMETRY",
+  "noActivity": "No activity yet.",
+  "systemThemeMode": "System Theme Mode",
+  "cyberpunkSFX": "Cyberpunk SFX",
+  "enableSFX": "Enable Sound Effects",
+  "languageIntegration": "Language Integration",
+  "switchLanguage": "Switch to {lang}",
+  "@switchLanguage": {
+    "placeholders": {
+      "lang": { "type": "String" }
+    }
+  },
+  "connectivityNode": "CONNECTIVITY NODE",
+  "evolutionApiHost": "Evolution API Host",
+  "globalMasterKey": "Global Master Key",
+  "nodeHealthStatus": "Node Health Status",
+  "pingServer": "PING SERVER",
+  "safetyProtocols": "SAFETY PROTOCOLS",
+  "messageBatchDelay": "Delay: {min}s - {max}s",
+  "@messageBatchDelay": {
+    "placeholders": {
+      "min": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "dailyTransmissionLimit": "Daily Transmission Limit",
+  "aiPersonaEngine": "AI PERSONA ENGINE",
+  "coreModel": "Core Reasoning Model",
+  "creativityThreshold": "Creativity Threshold",
+  "osVersion": "OS VERSION",
+  "navGrabber": "Members Grabber",
+  "navLinks": "Links Grabber",
+  "swapLanguageToast": "System Language: {locale}",
+  "@swapLanguageToast": {
+    "placeholders": {
+      "locale": { "type": "String" }
+    }
+  },
+  "systemLogs": "SYSTEM LOGS",
+  "awaitingCommands": "Awaiting Commands...",
+  "groupSenderTitle": "Group Sender",
+  "startSending": "START SENDING",
+  "logs": "LOGS",
+  "typeMessage": "Type Message...",
+  "engineSettings": "ENGINE SETTINGS",
+  "running": "RUNNING",
+  "connection": "Connection",
+  "googleMaps": "Google Maps",
+  "crmDashboard": "CRM Dashboard",
+  "opportunityHunter": "Opportunity Hunter",
+  "businessSettings": "Business Settings",
+  "aiAssistant": "AI Assistant",
+  "cloudServer": "Cloud Server",
+  "themeSettings": "Theme Settings",
+  "membersGrabber": "Members Grabber",
+  "linksGrabber": "Links Grabber",
+  "numberFilter": "Number Filter",
+  "import": "Import",
+  "fileUpload": "File Upload",
+  "campaignContent": "Campaign Content",
+  "groupLink": "Group Link"
 }
