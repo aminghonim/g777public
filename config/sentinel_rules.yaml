@@ -1,0 +1,14 @@
+thresholds:
+  latency_max_ms: 15000       # 15 seconds
+  memory_limit_mb: 500        # 500 MB RAM limit warning
+  token_usage_limit: 100000   # Daily token limit (example)
+  error_burst_limit: 5        # Max consecutive errors before freeze
+
+actions:
+  high_latency: "log_warning"
+  high_memory: "trigger_gc"
+  critical_error: "freeze_agent"
+
+logging:
+  db_path: "data/sentinel_metrics.db"
+  enabled: true

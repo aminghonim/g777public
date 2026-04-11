@@ -1,0 +1,51 @@
+name: G777 SAAF Governance Check
+
+on:
+  push:
+    branches: [ "main", "test-governance" ]
+  pull_request:
+    branches: [ "main" ]
+
+# Enforce Node.js 24 for ALL actions in this workflow
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  validate_state:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check G777 Phase
+        run: |
+          python3 << 'EOF'
+          import sys
+          sys.path.insert(0, '.g777')
+          from state_machine_db import G777StateMachineDB, Phase
+
+          ALLOWED_PHASES = [Phase.IMPLEMENT, Phase.SHIP]
+          BLOCKED_PHASES = [Phase.INIT, Phase.SPECIFY, Phase.PLAN, Phase.TASKS, Phase.REVIEW, Phase.DEPLOY]
+
+          sm = G777StateMachineDB()
+          current = sm.current_phase()
+
+          print(f"[G777 Governance] Current Phase: {current.value}")
+
+          if current in BLOCKED_PHASES:
+              print(f"❌ BLOCKED: Phase '{current.value}' is not authorized for deployment.")
+              print(f"   Authorized phases: {[p.value for p in ALLOWED_PHASES]}")
+              sys.exit(1)
+
+          print(f"✅ ALLOWED: Phase '{current.value}' is authorized.")
+          EOF

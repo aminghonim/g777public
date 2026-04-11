@@ -1,0 +1,13 @@
+toon_settings:
+  enabled: true
+  compression_level: "high"
+  # Keys that should NEVER be compressed or altered (Security/PII)
+  excluded_keys:
+    - "user_id"
+    - "auth_token"
+    - "ssn"
+    - "email"
+    - "phone"
+  telemetry:
+    log_savings: true
+    alert_on_failure: true

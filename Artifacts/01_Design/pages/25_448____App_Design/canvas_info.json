@@ -1,0 +1,62 @@
+{
+  "id": "25:448",
+  "name": "🎨 App Design",
+  "type": "CANVAS",
+  "scrollBehavior": "SCROLLS",
+  "backgroundColor": {
+    "r": 0.0941176488995552,
+    "g": 0.1411764770746231,
+    "b": 0.19607843458652496,
+    "a": 1.0
+  },
+  "prototypeStartNodeID": null,
+  "flowStartingPoints": [],
+  "prototypeDevice": {
+    "type": "NONE",
+    "rotation": "NONE"
+  },
+  "children": [
+    {
+      "id": "690:1097",
+      "name": "designed by: NASHEKRASHE",
+      "type": "GROUP",
+      "_ref": "screens/690_1097__designed_by__NASHEKRASHE.json"
+    },
+    {
+      "id": "45:111",
+      "name": "Home",
+      "type": "FRAME",
+      "_ref": "screens/45_111__Home.json"
+    },
+    {
+      "id": "660:1185",
+      "name": "Favourites",
+      "type": "FRAME",
+      "_ref": "screens/660_1185__Favourites.json"
+    },
+    {
+      "id": "664:1319",
+      "name": "Profile",
+      "type": "FRAME",
+      "_ref": "screens/664_1319__Profile.json"
+    },
+    {
+      "id": "617:1019",
+      "name": "Splash",
+      "type": "FRAME",
+      "_ref": "screens/617_1019__Splash.json"
+    },
+    {
+      "id": "629:1383",
+      "name": "Login",
+      "type": "FRAME",
+      "_ref": "screens/629_1383__Login.json"
+    },
+    {
+      "id": "297:3830",
+      "name": "Inner Page",
+      "type": "FRAME",
+      "_ref": "screens/297_3830__Inner_Page.json"
+    }
+  ]
+}

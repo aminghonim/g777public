@@ -1,0 +1,74 @@
+{
+  "id": "5:3",
+  "name": "🧱 UI Kit",
+  "type": "CANVAS",
+  "scrollBehavior": "SCROLLS",
+  "backgroundColor": {
+    "r": 0.09383681416511536,
+    "g": 0.1427951455116272,
+    "b": 0.19583334028720856,
+    "a": 1.0
+  },
+  "prototypeStartNodeID": null,
+  "flowStartingPoints": [],
+  "prototypeDevice": {
+    "type": "NONE",
+    "rotation": "NONE"
+  },
+  "children": [
+    {
+      "id": "5:23",
+      "name": "Colors",
+      "type": "FRAME",
+      "_ref": "screens/5_23__Colors.json"
+    },
+    {
+      "id": "49:128",
+      "name": "Typography",
+      "type": "FRAME",
+      "_ref": "screens/49_128__Typography.json"
+    },
+    {
+      "id": "25:67",
+      "name": "Tab icons",
+      "type": "FRAME",
+      "_ref": "screens/25_67__Tab_icons.json"
+    },
+    {
+      "id": "49:160",
+      "name": "General icons 24",
+      "type": "FRAME",
+      "_ref": "screens/49_160__General_icons_24.json"
+    },
+    {
+      "id": "629:1612",
+      "name": "Custom icons 48",
+      "type": "FRAME",
+      "_ref": "screens/629_1612__Custom_icons_48.json"
+    },
+    {
+      "id": "50:152",
+      "name": "Tabs",
+      "type": "FRAME",
+      "_ref": "screens/50_152__Tabs.json"
+    },
+    {
+      "id": "50:1570",
+      "name": "Components",
+      "type": "FRAME",
+      "_ref": "screens/50_1570__Components.json"
+    },
+    {
+      "id": "284:3500",
+      "name": "Graphics",
+      "type": "FRAME",
+      "_ref": "screens/284_3500__Graphics.json"
+    },
+    {
+      "id": "680:1074",
+      "name": "Cover",
+      "type": "FRAME",
+      "_ref": "screens/680_1074__Cover.json"
+    }
+  ]
+}

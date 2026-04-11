@@ -1,0 +1,683 @@
+{
+  "components": {
+    "690:1089": {
+      "key": "15b7d18b4c772f51500443db32039f52f36ae2bd",
+      "name": "designed by",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "620:988": {
+      "key": "f732e4d90fbbcaba32aef8f67f7c60ea7b4eb235",
+      "name": "flutter_logo",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "50:257": {
+      "key": "7921c8ba74692786d941e1d71dc5f434d68f70fc",
+      "name": "Property 1=home",
+      "description": "",
+      "remote": false,
+      "componentSetId": "50:260",
+      "documentationLinks": []
+    },
+    "25:224": {
+      "key": "74b67d6e731216d7a9d0b6183dd6e4c1254f2132",
+      "name": "value=home, active=yes",
+      "description": "",
+      "remote": false,
+      "componentSetId": "25:225",
+      "documentationLinks": []
+    },
+    "626:1703": {
+      "key": "c856c1c3aa1c63e61a69fcc6fcac81dfd21bd64d",
+      "name": "icon_home",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "25:220": {
+      "key": "c05040ca343471d44ad539b4784e36a0449dce06",
+      "name": "value=favs, active=no",
+      "description": "",
+      "remote": false,
+      "componentSetId": "25:225",
+      "documentationLinks": []
+    },
+    "626:1815": {
+      "key": "91bcd0fe30aea3b34a3b93b89b2a774a498c6769",
+      "name": "icon_fav",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "25:219": {
+      "key": "a628736c287be5e99e113ed2cfbc04c331515d62",
+      "name": "value=more, active=no",
+      "description": "",
+      "remote": false,
+      "componentSetId": "25:225",
+      "documentationLinks": []
+    },
+    "626:1882": {
+      "key": "a4a24c1f97d5cb81c3e42221d6d10da5d0e8e72a",
+      "name": "icon_more",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "50:592": {
+      "key": "8fc4bcf5d958b847e126fdbf06a203916a811ca5",
+      "name": "Property 1=Default",
+      "description": "",
+      "remote": false,
+      "componentSetId": "645:1336",
+      "documentationLinks": []
+    },
+    "626:3083": {
+      "key": "71232c9e56976588929cdb463f6ef92a3ec5b025",
+      "name": "icon_profile",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "627:1080": {
+      "key": "02a39d223efe99f6dcd587f9f733f1d7b07312e3",
+      "name": "icon_settings",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "49:324": {
+      "key": "954df2376ddb3cb7ffdd286ef30f87cad7f17285",
+      "name": "bar_icon_back",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "648:1272": {
+      "key": "458dd2d8ecb7c756a261778f351ba12a0dd82e89",
+      "name": "Property 1=3",
+      "description": "",
+      "remote": false,
+      "componentSetId": "648:1274",
+      "documentationLinks": []
+    },
+    "648:1269": {
+      "key": "9adaa2aa21acb8fd338209f724fa3c2525b5387c",
+      "name": "Property 1=2",
+      "description": "",
+      "remote": false,
+      "componentSetId": "648:1274",
+      "documentationLinks": []
+    },
+    "648:1271": {
+      "key": "2d31fa6db54d8ded4f5031543601015c462ad567",
+      "name": "Property 1=4",
+      "description": "",
+      "remote": false,
+      "componentSetId": "648:1274",
+      "documentationLinks": []
+    },
+    "648:1341": {
+      "key": "be1eb46e01cdc1c4234519bf54cec8723a58f95c",
+      "name": "icon_more",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "648:1273": {
+      "key": "5a9ffa80bb05f9830370532b4bce8ed2da855cab",
+      "name": "Property 1=1",
+      "description": "",
+      "remote": false,
+      "componentSetId": "648:1274",
+      "documentationLinks": []
+    },
+    "662:1320": {
+      "key": "ebe84d9dd4652639b1844a4897008b4ab52b8402",
+      "name": "Property 1=favourites",
+      "description": "",
+      "remote": false,
+      "componentSetId": "50:260",
+      "documentationLinks": []
+    },
+    "25:221": {
+      "key": "c710777552887d98592b089d30a75a1079875a15",
+      "name": "value=home, active=no",
+      "description": "",
+      "remote": false,
+      "componentSetId": "25:225",
+      "documentationLinks": []
+    },
+    "25:223": {
+      "key": "5ccbf173083734033a950fc4f437cdf52f3f3c23",
+      "name": "value=favs, active=yes",
+      "description": "",
+      "remote": false,
+      "componentSetId": "25:225",
+      "documentationLinks": []
+    },
+    "49:323": {
+      "key": "22c6860ee99efac7ef26dc836aa3d0648ea7d5a8",
+      "name": "bar_icon_edit",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "665:1495": {
+      "key": "57ba4ed8448013072a767bc7fc53223db926e84f",
+      "name": "Property 1=on",
+      "description": "",
+      "remote": false,
+      "componentSetId": "665:1497",
+      "documentationLinks": []
+    },
+    "610:2216": {
+      "key": "dbfc8491585ac97ea0fd6491bf63e0e617368d6e",
+      "name": "Color=2-color 5, Value=87",
+      "description": "",
+      "remote": true,
+      "componentSetId": "610:2109",
+      "documentationLinks": []
+    },
+    "610:2176": {
+      "key": "f6da6933adbc066279745f014f7071da06599c7d",
+      "name": "Color=2-color 5, Value=100",
+      "description": "",
+      "remote": true,
+      "componentSetId": "610:2109",
+      "documentationLinks": []
+    },
+    "665:1475": {
+      "key": "b420b403f8a53a68d96d63c1f51cf14fdfe4efeb",
+      "name": "Property 1=on",
+      "description": "",
+      "remote": false,
+      "componentSetId": "85:1148",
+      "documentationLinks": []
+    },
+    "646:1414": {
+      "key": "1b39056302285f5ffe3575ef497cb5896e07851a",
+      "name": "logo",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "284:3482": {
+      "key": "e7f9d7b657b3a5c02de0792e937f326a237c861b",
+      "name": "Property 1=filled",
+      "description": "",
+      "remote": false,
+      "componentSetId": "284:3483",
+      "documentationLinks": []
+    },
+    "284:3481": {
+      "key": "1ef5a5d6af3e077fdd20d976dfdbc91c863c91b2",
+      "name": "Property 1=Default",
+      "description": "",
+      "remote": false,
+      "componentSetId": "284:3483",
+      "documentationLinks": []
+    },
+    "633:1145": {
+      "key": "5da819a630320011a64a22220a4136d28965cd05",
+      "name": "button",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "633:1306": {
+      "key": "c725c3cc1dc7d57e203c990ca6d834389d561914",
+      "name": "Vector 39",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "644:1109": {
+      "key": "87d9cfd6293a1d3e913bbb5b13794121d33bb982",
+      "name": "icon block",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "629:1663": {
+      "key": "5b9d1c2f1eb818abfcc39e9974c378ee74c0be3f",
+      "name": "Property 1=mass",
+      "description": "",
+      "remote": false,
+      "componentSetId": "650:1656",
+      "documentationLinks": []
+    },
+    "649:1422": {
+      "key": "4b218091ebeec49db6fcba256e8ba62fd2e947bb",
+      "name": "Property 1=gravity",
+      "description": "",
+      "remote": false,
+      "componentSetId": "650:1656",
+      "documentationLinks": []
+    },
+    "650:1655": {
+      "key": "8640ec77397deee07a9fbf6ee3214d28314847f9",
+      "name": "Property 1=day",
+      "description": "",
+      "remote": false,
+      "componentSetId": "650:1656",
+      "documentationLinks": []
+    },
+    "650:1653": {
+      "key": "ece2e215df750e64b26fa5bb5934d8c30d36b163",
+      "name": "Property 1=velocity",
+      "description": "",
+      "remote": false,
+      "componentSetId": "650:1656",
+      "documentationLinks": []
+    },
+    "650:1652": {
+      "key": "fa9190f3fb76f58ef73ec4bd43f14257eff56a7a",
+      "name": "Property 1=temp",
+      "description": "",
+      "remote": false,
+      "componentSetId": "650:1656",
+      "documentationLinks": []
+    },
+    "650:1654": {
+      "key": "4e463f352dd996e8dcfc44df75bc98ac0dfee78d",
+      "name": "Property 1=distance",
+      "description": "",
+      "remote": false,
+      "componentSetId": "650:1656",
+      "documentationLinks": []
+    },
+    "645:1335": {
+      "key": "e99b8476fed9fd5b358dc68bb6843f221599edb6",
+      "name": "Property 1=inner",
+      "description": "",
+      "remote": false,
+      "componentSetId": "645:1336",
+      "documentationLinks": []
+    },
+    "25:222": {
+      "key": "436503034abc9e5d23d27c6dedfe0dbdcf8938c0",
+      "name": "value=more, active=yes",
+      "description": "",
+      "remote": false,
+      "componentSetId": "25:225",
+      "documentationLinks": []
+    },
+    "49:281": {
+      "key": "4a91604a6c55d0129d4b7c7df827c3289758c7af",
+      "name": "bar_icon_plus",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "263:2025": {
+      "key": "fec4d76be74fc456145638eda628c41a9af60e84",
+      "name": "icon_blink",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "441:4725": {
+      "key": "01ada526331c79979f4afa3be0803e16fda212d9",
+      "name": "tab_export",
+      "description": "",
+      "remote": false,
+      "documentationLinks": []
+    },
+    "662:1373": {
+      "key": "5cbae8e23518f7c7266e4f1913e73c3b8c719737",
+      "name": "Property 1=more",
+      "description": "",
+      "remote": false,
+      "componentSetId": "50:260",
+      "documentationLinks": []
+    },
+    "85:1147": {
+      "key": "a6042e1c39cdbdaf9aa47ab4f718b71aa191d489",
+      "name": "Property 1=off",
+      "description": "",
+      "remote": false,
+      "componentSetId": "85:1148",
+      "documentationLinks": []
+    },
+    "284:3480": {
+      "key": "5a63e7779978eff8e3b3914d101d87c4bf54e475",
+      "name": "Property 1=disabled",
+      "description": "",
+      "remote": false,
+      "componentSetId": "284:3483",
+      "documentationLinks": []
+    },
+    "284:3479": {
+      "key": "530b9342e478ba708bcf6be8c3a850f4776c9b99",
+      "name": "Property 1=error",
+      "description": "",
+      "remote": false,
+      "componentSetId": "284:3483",
+      "documentationLinks": []
+    },
+    "633:1149": {
+      "key": "9a6e33e11814d72585db2eea3252d3076afa2304",
+      "name": "Property 1=Primary, State=Default",
+      "description": "",
+      "remote": false,
+      "componentSetId": "633:1175",
+      "documentationLinks": []
+    },
+    "633:1185": {
+      "key": "51e7d7e1b0beb87a048e443ddb53a9e5843a3464",
+      "name": "Property 1=Primary, State=pressed",
+      "description": "",
+      "remote": false,
+      "componentSetId": "633:1175",
+      "documentationLinks": []
+    },
+    "633:1203": {
+      "key": "b8681653e191407f60d696bba47558b35e8b2636",
+      "name": "Property 1=Primary, State=disabled",
+      "description": "",
+      "remote": false,
+      "componentSetId": "633:1175",
+      "documentationLinks": []
+    },
+    "633:1162": {
+      "key": "3e078c6a462eb146116a27d9633e846294a83498",
+      "name": "Property 1=Secondary, State=Default",
+      "description": "",
+      "remote": false,
+      "componentSetId": "633:1175",
+      "documentationLinks": []
+    },
+    "633:1187": {
+      "key": "78b8f07916680a988bc6b68da3b304e94cf1fd76",
+      "name": "Property 1=Secondary, State=pressed",
+      "description": "",
+      "remote": false,
+      "componentSetId": "633:1175",
+      "documentationLinks": []
+    },
+    "633:1205": {
+      "key": "9b1852229e6a1812ae27858a0ec5698c611db542",
+      "name": "Property 1=Secondary, State=disabled",
+      "description": "",
+      "remote": false,
+      "componentSetId": "633:1175",
+      "documentationLinks": []
+    },
+    "633:1174": {
+      "key": "e21ba3c2ecfe4127e90f0ddf3ec2709c5b832eea",
+      "name": "Property 1=Tertiary, State=Default",
+      "description": "",
+      "remote": false,
+      "componentSetId": "633:1175",
+      "documentationLinks": []
+    },
+    "633:1189": {
+      "key": "61d47670a3146268707dbcd69d5346c24c76445f",
+      "name": "Property 1=Tertiary, State=pressed",
+      "description": "",
+      "remote": false,
+      "componentSetId": "633:1175",
+      "documentationLinks": []
+    },
+    "633:1207": {
+      "key": "c7f780e07a8fb076b2fdbfaa5597b25862027646",
+      "name": "Property 1=Tertiary, State=disabled",
+      "description": "",
+      "remote": false,
+      "componentSetId": "633:1175",
+      "documentationLinks": []
+    },
+    "665:1496": {
+      "key": "b5eb7094e8ecb444f90d884db1030071ae8ccc6d",
+      "name": "Property 1=off",
+      "description": "",
+      "remote": false,
+      "componentSetId": "665:1497",
+      "documentationLinks": []
+    },
+    "648:1270": {
+      "key": "e97e7e0d93862cda5c785105209b25b6893ac4a3",
+      "name": "Property 1=5",
+      "description": "",
+      "remote": false,
+      "componentSetId": "648:1274",
+      "documentationLinks": []
+    }
+  },
+  "componentSets": {
+    "50:260": {
+      "key": "aa21856ab0ec2058a9024a4b1098983795ecada4",
+      "name": "Tabbar",
+      "description": "",
+      "documentationLinks": []
+    },
+    "25:225": {
+      "key": "d592597811125b67784bdefccf3dca8443958595",
+      "name": "tab_icon",
+      "description": "",
+      "documentationLinks": []
+    },
+    "645:1336": {
+      "key": "3c0d3546f4987f8e33bc4d77ca9578f8bcd7a8eb",
+      "name": "Navbar",
+      "description": "",
+      "documentationLinks": []
+    },
+    "648:1274": {
+      "key": "d54f467302adeb322864242b575a781f442837d5",
+      "name": "planet",
+      "description": "",
+      "documentationLinks": []
+    },
+    "665:1497": {
+      "key": "05cd483957593bbf2a7613221275bcce52333796",
+      "name": "Switch",
+      "description": "",
+      "documentationLinks": []
+    },
+    "610:2109": {
+      "key": "f9e55681e8a5bc47ba47d7f859e8160586ae8a87",
+      "name": "circle",
+      "description": "",
+      "remote": true
+    },
+    "85:1148": {
+      "key": "9f45ff4a075a99717ea814654a49a4982411d6a0",
+      "name": "checkbox",
+      "description": "",
+      "documentationLinks": []
+    },
+    "284:3483": {
+      "key": "0c3ebbf115203528cbaf713256ec24a8ad2d21ed",
+      "name": "input",
+      "description": "",
+      "documentationLinks": []
+    },
+    "650:1656": {
+      "key": "94408da6edb04820e60e1403ad088c9744dd6b4e",
+      "name": "icon_xl",
+      "description": "",
+      "documentationLinks": []
+    },
+    "633:1175": {
+      "key": "19947dd00c03152730a6de74aaa1571018089fef",
+      "name": "Button",
+      "description": "",
+      "documentationLinks": []
+    }
+  },
+  "schemaVersion": 0,
+  "styles": {
+    "26:642": {
+      "key": "fb3750ca82e68a49d1ca5c4d239c0c63803c2c19",
+      "name": "dark/Accent",
+      "styleType": "FILL",
+      "remote": false,
+      "description": ""
+    },
+    "26:645": {
+      "key": "0d839321dbcd4fa3eb6e8b9d34c686f6c9844d7a",
+      "name": "dark/Active",
+      "styleType": "FILL",
+      "remote": false,
+      "description": ""
+    },
+    "26:646": {
+      "key": "0939f69f97b4614e1d3aa8ce185b9573e6eacf0a",
+      "name": "dark/BG",
+      "styleType": "FILL",
+      "remote": false,
+      "description": ""
+    },
+    "50:89": {
+      "key": "77f2144451fe2d827b8e0497c304fa766e2b60f6",
+      "name": "H1",
+      "styleType": "TEXT",
+      "remote": false,
+      "description": ""
+    },
+    "50:1690": {
+      "key": "ec140058f12fe18f79954ca3099e302a32837885",
+      "name": "tile",
+      "styleType": "EFFECT",
+      "remote": false,
+      "description": ""
+    },
+    "59:530": {
+      "key": "d6996ffa0bd098c61ff8301945d76224ddf2298d",
+      "name": "dark/text",
+      "styleType": "FILL",
+      "remote": false,
+      "description": ""
+    },
+    "60:548": {
+      "key": "a84eb6af335f7d8c1d136cffc889486f1f3fd932",
+      "name": "dark/elevation",
+      "styleType": "FILL",
+      "remote": false,
+      "description": ""
+    },
+    "60:549": {
+      "key": "1541b36eb8d1e130c3d3377c0f68c6c4314ec1f0",
+      "name": "dark/stroke",
+      "styleType": "FILL",
+      "remote": false,
+      "description": ""
+    },
+    "60:551": {
+      "key": "c996b3fc1099582812ab447f251bda5585a2de55",
+      "name": "dark/#000",
+      "styleType": "FILL",
+      "remote": false,
+      "description": ""
+    },
+    "80:1133": {
+      "key": "a34c9c6ce88d178ae84304f32a9780c5d97f67c5",
+      "name": "H2",
+      "styleType": "TEXT",
+      "remote": false,
+      "description": ""
+    },
+    "80:1134": {
+      "key": "c7d2adf6e51b6238f8ed0726747784c391c5aee3",
+      "name": "H3",
+      "styleType": "TEXT",
+      "remote": false,
+      "description": ""
+    },
+    "80:1135": {
+      "key": "88dea5df507450b616c76e2f195a31e6315aa138",
+      "name": "Body",
+      "styleType": "TEXT",
+      "remote": false,
+      "description": ""
+    },
+    "80:1136": {
+      "key": "016c9cfeeb11e76e97175f9d273de1e03cc9d519",
+      "name": "Message",
+      "styleType": "TEXT",
+      "remote": false,
+      "description": ""
+    },
+    "80:1138": {
+      "key": "6fdd05872af916f584df3f927c06226f0aa5c491",
+      "name": "Minimal",
+      "styleType": "TEXT",
+      "remote": false,
+      "description": ""
+    },
+    "284:3477": {
+      "key": "a1934160bd2804ae2f9e5890fda323c763255c70",
+      "name": "dark/gradient",
+      "styleType": "FILL",
+      "remote": false,
+      "description": ""
+    },
+    "622:1031": {
+      "key": "fe6751a0d1dcdd998f5263da321721958b770d80",
+      "name": "dark/gradient",
+      "styleType": "FILL",
+      "remote": false,
+      "description": ""
+    },
+    "650:1699": {
+      "key": "4cfd35f2a0c5ab3dacbdf0550919f64023d62b43",
+      "name": "dark/stroke",
+      "styleType": "FILL",
+      "remote": false,
+      "description": ""
+    },
+    "650:1711": {
+      "key": "ac7062c2a61eefad750bcf04d180884f067502b8",
+      "name": "planet_shadow",
+      "styleType": "EFFECT",
+      "remote": false,
+      "description": ""
+    },
+    "610:2106": {
+      "key": "238dfdbd9b8eb639f3a6451ebd769749d8aae286",
+      "name": "gradient 5",
+      "styleType": "FILL",
+      "remote": true,
+      "description": ""
+    },
+    "610:2103": {
+      "key": "0beb2c5f86dbeceff27fe2bc60fc6f4bdf1d805e",
+      "name": "gradient 2",
+      "styleType": "FILL",
+      "remote": true,
+      "description": ""
+    }
+  },
+  "name": "Cosmic — Free Flutter App UI Template (Community)",
+  "lastModified": "2026-03-25T09:16:24Z",
+  "thumbnailUrl": "https://s3-alpha.figma.com/thumbnails/76af4372-98c8-4740-9d48-fc7da5df84ac?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQ4GOSFWC6RGVDPLF%2F20260322%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260322T120000Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=2153acc2c4c9eb942ea75ff838198fe2e2174516778ca85c92664ed24d39a3bf",
+  "version": "2334814118405926087",
+  "role": "owner",
+  "editorType": "figma",
+  "linkAccess": "view",
+  "document": {
+    "id": "0:0",
+    "name": "Document",
+    "type": "DOCUMENT",
+    "scrollBehavior": "SCROLLS",
+    "children": [
+      {
+        "id": "25:448",
+        "name": "🎨 App Design",
+        "type": "CANVAS",
+        "_ref": "pages/25_448____App_Design/canvas_info.json"
+      },
+      {
+        "id": "5:3",
+        "name": "🧱 UI Kit",
+        "type": "CANVAS",
+        "_ref": "pages/5_3____UI_Kit/canvas_info.json"
+      }
+    ]
+  }
+}

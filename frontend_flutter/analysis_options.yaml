@@ -1,0 +1,10 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    avoid_print: true # Iron Rule 6 Compliance
+    type_annotate_public_apis: true
+    always_declare_return_types: true
+    unnecessary_brace_in_string_interps: true

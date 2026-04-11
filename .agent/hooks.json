@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "post_edit": {
+      "description": "SAAF Global Safety Net: Executes automated tests after file modifications.",
+      "rules": [
+        {
+          "pattern": "*.py",
+          "command": "python -m pytest {file} --tb=short || echo '⚠️ SAAF Backend Warning: Tests failed! Review the output.'",
+          "blocking": false 
+        },
+        {
+          "pattern": "*.dart",
+          "command": "flutter test {file} || echo '⚠️ SAAF Frontend Warning: Widget tests failed!'",
+          "blocking": false
+        }
+      ]
+    }
+  }
+}
