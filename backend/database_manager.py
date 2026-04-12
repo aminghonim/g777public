@@ -10,7 +10,7 @@ import json
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 import psycopg2
-from psycopg2.extras import RealDictCursor, Json
+from psycopg2.extras import RealDictCursor, execute_values, Json
 from psycopg2 import pool
 import logging
 from dotenv import load_dotenv
@@ -149,6 +149,42 @@ class DatabaseManager:
         except Exception as e:
             conn.rollback()
             logger.error(f"Error in save_interaction: {e}")
+            raise
+        finally:
+            self.release_connection(conn)
+
+    def sync_groups_to_db(self, instance_name: str, groups: List[Dict]) -> int:
+        """
+        SAAS-008: High-Performance Batch Group Sync.
+        Uses single bulk query to upsert WhatsApp groups.
+        """
+        if self.pool is None or not groups:
+            return 0
+            
+        # Transform into tuples for execute_values
+        data_list = [
+            (g["id"], instance_name, g["name"], g.get("member_count", 0)) 
+            for g in groups
+        ]
+        
+        conn = self.get_connection()
+        try:
+            with conn.cursor() as cursor:
+                query = """
+                    INSERT INTO groups (id, instance_name, name, member_count)
+                    VALUES %s
+                    ON CONFLICT (id, instance_name) 
+                    DO UPDATE SET 
+                        name = EXCLUDED.name,
+                        member_count = EXCLUDED.member_count,
+                        updated_at = NOW();
+                """
+                execute_values(cursor, query, data_list)
+                conn.commit()
+                return len(data_list)
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error in bulk sync_groups_to_db: {e}")
             raise
         finally:
             self.release_connection(conn)
@@ -465,6 +501,7 @@ class DatabaseManager:
         self._ensure_users_table()
         self._ensure_tiers_and_quotas_tables()
         self._ensure_licenses_and_devices_tables()
+        self._ensure_groups_table()
         self._ensure_multitenancy_columns()
 
     def _ensure_users_table(self):
@@ -625,6 +662,29 @@ class DatabaseManager:
                 conn.commit()
         except Exception as e:
             logger.warning(f"Migration failed: {e}")
+        finally:
+            self.release_connection(conn)
+
+    def _ensure_groups_table(self):
+        """Create `groups` table if it does not exist."""
+        conn = self.get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS groups (
+                        id TEXT NOT NULL,
+                        instance_name TEXT NOT NULL,
+                        name TEXT,
+                        member_count INTEGER DEFAULT 0,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        PRIMARY KEY (id, instance_name)
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_groups_instance_name ON groups(instance_name);
+                    """
+                )
+                conn.commit()
         finally:
             self.release_connection(conn)
 
