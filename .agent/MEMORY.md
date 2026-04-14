@@ -12,6 +12,7 @@
   - **Cache & Rate Limit**: **Upstash Redis**. `backend/services/cache_manager.py`. (Rule 11: AI Budget protection).
   - **Auth & Identity**: **Clerk**. `backend/core/auth.py`. (Middleware + JWT Verification).
   - **Observability**: **Sentry**. `backend/core/monitoring.py`. (Error & Performance tracking).
+- **SAAF Status**: **Full Squad Mode ACTIVATED** (SAAF Governance Enforcement active).
 - **Deprecated Database**: **Neon PostgreSQL** (Confirmed Removed).
 - **Communication Engine**: **Evolution API v2** (Local/Gateway architecture).
   - **Local Gateway**: `backend/wa_gateway.py` (WAGateway class).
@@ -32,6 +33,7 @@
 2.  **Postgres Pooler**: Use Port `6543` for Supabase connection to ensure stability.
 3.  **Arabic Communication**: Default technical reasoning and explanations in Arabic.
 4.  **Emoji usage**: Forbidden in code blocks.
+5.  **SAAF Enforcement**: All AI interventions MUST use `agent-router` (Backend) or `impeccable-protocol` (Frontend). Emergency reset command is `[SAAF ENFORCEMENT - HALT]`.
 
 ## 📅 Historical Milestones
 
@@ -119,4 +121,18 @@
   - Implemented `GlobalLogsConsole` widget in `lib/features/logs/presentation/widgets/`.
   - Verified UI governance via `flutter analyze` ensuring zero linting errors.
   - Enforced exact **Space Blue** (#091522) and Neon color tokens for the logging interface.
+
+- **2026-04-13**: **SAAF FULL SQUAD ACTIVATION**:
+  - Integrated **SAAF (Super AI Agency Framework)** directives into core project memory.
+  - Activated mandatory MCP routing for Backend (`agent-router`) and Frontend (`impeccable-protocol`).
+  - Updated `GEMINI.md` as the single source of truth for SAAF Governance.
+  - Established logic for **SAAF ENFORCEMENT - HALT** to prevent AI hallucinations and unverified code execution.
+
+- **2026-04-14**: **SAAF MODELS REFACTOR**:
+    - Performed surgical refactor of `backend/models/group_sender.py` for full CNS Squad compliance.
+    - Injected mandatory docstrings and strict type hints (SAAF Rule 8).
+    - Enforced **Tenant Isolation** by adding `instance_name` to all persistent models (SAAF Rule 12).
+    - Hardened type safety by converting status strings to `BroadcastStatusEnum`.
+    - Integrated Pydantic field validation (`ge=0`) for broadcasting delay parameters.
+    - Verified logic with an automated TDD-based scratch suite.
 
