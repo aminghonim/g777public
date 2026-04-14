@@ -136,3 +136,10 @@
     - Integrated Pydantic field validation (`ge=0`) for broadcasting delay parameters.
     - Verified logic with an automated TDD-based scratch suite.
 
+- **2026-04-14**: **VULNERABILITY M8 (MCP AUTH) FIXED**:
+    - Implemented `backend/core/mcp_auth.py` with `MCPAuthenticator` singleton.
+    - Added `X-MCP-Token` header validation using `hmac.compare_digest` for timing-attack protection.
+    - Integrated authentication into `MCPManager.call_tool` and `MCPManager.get_tools_definitions`.
+    - Enforced mandatory API key check for all MCP tool invocations.
+    - Achieved **GREEN** status on security TDD suite `tests/security/test_mcp_auth.py`.
+

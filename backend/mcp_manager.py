@@ -13,6 +13,7 @@ from tenacity import (
     before_log,
     retry_if_exception_type,
 )
+from backend.core.mcp_auth import MCPAuthenticator
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class MCPManager:
             return
         self.sessions: Dict[str, ClientSession] = {}
         self.server_params: Dict[str, StdioServerParameters] = {}
+        self.authenticator = MCPAuthenticator()
         self._initialized = True
 
         # Configure default servers
@@ -58,11 +60,15 @@ class MCPManager:
         before=before_log(logger, logging.WARNING),
         retry=retry_if_exception_type(Exception),
     )
-    async def get_tools_definitions(self) -> List[types.Tool]:
+    async def get_tools_definitions(self, api_key: Optional[str] = None) -> List[types.Tool]:
         """
         Connects to all servers and returns ADK-compliant Tool definitions.
-        Includes Self-Healing Retry Logic.
+        Requires 'read' or 'full' permission.
         """
+        if not self.authenticator.validate(api_key, required_perm="read"):
+            logger.warning("Discovery denied: Invalid or missing MCP API key.")
+            return []
+
         all_tools = []
         for server_name, params in self.server_params.items():
             try:
@@ -94,8 +100,21 @@ class MCPManager:
 
         return all_tools
 
-    async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> str:
+    async def call_tool(
+        self, 
+        tool_name: str, 
+        arguments: Dict[str, Any], 
+        api_key: Optional[str] = None,
+        caller: str = "unknown"
+    ) -> str:
         """Route tool calls from the AI back to the correct MCP server."""
+        # 🛡️ MCP Auth Layer (M8)
+        if not self.authenticator.validate(api_key, required_perm="full"):
+            self.authenticator.audit_log(caller, tool_name, success=False)
+            return f"Error: Authentication failed for tool {tool_name}. Invalid or missing X-MCP-Token."
+
+        self.authenticator.audit_log(caller, tool_name, success=True)
+
         if "__" not in tool_name:
             return f"Error: Invalid tool name format {tool_name}"
 
