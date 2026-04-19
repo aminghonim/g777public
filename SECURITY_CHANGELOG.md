@@ -3,8 +3,8 @@
 **Date:** Monday, April 13, 2026 — Updated: Sunday, April 19, 2026
 **Audit Date:** 2026-04-13
 **Auditor:** security-engineer (via SAAF Squad)
-**Total Vulnerabilities Fixed:** 30 (5 CRITICAL + 9 HIGH + 16 MEDIUM)
-**Tests:** 9 critical + 5 M5 + 9 M8 + 5 M10 = 28 passing, 1 xfailed (pre-existing)
+**Total Vulnerabilities Fixed:** 32 (5 CRITICAL + 9 HIGH + 18 MEDIUM)
+**Tests:** 9 critical + 5 M5 + 9 M8 + 5 M10 + 2 M11/M12 = 30 passing, 1 xfailed (pre-existing)
 
 ---
 
@@ -123,6 +123,16 @@
 - **Risk Eliminated:** Arbitrary non-Python code (Bash, JS) bypassing static analysis and executing on the server (RCE risk).
 - **TDD Result:** 5/5 tests GREEN. 28/28 full security suite unbroken.
 
+### M11 & M12 — In-memory State / Non-distributed Rate Limiting
+- **Date:** 2026-04-19
+- **Branch:** `fix/m11-distributed-state` → merged into `cleansed-history`
+- **Files:** `core/security.py`, `backend/routers/license.py`
+- **Change:**
+  - `security.py`: Migrated `_token_blocklist` to Upstash Redis via `CacheManager`, with local memory acting only as a fallback.
+  - `license.py`: Removed local dictionary `_guest_requests` and migrated sliding-window rate limit for guest endpoints to Redis.
+- **Risk Eliminated:** Missing blocklists across distributed workers (CWE-613) and easily bypassed rate-limiting through multi-instance attacks (CWE-799).
+- **TDD Result:** 2/2 tests GREEN. 30/30 full security suite unbroken.
+
 ### M7 — Unauthenticated Webhooks (HMAC Verification)
 - **Date:** 2026-04-19
 - **Branch:** `fix/m7-webhook-auth` → merged into `cleansed-history`
@@ -154,11 +164,11 @@
 
 ## ⚠️ Remaining Known Issues (Not Yet Addressed)
 
-1. **In-memory token blocklist** — not distributed across workers (requires Redis/memcached migration)
-2. **Non-distributed rate limiting** — in-memory counters per worker
+1. ~~**In-memory token blocklist**~~ — **CLOSED by M11** (2026-04-19)
+2. ~~**Non-distributed rate limiting**~~ — **CLOSED by M12** (2026-04-19)
 3. ~~**Unauthenticated webhook endpoints**~~ — **CLOSED by M7** (2026-04-19)
 4. ~~**MCP tools have no auth**~~ — **CLOSED by M8** (2026-04-14)
 5. ~~**QuotaGuard fallback to guest**~~ — **CLOSED by M5** (2026-04-19)
 6. ~~**SafetyProtocol passes unknown languages**~~ — **CLOSED by M10** (2026-04-19)
 
-These remaining issues (1 and 2) pertain to distributed systems scaling rather than immediate remote exploits, and should be addressed in an infrastructure sprint.
+All major known security vulnerabilities from the initial audit have been successfully resolved.

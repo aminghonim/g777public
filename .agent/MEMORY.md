@@ -170,6 +170,13 @@
     - Achieved **GREEN** status: 5/5 new TDD tests + 28/28 full security suite passing.
     - Branch `fix/m10-safety-protocol-bypass` merged into `cleansed-history`.
 
+- **2026-04-19**: **VULNERABILITY M11 & M12 (IN-MEMORY STATE) FIXED**:
+    - Root cause: Token blocklist and Guest rate limiting were stored in local python variables `set()` and `dict()`, which do not persist across workers or server restarts.
+    - **File 1:** `core/security.py` — Migrated `revoke_token` and `decode_token` blocklist logic to use `CacheManager` with Upstash Redis, keeping local memory as a fallback.
+    - **File 2:** `backend/routers/license.py` — Removed `_guest_requests` dict and migrated `_check_guest_rate_limit` to use `CacheManager.check_rate_limit`.
+    - Achieved **GREEN** status: 2/2 new TDD tests (Redis mocked and asserted) + 30/30 full security suite passing.
+    - Branch `fix/m11-distributed-state` merged into `cleansed-history`.
+
 ## 🔑 Known Secrets & Required Environment Variables
 
 | Variable | Purpose | Where Used |
