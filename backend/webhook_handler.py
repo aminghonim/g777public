@@ -7,6 +7,8 @@ Flow: Baileys → Privacy → DB → AI → Reply + N8N Forwarding
 
 # Standard library
 import asyncio
+import hashlib
+import hmac
 import json
 import logging
 import os
@@ -15,7 +17,7 @@ from typing import Any, Dict
 
 # Third-party
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 # Local / first-party
@@ -43,6 +45,60 @@ logger = logging.getLogger(__name__)
 
 N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL")
 BOT_PAUSE_HOURS = int(os.getenv("BOT_PAUSE_ON_HUMAN_REPLY", "4"))
+
+# ============================================================================
+# SECURITY: M7 - WEBHOOK SIGNATURE VERIFICATION
+# ============================================================================
+
+
+async def verify_evolution_signature(request: Request) -> None:
+    """
+    FastAPI Dependency: enforces HMAC-SHA256 signature verification.
+
+    WHY: Without this check any actor who knows the webhook URL can send
+    arbitrary payloads, inject fake messages, and exhaust downstream
+    resources (N8N, AI, DB). This is vulnerability M7.
+
+    Algorithm:
+        1. Read EVOLUTION_WEBHOOK_SECRET from environment (fail-closed if absent).
+        2. Read the raw request body (bytes) — MUST happen before .json().
+        3. Compute expected = "sha256=" + HMAC-SHA256(secret, body).
+        4. Compare with x-evolution-signature header via hmac.compare_digest
+           to prevent timing-oracle attacks (CWE-208 / OWASP).
+        5. Reject with 403 on mismatch; 500 on missing configuration.
+    """
+    secret = os.getenv("EVOLUTION_WEBHOOK_SECRET", "")
+    if not secret:
+        # WHY: Fail-closed — a missing secret means the operator has not
+        # configured the environment correctly. Allowing requests through
+        # silently would defeat the entire security control.
+        logger.error(
+            "[Security] EVOLUTION_WEBHOOK_SECRET is not configured. "
+            "Rejecting all webhook requests until the secret is set."
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Webhook secret not configured. Contact the system administrator.",
+        )
+
+    signature_header = request.headers.get("x-evolution-signature", "")
+    body = await request.body()
+
+    expected = "sha256=" + hmac.new(
+        secret.encode("utf-8"), body, hashlib.sha256
+    ).hexdigest()
+
+    # WHY: compare_digest runs in constant time regardless of input length,
+    # preventing an attacker from measuring response latency to infer the
+    # correct HMAC byte-by-byte (CWE-208 timing attack).
+    if not hmac.compare_digest(expected, signature_header):
+        logger.warning(
+            "[Security] Webhook signature MISMATCH — request rejected. "
+            "Source IP: %s",
+            request.client.host if request.client else "unknown",
+        )
+        raise HTTPException(status_code=403, detail="Invalid webhook signature.")
+
 
 # ============================================================================
 # MAIN WEBHOOK PROCESSOR
@@ -93,10 +149,11 @@ async def process_whatsapp_message(payload: Dict[str, Any]):
         # Extract phone number
         phone = remote_jid.split("@")[0]
 
-        # Log received message
-        preview = message_text[:50] if message_text else f"[{media_type}]"
+        # Log received message (PII-safe: redact phone and truncate content)
+        preview = message_text[:30] if message_text else f"[{media_type}]"
+        redacted_phone = phone[:4] + "****" + phone[-2:] if len(phone) > 6 else "***"
         logger.info(
-            f"[Inbound] Processing | From: {phone} | Content: {preview} | Media: {media_type or 'none'}"
+            f"[Inbound] Processing | From: {redacted_phone} | Content: {preview} | Media: {media_type or 'none'}"
         )
 
         # ==================== STEP 3: CUSTOMER MANAGEMENT ====================
@@ -240,7 +297,7 @@ async def forward_to_n8n(
             "X-Media-Type": media_type or "text",
         }
 
-        async with httpx.AsyncClient(follow_redirects=True, verify=False) as client:
+        async with httpx.AsyncClient(follow_redirects=True, verify=True) as client:
             response = await client.post(
                 url, json=n8n_payload, headers=headers, timeout=15.0
             )
@@ -287,7 +344,7 @@ async def health_check():
     }
 
 
-@router.post("/webhook/whatsapp")
+@router.post("/webhook/whatsapp", dependencies=[Depends(verify_evolution_signature)])
 async def whatsapp_webhook(request: Request, background_tasks: BackgroundTasks):
     """
     [Task] Main webhook entry point for Evolution API v2.
@@ -324,7 +381,7 @@ async def whatsapp_webhook(request: Request, background_tasks: BackgroundTasks):
 # Evolution-specific webhook (tenant‑aware lead insertion)
 # ---------------------------------------------------------------------------
 
-@router.post("/api/webhook/evolution")
+@router.post("/api/webhook/evolution", dependencies=[Depends(verify_evolution_signature)])
 async def evolution_webhook(request: Request):
     """Handle incoming text messages from Evolution API.
 
