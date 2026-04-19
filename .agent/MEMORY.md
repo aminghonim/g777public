@@ -153,6 +153,15 @@
     - Achieved **GREEN** status: 5/5 TDD tests passing, 34 pre-existing tests unbroken.
     - Branch `fix/m7-webhook-auth` merged into `cleansed-history` via `--no-ff`.
 
+- **2026-04-19**: **VULNERABILITY M5 (QUOTAGUARD GUEST FALLBACK BYPASS) FIXED**:
+    - Root cause: `_get_effective_user_id()` used Python's `or` chain → `user_id or sub or GUEST_USER_ID`, so any falsy value (empty string, None) silently resolved to the guest UUID.
+    - **File 1:** `backend/core/quota_guard.py` — replaced silent `or` fallback with an explicit guard: if `user_id` and `sub` are both falsy, raise `HTTPException(401)`.
+    - **File 2:** `core/dependencies.py` — eliminated silent `pass` after Clerk rejection; when `CLERK_SECRET_KEY` is configured, a Clerk rejection now immediately re-raises (`raise clerk_exc`). SecurityEngine fallback is only reached when Clerk is NOT configured.
+    - Attack vector closed: Attacker can no longer craft a valid-signature JWT with `user_id=""` to bypass per-tenant quota tracking.
+    - Real guest path preserved: `/auth/guest` issues tokens with `user_id=GUEST_USER_ID` (non-empty), which passes the guard correctly.
+    - Achieved **GREEN** status: 5/5 new TDD tests + 23/23 full security suite passing.
+    - Branch `fix/m5-quotaguard-bypass` merged into `cleansed-history` via `--no-ff`.
+
 ## 🔑 Known Secrets & Required Environment Variables
 
 | Variable | Purpose | Where Used |

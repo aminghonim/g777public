@@ -3,8 +3,8 @@
 **Date:** Monday, April 13, 2026 — Updated: Sunday, April 19, 2026
 **Audit Date:** 2026-04-13
 **Auditor:** security-engineer (via SAAF Squad)
-**Total Vulnerabilities Fixed:** 28 (5 CRITICAL + 9 HIGH + 14 MEDIUM)
-**Tests:** 11 passed, 1 xfailed (pre-existing) + 5 new M7 tests (GREEN)
+**Total Vulnerabilities Fixed:** 29 (5 CRITICAL + 9 HIGH + 15 MEDIUM)
+**Tests:** 9 critical + 5 M5 + 9 M8 = 23 passing, 1 xfailed (pre-existing)
 
 ---
 
@@ -98,6 +98,20 @@
 - **File:** `backend/core/telemetry.py`
 - **Change:** `psutil.cpu_percentage()` → `psutil.cpu_percent()` (correct API name)
 
+### M5 — QuotaGuard Guest Fallback Bypass
+- **Date:** 2026-04-19
+- **Branch:** `fix/m5-quotaguard-bypass` → merged into `cleansed-history`
+- **Files:** `backend/core/quota_guard.py`, `core/dependencies.py`, `tests/security/test_m5_quotaguard.py`
+- **Change:**
+  - `_get_effective_user_id()`: Replaced silent `or GUEST_USER_ID` chain with explicit identity guard.
+    - Falsy `user_id` + falsy `sub` → `HTTPException(401)` immediately.
+    - Real guest path (token with `user_id=GUEST_USER_ID` from `/auth/guest`) passes correctly.
+  - `get_current_user()`: Removed silent `pass` after Clerk rejection.
+    - When `CLERK_SECRET_KEY` is configured: Clerk rejection → immediate `raise clerk_exc`.
+    - SecurityEngine fallback now only reachable in non-Clerk environments.
+- **Risk Eliminated (CWE-287):** Attacker crafting a valid-signature JWT with `user_id=""` could bypass per-tenant quota enforcement entirely, consuming unlimited resources under the guest quota.
+- **TDD Result:** 5/5 tests GREEN (RED→GREEN validated). 23/23 full security suite unbroken.
+
 ### M7 — Unauthenticated Webhooks (HMAC Verification)
 - **Date:** 2026-04-19
 - **Branch:** `fix/m7-webhook-auth` → merged into `cleansed-history`
@@ -133,7 +147,7 @@
 2. **Non-distributed rate limiting** — in-memory counters per worker
 3. ~~**Unauthenticated webhook endpoints**~~ — **CLOSED by M7** (2026-04-19)
 4. ~~**MCP tools have no auth**~~ — **CLOSED by M8** (2026-04-14)
-5. **QuotaGuard fallback to guest** — malformed tokens could bypass quota
-6. **SafetyProtocol passes unknown languages** — non-Python code not validated
+5. ~~**QuotaGuard fallback to guest**~~ — **CLOSED by M5** (2026-04-19)
+6. **SafetyProtocol passes unknown languages** — non-Python code not validated (M10)
 
 These should be addressed in a follow-up security sprint.
