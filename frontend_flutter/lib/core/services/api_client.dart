@@ -15,7 +15,15 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 
 class ApiClient {
   static const String _tokenKey = 'jwt_token';
+  static const String _mcpTokenKey = 'mcp_token';
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
+
+  /// Optional callback invoked on 401 responses to trigger provider-level logout.
+  /// Pass `ref.read(authProvider.notifier).logout` when creating the client
+  /// inside a Riverpod context to ensure the UI reacts immediately.
+  final Future<void> Function()? onUnauthorized;
+
+  ApiClient({this.onUnauthorized});
 
   static const String _baseUrl = String.fromEnvironment(
     'API_BASE_URL',
@@ -61,6 +69,7 @@ class ApiClient {
   }) async {
     await _ensureInitialized();
     final token = await _storage.read(key: _tokenKey);
+    final mcpToken = await _storage.read(key: _mcpTokenKey);
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -71,28 +80,49 @@ class ApiClient {
     if (_handshakeToken != null) {
       headers['X-G777-Auth-Token'] = _handshakeToken!;
     }
+    // MCP-SEC-001: Inject MCP token for all authenticated requests.
+    if (mcpToken != null && mcpToken.isNotEmpty) {
+      headers['X-MCP-Token'] = mcpToken;
+    }
     if (extra != null) headers.addAll(extra);
     return headers;
   }
 
-  ApiResponse _handleResponse(http.Response response) {
+  Future<ApiResponse> _handleResponse(http.Response response) async {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final body = response.body.isNotEmpty ? jsonDecode(response.body) : null;
       return ApiResponse(data: body, statusCode: response.statusCode);
     }
     if (response.statusCode == 401) {
-      // SAAS-005: Clear only authentication secrets while preserving system metadata
-      _storage.delete(key: _tokenKey);
-      _storage.delete(key: 'user_data');
+      // M5-SEC: Invoke provider-level logout callback so Riverpod updates the UI
+      // and navigation to the login page happens automatically.
+      await _storage.delete(key: _tokenKey);
+      await _storage.delete(key: 'user_data');
+      await onUnauthorized?.call();
       throw const ApiException(
         statusCode: 401,
         message: 'انتهت الجلسة. الرجاء تسجيل الدخول مجدداً.',
       );
     }
     if (response.statusCode == 403) {
-      throw const ApiException(
+      // QUOTA-SEC: Parse detail to distinguish quota exhaustion from permission denial.
+      String detail = 'غير مصرح بهذه العملية.';
+      if (response.body.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map && decoded.containsKey('detail')) {
+            detail = decoded['detail'].toString();
+          }
+        } catch (_) {}
+      }
+      final isQuota = detail.toUpperCase().contains('QUOTA') ||
+          detail.toUpperCase().contains('LIMIT');
+      throw ApiException(
         statusCode: 403,
-        message: 'غير مصرح بهذه العملية.',
+        message: isQuota
+            ? 'لقد استنفدت حصتك. يرجى الترقية لمتابعة الاستخدام.'  
+            : 'ليس لديك صلاحية للوصول لهذه الميزة.',
+        isQuotaError: isQuota,
       );
     }
     // Generic server error
@@ -128,7 +158,7 @@ class ApiClient {
       final response = await http
           .get(uri, headers: headers)
           .timeout(_defaultTimeout);
-      return _handleResponse(response);
+      return await _handleResponse(response);
     } on ApiException {
       rethrow;
     } catch (e) {
@@ -152,7 +182,7 @@ class ApiClient {
             body: body != null ? jsonEncode(body) : null,
           )
           .timeout(_defaultTimeout);
-      return _handleResponse(response);
+      return await _handleResponse(response);
     } on ApiException {
       rethrow;
     } catch (e) {
@@ -176,7 +206,7 @@ class ApiClient {
             body: body != null ? jsonEncode(body) : null,
           )
           .timeout(_defaultTimeout);
-      return _handleResponse(response);
+      return await _handleResponse(response);
     } on ApiException {
       rethrow;
     } catch (e) {
@@ -195,7 +225,7 @@ class ApiClient {
       final response = await http
           .delete(uri, headers: headers)
           .timeout(_defaultTimeout);
-      return _handleResponse(response);
+      return await _handleResponse(response);
     } on ApiException {
       rethrow;
     } catch (e) {
@@ -287,8 +317,16 @@ class ApiResponse {
 class ApiException implements Exception {
   final int statusCode;
   final String message;
+  
+  /// True when the server returned a 403 due to quota exhaustion.
+  /// Use this flag to show an upgrade prompt rather than a generic error.
+  final bool isQuotaError;
 
-  const ApiException({required this.statusCode, required this.message});
+  const ApiException({
+    required this.statusCode,
+    required this.message,
+    this.isQuotaError = false,
+  });
 
   @override
   String toString() => 'ApiException($statusCode): $message';
