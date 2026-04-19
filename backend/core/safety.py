@@ -52,11 +52,12 @@ class SafetyProtocol:
         if not code or not code.strip():
             return False, "Code content is empty."
 
-        if language.lower() == "python":
-            return self._validate_python(code)
+        SUPPORTED_LANGUAGES = {"python"}
+        if language.lower() not in SUPPORTED_LANGUAGES:
+            logger.warning(f"M10 Guard: Unsupported language '{language}' rejected.")
+            return False, f"Language '{language}' is not supported for execution. Only Python is permitted."
 
-        # Default pass for unknown languages (for now)
-        return True, "Language checks passed (No Linter)."
+        return self._validate_python(code)
 
     def _validate_python(self, code: str) -> Tuple[bool, str]:
         try:
