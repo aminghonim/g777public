@@ -143,3 +143,23 @@
     - Enforced mandatory API key check for all MCP tool invocations.
     - Achieved **GREEN** status on security TDD suite `tests/security/test_mcp_auth.py`.
 
+- **2026-04-19**: **VULNERABILITY M7 (UNAUTHENTICATED WEBHOOKS) FIXED**:
+    - Implemented `verify_evolution_signature()` as a FastAPI `Depends()` in `backend/webhook_handler.py`.
+    - Algorithm: **HMAC-SHA256** over raw request body, verified via `hmac.compare_digest()` (CWE-208 timing-attack protection).
+    - Protected endpoints: `POST /webhook/whatsapp` and `POST /api/webhook/evolution`.
+    - Fail-closed behavior: missing `EVOLUTION_WEBHOOK_SECRET` env var → HTTP 500; signature mismatch → HTTP 403 + WARNING log with client IP.
+    - Unprotected by design: `/webhook/health` (monitoring) and `/webhook/test` (dev-only).
+    - New secret required in env: `EVOLUTION_WEBHOOK_SECRET` — generate with `python -c "import secrets; print(secrets.token_hex(32))"`.
+    - Achieved **GREEN** status: 5/5 TDD tests passing, 34 pre-existing tests unbroken.
+    - Branch `fix/m7-webhook-auth` merged into `cleansed-history` via `--no-ff`.
+
+## 🔑 Known Secrets & Required Environment Variables
+
+| Variable | Purpose | Where Used |
+|---|---|---|
+| `EVOLUTION_WEBHOOK_SECRET` | HMAC-SHA256 webhook signature (M7) | `backend/webhook_handler.py` |
+| `MCP_API_KEY` | MCP tool invocation auth (M8) | `backend/core/mcp_auth.py` |
+| `EVOLUTION_API_KEY` | Evolution API bridge auth | `backend/evolution/` |
+| `G777_HANDSHAKE_TOKEN` | Internal service handshake | `backend/routers/` |
+| `BRIDGE_API_KEY` | Internal bridge authentication | `backend/` |
+
