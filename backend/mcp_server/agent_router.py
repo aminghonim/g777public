@@ -38,7 +38,7 @@ CONFIDENCE_MIN = 0.70
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
     reraise=True,
-    retry=tenacity.retry_if_exception_type((urllib.error.URLError, urllib.error.HTTPError, TimeoutError))
+    retry=retry_if_exception_type((urllib.error.URLError, urllib.error.HTTPError, TimeoutError))
 )
 def _search_pinecone(query: str, top_k: int = 5) -> list:
     """Search Pinecone for matching agents using REST API with Retry policy."""
