@@ -16,6 +16,7 @@ from backend.memory.vector_store_manager import VectorStoreManager
 from backend.observers.system_monitor import SystemMonitor
 from backend.observers.file_watcher import CodeChangeHandler
 from backend.executors.sandbox import SandboxExecutor
+from backend.ai_client import UnifiedAIClient
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,8 +40,12 @@ class Orchestrator:
         self.memory = VectorStoreManager()
         self.sandbox = SandboxExecutor()
         self.system_monitor = SystemMonitor()
-        self.client = genai.Client(api_key=self.api_key)
-        self.researcher = ResearcherAgent(self)  # <--- Initialize Researcher
+        
+        # Unified AI Client
+        self.ai_client = UnifiedAIClient(model=self.model_name, api_key=self.api_key)
+        self.client = getattr(self.ai_client.gemini_client, 'client', None) if self.ai_client.primary == "gemini" else None
+        
+        self.researcher = ResearcherAgent(self)
         self.coder = CoderAgent(self)  # <--- Initialize Coder
         self.sentinel = SentinelAgent(self)  # <--- Initialize Sentinel
         self.intent_analyzer = IntentAlignment()  # <--- Initialize Intent Analyzer
@@ -173,25 +178,36 @@ class Orchestrator:
             # Tool-Use Execution Loop (Max 5 turns)
             turn = 0
             while turn < 5:
-                response = await self.client.aio.models.generate_content(
-                    model=self.model_name,
-                    contents=contents,
-                    config=types.GenerateContentConfig(tools=tools, temperature=0.4),
-                )
-
-                # Check for empty response
-                if not response.candidates:
-                    return "Error: AI produced no candidates."
-
-                # Check for function calls
-                call = next(
-                    (
-                        p.function_call
-                        for p in response.candidates[0].content.parts
-                        if p.function_call
-                    ),
-                    None,
-                )
+                if self.ai_client.primary == "gemini" and self.client:
+                    response = await self.client.aio.models.generate_content(
+                        model=self.model_name,
+                        contents=contents,
+                        config=types.GenerateContentConfig(tools=tools, temperature=0.4),
+                    )
+                    
+                    # Check for empty response
+                    if not response.candidates:
+                        return "Error: AI produced no candidates."
+                    
+                    # Check for function calls
+                    call = next(
+                        (
+                            p.function_call
+                            for p in response.candidates[0].content.parts
+                            if p.function_call
+                        ),
+                        None,
+                    )
+                else:
+                    # Generic / Local Model Path (Text Only for now)
+                    # We convert history to a simple prompt string for local models
+                    prompt_str = f"{augmented_system_prompt}\n\nUser Message: {message}"
+                    # Add previous turns if any
+                    if turn > 0:
+                        prompt_str += "\n\n(Context from previous tool calls injected below)"
+                    
+                    text_response = await self.ai_client.generate_response(message, augmented_system_prompt)
+                    return text_response
 
                 if not call:
                     # Final text response
@@ -256,9 +272,9 @@ class Orchestrator:
                             is_valid, reason = safety_protocol.validate_code_safety(
                                 cmd, "shell"
                             )
-                            # Basic check (reusing validate_code_safety which defaults to pass for non-python)
-                            # Ideally we add specific shell validation here or rely on SandboxExecutor
-                            pass
+                            if not is_valid:
+                                is_safe = False
+                                error_msg = f"Safety Protocol Blocked Shell Command: {reason}"
 
                     if not is_safe:
                         result = error_msg
