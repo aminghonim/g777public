@@ -1,12 +1,45 @@
 import os
 import secrets
-from fastapi import APIRouter, HTTPException
+import logging
+import time
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from core.security import SecurityEngine
 from backend.database_manager import db_manager
 from backend.core.security_sanitizer import SecuritySanitizer
+from backend.services.cache_manager import cache_manager
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+# Guest endpoint rate limiting
+GUEST_RATE_LIMIT_WINDOW = 60  # seconds
+GUEST_RATE_LIMIT_MAX = 5  # max requests per window
+
+
+def _check_guest_rate_limit(client_ip: str) -> bool:
+    """
+    Distributed sliding window rate limiter for guest token endpoint.
+    Returns True if allowed, False if rate limited.
+    """
+    # Uses Upstash Redis via CacheManager to track requests per IP
+    return cache_manager.check_rate_limit(
+        identifier=f"guest_token:{client_ip}",
+        limit=GUEST_RATE_LIMIT_MAX,
+        window_seconds=GUEST_RATE_LIMIT_WINDOW
+    )
+
+
+def _get_master_key() -> str:
+    """
+    Retrieve the master key from environment.
+    If not set, returns None — master key functionality is disabled.
+    In production, set DEV_MASTER_KEY to a cryptographically secure value
+    generated at install time (e.g., secrets.token_urlsafe(32)).
+    """
+    return os.getenv("DEV_MASTER_KEY")
 
 
 class LicenseActivationRequest(BaseModel):
@@ -36,10 +69,13 @@ async def activate_license(payload: LicenseActivationRequest):
             .upper()
         )
         sanitized_hwid = SecuritySanitizer.sanitize_input(payload.hwid)
-        master_key_raw = os.getenv("DEV_MASTER_KEY", "G777-ULTRA-MASTER")
-        master_key = master_key_raw.replace("-", "").replace(".", "").upper()
+        master_key = _get_master_key()
+        if master_key:
+            master_key = master_key.replace("-", "").replace(".", "").upper()
+        else:
+            master_key = None  # Master key disabled if not configured
 
-        if sanitized_key == master_key:
+        if master_key and sanitized_key == master_key:
             # God-Mode Token Generation (No DB Interaction)
             token_data = {
                 "sub": "dev_master_007",
@@ -119,11 +155,23 @@ async def generate_license(payload: LicenseGenerationRequest):
 
 
 @router.post("/guest")
-async def activate_guest():
+async def activate_guest(request: Request):
     """
     SAAS-017: Guest Session Token.
     Issues an isolated token for trial users.
+    Rate limited to prevent token farming.
     """
+    # Rate limiting check
+    client_ip = request.client.host if request.client else "unknown"
+    if not _check_guest_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "RATE_LIMITED",
+                "message": f"Too many guest token requests. Max {GUEST_RATE_LIMIT_MAX} per {GUEST_RATE_LIMIT_WINDOW}s.",
+                "retry_after": GUEST_RATE_LIMIT_WINDOW,
+            }
+        )
     token_data = {
         "sub": "00000000-0000-0000-0000-000000000000",
         "user_id": "00000000-0000-0000-0000-000000000000",

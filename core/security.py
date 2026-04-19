@@ -3,9 +3,11 @@ import uuid
 import json
 import os
 import logging
+import hmac
 import bcrypt  # Direct bcrypt usage for robustness
 from pathlib import Path
 from core.config import settings
+from backend.services.cache_manager import cache_manager
 
 # Configure logger for this module
 logger = logging.getLogger(__name__)
@@ -17,20 +19,40 @@ from datetime import datetime, timedelta
 
 class SecurityEngine:
     # JWT configuration
-    SECRET_KEY = os.getenv("SECRET_KEY") or os.urandom(32).hex()
+    # In production, SECRET_KEY must be set via environment variable.
+    # For dev/test, a random key is generated per-process (tokens won't
+    # survive restarts — which is the intended security behavior).
+    _secret_key = os.getenv("SECRET_KEY")
+    if not _secret_key:
+        import warnings
+        warnings.warn(
+            "SECRET_KEY not set. Generating random key for this session. "
+            "Tokens will be invalidated on restart. "
+            "Set SECRET_KEY env var for production use.",
+            RuntimeWarning
+        )
+        _secret_key = os.urandom(32).hex()
+
+    SECRET_KEY = _secret_key
     ALGORITHM = os.getenv("JWT_ALGORITHM") or "HS256"
+    # Reduced from 30 days to 24 hours for better security
     ACCESS_TOKEN_EXPIRE_MINUTES = int(
-        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES") or 43200
-    )  # 30 Days default
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES") or 1440
+    )  # 24 Hours default
 
     # In-memory Token Blocklist (for ASVS V7.4.1 Session Revocation)
     _token_blocklist = set()
 
     @classmethod
     def revoke_token(cls, jti: str):
-        """Adds a JWT ID to the blocklist."""
+        """Adds a JWT ID to the distributed blocklist (Redis) with local fallback."""
         if jti:
             cls._token_blocklist.add(jti)
+            try:
+                # TTL is token expiration time in seconds to automatically clean up Redis
+                cache_manager.set(f"revoked_jti:{jti}", "1", ex=cls.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+            except Exception as e:
+                logger.error(f"Redis fallback: failed to add token {jti} to blocklist: {e}")
 
     # ASVS V6.1.1 & V6.3.1: Brute Force & Credential Stuffing Protection
     _failed_logins = (
@@ -132,10 +154,17 @@ class SecurityEngine:
         try:
             payload = jwt.decode(token, cls.SECRET_KEY, algorithms=[cls.ALGORITHM])
 
-            # V7.4.1: Verify token is not revoked
+            # V7.4.1: Verify token is not revoked (Distributed check)
             jti = payload.get("jti")
-            if jti and jti in cls._token_blocklist:
-                raise JWTError("Token has been revoked")
+            if jti:
+                redis_revoked = False
+                try:
+                    redis_revoked = bool(cache_manager.get(f"revoked_jti:{jti}"))
+                except Exception as e:
+                    logger.warning(f"Redis blocklist check failed, falling back to memory: {e}")
+                
+                if redis_revoked or jti in cls._token_blocklist:
+                    raise JWTError("Token has been revoked")
 
             # SAAS-006: Strict validation of tenant isolation claims
             if "sub" not in payload or "instance_name" not in payload:
