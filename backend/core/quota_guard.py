@@ -1,7 +1,10 @@
+import logging
 from fastapi import HTTPException, Depends, status
 from typing import Dict, Any
 from backend.database_manager import db_manager
 from core.dependencies import get_current_user
+
+logger = logging.getLogger(__name__)
 
 
 class QuotaGuard:
@@ -14,9 +17,26 @@ class QuotaGuard:
 
     @classmethod
     def _get_effective_user_id(cls, current_user: Dict[str, Any]) -> str:
-        return (
-            current_user.get("user_id") or current_user.get("sub") or cls.GUEST_USER_ID
-        )
+        """
+        Resolve the tenant identity from a decoded JWT payload.
+
+        WHY strict mode: The `or` fallback (user_id or sub or GUEST_USER_ID)
+        was the root cause of M5. A JWT with user_id="" is NOT a guest — it is
+        a malformed or forged token. A real guest explicitly carries GUEST_USER_ID
+        as issued by /auth/guest. Any other absent identity on a presented token
+        is rejected immediately to prevent quota bypass.
+        """
+        user_id = current_user.get("user_id") or current_user.get("sub")
+        if not user_id:
+            logger.warning(
+                "M5 Guard: Token present but user identity claim is absent or empty. "
+                "Rejecting to prevent quota bypass."
+            )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: Missing or empty user identity claim.",
+            )
+        return user_id
 
     @classmethod
     async def check_message_quota(

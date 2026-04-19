@@ -36,13 +36,19 @@ async def get_current_user(
             # Attempt Clerk Verification
             user = await ClerkAuth.verify_token(credentials)
             return user
-        except HTTPException:
-            # If Clerk fail, we might want to fallback to local for migration phase
-            # or strictly enforce Clerk. Rule 4 (Zero-Regression) suggests caution.
-            pass
+        except HTTPException as clerk_exc:
+            # WHY strict reject: Clerk is configured and explicitly rejected this token.
+            # Falling through to SecurityEngine would allow an attacker to exploit the
+            # legacy path after Clerk has already decided the token is invalid.
+            # SecurityEngine fallback is reserved for environments without Clerk only.
+            logger.warning(
+                "M5 Guard: Clerk rejected token and CLERK_SECRET_KEY is active. "
+                "Rejecting immediately — no SecurityEngine fallback allowed."
+            )
+            raise clerk_exc
 
     try:
-        # Fallback: The legacy SecurityEngine (V7.4.1)
+        # Fallback: The legacy SecurityEngine — only reached when Clerk is NOT configured.
         payload = SecurityEngine.decode_token(token)
         return payload
     except Exception as exc:
