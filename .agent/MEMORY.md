@@ -162,6 +162,14 @@
     - Achieved **GREEN** status: 5/5 new TDD tests + 23/23 full security suite passing.
     - Branch `fix/m5-quotaguard-bypass` merged into `cleansed-history` via `--no-ff`.
 
+- **2026-04-19**: **VULNERABILITY M10 (SAFETYPROTOCOL BYPASS) FIXED**:
+    - Root cause: `validate_code_safety()` defaulted to `True` for unknown/non-Python languages. Orchestrator passed `shell` identifier which was silently approved and ignored.
+    - Agent Router Issue fixed: `agent_router.py` was causing `context canceled` due to a 14s retry loop on missing `PINECONE_HOST`. Fixed tenacity import and logic.
+    - **File 1:** `backend/core/safety.py` — Strictly enforced `Fail-closed` behavior. Added `SUPPORTED_LANGUAGES = {"python"}` and rejected anything else with `HTTPException(401)`/False.
+    - **File 2:** `backend/agents/orchestrator.py` — Replaced the silent `pass` with actual execution blocking if shell command is rejected by `SafetyProtocol`.
+    - Achieved **GREEN** status: 5/5 new TDD tests + 28/28 full security suite passing.
+    - Branch `fix/m10-safety-protocol-bypass` merged into `cleansed-history`.
+
 ## 🔑 Known Secrets & Required Environment Variables
 
 | Variable | Purpose | Where Used |

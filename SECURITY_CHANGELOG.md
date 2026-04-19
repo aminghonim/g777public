@@ -3,8 +3,8 @@
 **Date:** Monday, April 13, 2026 — Updated: Sunday, April 19, 2026
 **Audit Date:** 2026-04-13
 **Auditor:** security-engineer (via SAAF Squad)
-**Total Vulnerabilities Fixed:** 29 (5 CRITICAL + 9 HIGH + 15 MEDIUM)
-**Tests:** 9 critical + 5 M5 + 9 M8 = 23 passing, 1 xfailed (pre-existing)
+**Total Vulnerabilities Fixed:** 30 (5 CRITICAL + 9 HIGH + 16 MEDIUM)
+**Tests:** 9 critical + 5 M5 + 9 M8 + 5 M10 = 28 passing, 1 xfailed (pre-existing)
 
 ---
 
@@ -112,6 +112,17 @@
 - **Risk Eliminated (CWE-287):** Attacker crafting a valid-signature JWT with `user_id=""` could bypass per-tenant quota enforcement entirely, consuming unlimited resources under the guest quota.
 - **TDD Result:** 5/5 tests GREEN (RED→GREEN validated). 23/23 full security suite unbroken.
 
+### M10 — SafetyProtocol Non-Validated Code Execution
+- **Date:** 2026-04-19
+- **Branch:** `fix/m10-safety-protocol-bypass` → merged into `cleansed-history`
+- **Files:** `backend/core/safety.py`, `backend/agents/orchestrator.py`, `backend/mcp_server/agent_router.py`
+- **Change:**
+  - `safety.py`: Replaced `True` default for unknown languages with a strict `Fail-closed` rejection. Only `python` is permitted.
+  - `orchestrator.py`: Orchestrator now actively blocks shell execution if `validate_code_safety(cmd, "shell")` returns False, replacing the former silent `pass`.
+  - `agent_router.py`: Fixed a bug where a missing `PINECONE_HOST` caused the MCP server to hang due to `tenacity` retrying infinitely/exponentially, causing `context canceled` on the client.
+- **Risk Eliminated:** Arbitrary non-Python code (Bash, JS) bypassing static analysis and executing on the server (RCE risk).
+- **TDD Result:** 5/5 tests GREEN. 28/28 full security suite unbroken.
+
 ### M7 — Unauthenticated Webhooks (HMAC Verification)
 - **Date:** 2026-04-19
 - **Branch:** `fix/m7-webhook-auth` → merged into `cleansed-history`
@@ -148,6 +159,6 @@
 3. ~~**Unauthenticated webhook endpoints**~~ — **CLOSED by M7** (2026-04-19)
 4. ~~**MCP tools have no auth**~~ — **CLOSED by M8** (2026-04-14)
 5. ~~**QuotaGuard fallback to guest**~~ — **CLOSED by M5** (2026-04-19)
-6. **SafetyProtocol passes unknown languages** — non-Python code not validated (M10)
+6. ~~**SafetyProtocol passes unknown languages**~~ — **CLOSED by M10** (2026-04-19)
 
-These should be addressed in a follow-up security sprint.
+These remaining issues (1 and 2) pertain to distributed systems scaling rather than immediate remote exploits, and should be addressed in an infrastructure sprint.
