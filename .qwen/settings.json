@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(du *)",
+      "Bash(rm *)",
+      "Bash(true)",
+      "Read(//tmp/docx2/**)",
+      "Read(//tmp/docx1/**)",
+      "Bash(python3 *)",
+      "Bash(pip install *)"
+    ]
+  },
+  "$version": 3
+}

@@ -23,9 +23,7 @@ class AnalyticsRepository {
 }
 
 @riverpod
-Future<AnalyticsRepository> analyticsRepository(
-  AnalyticsRepositoryRef ref,
-) async {
+Future<AnalyticsRepository> analyticsRepository(Ref ref) async {
   final dio = await ref.watch(dioProvider.future);
   return AnalyticsRepository(dio);
 }

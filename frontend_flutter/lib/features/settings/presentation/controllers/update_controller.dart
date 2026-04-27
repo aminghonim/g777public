@@ -29,10 +29,11 @@ class UpdateState {
   }
 }
 
-class UpdateNotifier extends StateNotifier<UpdateState> {
-  final UpdateService _service;
+class UpdateNotifier extends Notifier<UpdateState> {
+  @override
+  UpdateState build() => UpdateState();
 
-  UpdateNotifier(this._service) : super(UpdateState());
+  UpdateService get _service => ref.read(updateServiceProvider);
 
   Future<void> checkForUpdates() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -51,14 +52,12 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
     state = state.copyWith(isApplying: true, error: null);
     try {
       await _service.applyUpdate(info.downloadUrl, info.sha256);
-      // The backend will trigger a shutdown and initiate the swap.
     } catch (e) {
       state = state.copyWith(isApplying: false, error: e.toString());
     }
   }
 }
 
-final updateControllerProvider =
-    StateNotifierProvider<UpdateNotifier, UpdateState>((ref) {
-      return UpdateNotifier(ref.read(updateServiceProvider));
-    });
+final updateControllerProvider = NotifierProvider<UpdateNotifier, UpdateState>(
+  UpdateNotifier.new,
+);

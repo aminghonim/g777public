@@ -2,9 +2,11 @@ import os
 import secrets
 import logging
 import time
-from fastapi import APIRouter, HTTPException, Request
+from typing import Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from core.security import SecurityEngine
+from core.dependencies import get_current_user
 from backend.database_manager import db_manager
 from backend.core.security_sanitizer import SecuritySanitizer
 from backend.services.cache_manager import cache_manager
@@ -28,7 +30,7 @@ def _check_guest_rate_limit(client_ip: str) -> bool:
     return cache_manager.check_rate_limit(
         identifier=f"guest_token:{client_ip}",
         limit=GUEST_RATE_LIMIT_MAX,
-        window_seconds=GUEST_RATE_LIMIT_WINDOW
+        window_seconds=GUEST_RATE_LIMIT_WINDOW,
     )
 
 
@@ -123,16 +125,27 @@ async def activate_license(payload: LicenseActivationRequest):
 
 
 @router.post("/generate")
-async def generate_license(payload: LicenseGenerationRequest):
+async def generate_license(
+    payload: LicenseGenerationRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
     """
     SAAS-016: Generate secure license key using CSPRNG.
-    Format: XXXX-XXXX-XXXX-XXXX
+    Format: XXXXX-XXXXX-XXXXX-XXXXX
+    Restricted to admin users only.
     """
+    # Admin Guard: reject non-admin roles
+    if current_user.get("role") != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Admin privileges required to generate licenses.",
+        )
+
     # 1. Use Cryptographically Secure Pseudo-Random Number Generator (CSPRNG ASVS Standard)
     raw_key = secrets.token_hex(10).upper()  # 20 Chars
     license_key = "-".join([raw_key[i : i + 5] for i in range(0, 20, 5)])
 
-    # 2. Add to database (Requires db_manager.create_license snippet...)
+    # 2. Add to database
     conn = db_manager.get_connection()
     try:
         with conn.cursor() as cursor:
@@ -150,7 +163,9 @@ async def generate_license(payload: LicenseGenerationRequest):
     return {
         "status": "success",
         "license_key": license_key,
+        "tier_id": payload.tier_id,
         "max_devices": payload.max_devices,
+        "days_valid": payload.days_valid,
     }
 
 
@@ -170,7 +185,7 @@ async def activate_guest(request: Request):
                 "error": "RATE_LIMITED",
                 "message": f"Too many guest token requests. Max {GUEST_RATE_LIMIT_MAX} per {GUEST_RATE_LIMIT_WINDOW}s.",
                 "retry_after": GUEST_RATE_LIMIT_WINDOW,
-            }
+            },
         )
     token_data = {
         "sub": "00000000-0000-0000-0000-000000000000",
@@ -183,3 +198,44 @@ async def activate_guest(request: Request):
 
     token = SecurityEngine.create_access_token(token_data)
     return {"status": "success", "access_token": token, "token_type": "bearer"}
+
+
+@router.get("/status")
+async def get_license_status(current_user: Dict[str, Any] = Depends(get_current_user)):
+    """
+    SAAS-019: License Status Endpoint.
+    Returns the current license status including expiry date and days remaining.
+    Accessible even when license is expired (exempt from LicenseGuard).
+    """
+    username = current_user.get("username", "")
+    role = current_user.get("role", "")
+
+    # Guest users have no license binding
+    if role == "guest":
+        return {
+            "is_valid": True,
+            "reason": "guest_access",
+            "role": "guest",
+            "expires_at": None,
+            "days_remaining": None,
+        }
+
+    if db_manager is None or db_manager.pool is None:
+        return {
+            "is_valid": True,
+            "reason": "no_database",
+            "role": role,
+            "expires_at": None,
+            "days_remaining": None,
+        }
+
+    try:
+        status_result = db_manager.check_license_status(username)
+        status_result["role"] = role
+        return status_result
+    except Exception as e:
+        logger.error(f"License status check failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve license status",
+        )

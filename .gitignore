@@ -51,6 +51,32 @@ lib/generated/
 .env.test
 .env.prod
 .env.local
+.env.docker
+.env.docker.local
+.env.docker.local.backup
+.env.supabase
+
+# Sensitive runtime data
+auth_info/
+data/
+*.db
+qr.png
+out.json
+session_*.txt
+scratch/
+
+# Antigravity secure sessions
+.antigravity/
+.antigravity_dev/
+.antigravity_old/
+.antigravity_root_backup/
+.antigravityignore
+
+# G777 state machine runtime
+.g777/
+
+# Roo MCP config (may contain tokens)
+.roo/
 
 # IDEs
 .vscode/
@@ -78,3 +104,6 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+
+# Build artifacts
+*.docx

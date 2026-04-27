@@ -6,21 +6,44 @@ part of 'evolution_service.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$evolutionServiceHash() => r'20aef5dda42d5905bab2de8438b835c5db6ea87b';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [evolutionService].
 @ProviderFor(evolutionService)
-final evolutionServiceProvider =
-    AutoDisposeFutureProvider<EvolutionService>.internal(
-  evolutionService,
-  name: r'evolutionServiceProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$evolutionServiceHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final evolutionServiceProvider = EvolutionServiceProvider._();
 
-typedef EvolutionServiceRef = AutoDisposeFutureProviderRef<EvolutionService>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+final class EvolutionServiceProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<EvolutionService>,
+          EvolutionService,
+          FutureOr<EvolutionService>
+        >
+    with $FutureModifier<EvolutionService>, $FutureProvider<EvolutionService> {
+  EvolutionServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'evolutionServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$evolutionServiceHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<EvolutionService> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<EvolutionService> create(Ref ref) {
+    return evolutionService(ref);
+  }
+}
+
+String _$evolutionServiceHash() => r'11b751061f306a6648b7729a07293fcdda54e1c0';

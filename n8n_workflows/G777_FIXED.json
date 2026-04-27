@@ -1,0 +1,929 @@
+{
+  "name": "Memory Addon Nodes",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "474ea20e-da4d-490c-8b46-4ad6233ac90c",
+        "options": {}
+      },
+      "id": "befc6fe9-1d8f-4a9e-b62d-bdeee0c701c4",
+      "name": "Webhook1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        1648,
+        1344
+      ],
+      "webhookId": "77833194-63d9-402d-9a8f-880a0a99e0cf"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a78e13fe-65ee-4eba-8c87-ace450b71e11",
+              "leftValue": "={{ $json.body.data.key.fromMe }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "bf397d95-8dab-406d-bee8-45c4bbfe4273",
+      "name": "Not from me1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1872,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.data.message.imageMessage?.url || $json.body.data.message.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage?.url }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "2b8e17e1-5c44-4d20-bc4e-95b8e56cf84f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e67890b8-c949-4137-8b12-eb3f7a85d316",
+                    "leftValue": "={{ $json.body.data.message.videoMessage?.url || $json.body.data.message.extendedTextMessage?.contextInfo?.quotedMessage?.videoMessage?.url }}\n",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Video"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "63f8d2bb-7ac0-4d81-9100-ae66ab458072",
+                    "leftValue": "={{ $json.body.data.message.audioMessage?.url || $json.body.data.message.extendedTextMessage?.contextInfo?.quotedMessage?.audioMessage?.url }}\n",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b2e1f3a4-5c6d-7e8f-9a0b-1c2d3e4f5a6b",
+                    "leftValue": "={{ $json.body.data.message.conversation || $json.body.data.message.extendedTextMessage?.text }}\n",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "25984dbd-ccff-454c-9ff0-6182d1505cab",
+      "name": "Switch1",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2048,
+        1360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://baileys_bridge:3000/download",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "antigravity_secret_key_2024"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $('Webhook1').item.json.body.data.message, key: $('Webhook1').item.json.body.data.key }) }}",
+        "options": {}
+      },
+      "id": "00c421f2-7a5f-49c6-a5d7-d47b8dad8471",
+      "name": "Get Base65",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2320,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "base64",
+        "options": {}
+      },
+      "id": "180d75e2-9788-4cfc-a182-1312c792feb6",
+      "name": "Convert to File2",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2544,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://baileys_bridge:3000/download",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "antigravity_secret_key_2024"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $('Webhook1').item.json.body.data.message, key: $('Webhook1').item.json.body.data.key }) }}",
+        "options": {}
+      },
+      "id": "a7acddab-a283-4650-8146-3d40dd8ec9fb",
+      "name": "Get Base1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2320,
+        1248
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ \n  ($json.body?.data?.message?.conversation || \"\") + \" \" +\n  ( $if($(\"Analyze an image1\").isExecuted, $(\"Analyze an image1\").first().json.content.parts[0].text, \"\") ) + \" \" +\n  ( $if($(\"Transcribe a recording\").isExecuted, $(\"Transcribe a recording\").first().json.text, \"\") ) + \" \" +\n  ( $if($(\"Analyze Video1\").isExecuted, $(\"Analyze Video1\").first().json.text, \"\") )\n}}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "# IDENTITY:\nأنتِ \"ياسمين\"، موظفة خدمة عملاء شركة \"TripiGo للسياحة\". أنتِ خبيرة في \"راس سدر\" تحديداً. \nشخصيتك: مصرية، ودودة، ذكية، محترمة جداً، وكلامك \"خير الكلام ما قل ودل\".\n\n# LANGUAGE & TONE:\n- اللهجة: عامية مصرية محترمة (White Dialect). لا هي فصحى ولا هي لغة شوارع.\n- القاعدة الذهبية: الردود مختصرة جداً ومباشرة (سطرين أو ثلاثة بالكتير).\n\n# SOURCE OF TRUTH (الأسعار والخدمات):\nيمنع الاجتهاد. ردي من هذه المعلومات فقط:\n1. داي يوز (بلو لاجون / موسى كوست): 450 جنيه (انتقالات، غداء، شاليه، بحر وبيسين).\n2. ويك إند (3 أيام): 2200 جنيه (إقامة كاملة في كامب 360 أو فندق ريماس).\n3. ألعاب مائية: بنانا (200ج)، تيوب/صوفة (250ج).\n4. يخت خاص (ساعة): 3000 جنيه (مركب كامل، سنوركلي، صيد، لايف جاكت).\n* الحجز: 50% عربون، والباقي عند الوصول. الإلغاء قبل 48 ساعة لاسترداد المبلغ.\n\n# OPERATIONAL RULES:\n- الترحيب: مرة واحدة بس (منورنا يا فندم، أهلاً بحضرتك).\n- ممنوعات قاطعة: ممنوع تقولي \"ملوك الروقان\"، \"أهلاً بك في TripiGo\"، \"أنا ياسمين وموجودة لمساعدتك\"، أو أي جملة تبان إنك روبوت.\n- البديهة: لو العميل قلقان من الطريق، طمنيه إن طريق النفق الجديد أمان جداً ومزدوج.\n- الأسماء: لا تنادي العميل بـ \"أمين\" أبداً. نادي بـ \"يا فندم\" أو باسمه لو قاله في الشات.\n- العبارات المسموحة: \"تمام يا فندم\"، \"تحت أمرك\"، \"عيني ليك\"، \"مظبوط\"، \"ولا يهمك\".\n\n# MEDIA HANDLING:\n- لو العميل بعت صورة أو فيديو، حلليهم وردي عليهم في سياق خدماتنا المذكورة فوق بس."
+        }
+      },
+      "id": "7765393e-b595-49ab-95d3-1725aacc4907",
+      "name": "AI Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3056,
+        1616
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "6fb5332b-25fb-4976-9229-94337ac2f68f",
+      "name": "Loop Over Items1",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        3632,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const choice = Math.floor(Math.random() * 5) + 2; // Returns 2, 3, 4, 5, or 6\n\nreturn [\n  {\n    choice: choice\n  }\n];"
+      },
+      "id": "86e7af73-976a-40a8-82ef-53c6ec3a2914",
+      "name": "Code in JavaScript1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3408,
+        1712
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json.choice }}"
+      },
+      "id": "b49368ea-8614-48ca-bfc6-883e3a594777",
+      "name": "Wait1",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3632,
+        1712
+      ],
+      "webhookId": "e701ffa4-d048-43fb-ad48-6fcef28b9714"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://baileys_bridge:3000/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "antigravity_secret_key_2024"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $(\"Webhook1\").first().json.body.data.key.remoteJid }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $(\"AI Agent1\").item.json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "757a6982-67ca-4659-8c99-19923030d601",
+      "name": "Send Text1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3856,
+        1712
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "base64",
+        "options": {}
+      },
+      "id": "f6cd95ee-4886-4608-87cb-d4deeedb7cab",
+      "name": "Convert to File3",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2544,
+        1248
+      ]
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-chat",
+        "options": {}
+      },
+      "id": "dd429482-8c35-408b-8461-65ce1a4f5a49",
+      "name": "OpenRouter1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        3152,
+        1952
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "0IuKrF5tBZVsrTD2",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "id": "a6643a27-f825-4407-85a5-d2506aef47e4",
+      "name": "Transcribe a recording",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        2768,
+        1248
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "xGQtxOaeJd0TVcnn",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Audio To Text",
+        "height": 192,
+        "width": 560,
+        "color": 7
+      },
+      "id": "a1792840-6aeb-4a7b-82e6-62843b61ca7a",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2288,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Analyse Image",
+        "height": 192,
+        "width": 592,
+        "color": 6
+      },
+      "id": "bef575a2-fb94-41c4-bb21-b9a4374cfbe1",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2304,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "id": "d9af68d7-2ab1-461d-96a8-09b9ec16b96a",
+      "name": "Analyze an image1",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        2768,
+        1440
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "xGQtxOaeJd0TVcnn",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3-flash-preview",
+        "options": {}
+      },
+      "id": "0421a601-d5b1-436a-91e9-7c3944e87b67",
+      "name": "Google Gemini Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3024,
+        1824
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "xGQtxOaeJd0TVcnn",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "http://g777_backend:8000/memory",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "eq.{{ $('Webhook1').item.json.body.data.key.remoteJid.replace('@s.whatsapp.net', '') }}"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4390d7b2-9e34-41fb-b578-f5aa8e0ea06b",
+      "name": "Get Memory (Addon)1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        3152,
+        1280
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Fetch memories — the input is the response from GET /memory\nconst inputData = $input.all()[0]?.json;\nlet memories = [];\nif (Array.isArray(inputData)) {\n    memories = inputData;\n} else if (inputData && Array.isArray(inputData.data)) {\n    memories = inputData.data;\n}\n\n// 2. Build Memory Text\nlet memoryText = 'No previous memory.';\nif (memories.length > 0 && memories[0].phone) {\n    memoryText = memories.map(m => `- ${m.fact || m.intent} (${m.created_at})`).join('\\n');\n}\n\n// 3. RECOVER ORIGINAL DATA — try each media branch in order\nlet originalData = {};\nconst nodesToTry = ['Transcribe a recording', 'Analyze Video1', 'Analyze an image1', 'Switch1', 'Webhook1'];\nfor (const nodeName of nodesToTry) {\n    try {\n        const item = $(nodeName).item;\n        if (item && Object.keys(item.json).length > 0) {\n            originalData = item.json;\n            break;\n        }\n    } catch (e) {\n        // Node not executed in this branch — try next\n    }\n}\n\nreturn {\n    json: {\n        ...originalData,\n        memoryContext: memoryText\n    }\n};"
+      },
+      "id": "e436e7a0-cac2-41ed-b908-901f7d443bce",
+      "name": "Format Context (Addon)1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3344,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Use .first() and .last() to avoid Loop issues\nconst aiReply = $('AI Agent1').last().json.output || '';\n\nconst contextData = $('Format Context (Addon)1').first().json;\n\n// Extract phone — strip @s.whatsapp.net suffix if present\nconst phone = contextData.phone\n    || contextData.body?.data?.key?.remoteJid?.replace('@s.whatsapp.net', '')\n    || contextData.key?.remoteJid?.replace('@s.whatsapp.net', '')\n    || 'Unknown';\n\n// Extract user message — handle text, audio transcription, image and video analysis\nlet rawContent =\n    contextData.body?.data?.message?.conversation\n    || contextData.message?.conversation\n    || contextData.content\n    || contextData.text\n    || null;\n\n// For audio/video/image, the content is in the analysis node output embedded in contextData\nif (!rawContent) {\n    rawContent = '[Media Message]';\n}\nconst userMessage = String(rawContent);\n\n// Determine intent\nlet intent = 'general';\nif (userMessage.includes('?')) intent = 'question';\nif (String(aiReply).includes('?')) intent = 'ongoing';\n\nreturn {\n    json: {\n        phone,\n        intent,\n        fact: `User: \"${userMessage}\". AI: \"${aiReply}\"`\n    }\n};"
+      },
+      "id": "3cb5097e-040d-4818-aeea-8b878be4bb3d",
+      "name": "Extract Intent (Addon)1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3408,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://g777_backend:8000/memory",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $json.phone }}"
+            },
+            {
+              "name": "intent",
+              "value": "={{ $json.intent }}"
+            },
+            {
+              "name": "fact",
+              "value": "={{ $json.fact }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cd1c67f9-8dbc-41a9-8b34-22b51dac4da1",
+      "name": "Save Memory (Addon)1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        3632,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://baileys_bridge:3000/download",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "antigravity_secret_key_2024"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"message\": {{ JSON.stringify($json.body.data.message) }},\n  \"key\": {{ JSON.stringify($json.body.data.key) }}\n}",
+        "options": {}
+      },
+      "id": "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a",
+      "name": "Get BaseVideo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2320,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "base64",
+        "options": {}
+      },
+      "id": "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b",
+      "name": "Convert to File4",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2544,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "id": "f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1c",
+      "name": "Analyze Video1",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        2768,
+        1632
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "xGQtxOaeJd0TVcnn",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Not from me1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not from me1": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Get Memory (Addon)1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Base1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Base65",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get BaseVideo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Base65": {
+      "main": [
+        [
+          {
+            "node": "Convert to File2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File2": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Base1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract Intent (Addon)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Send Text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File3": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Get Memory (Addon)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image1": {
+      "main": [
+        [
+          {
+            "node": "Get Memory (Addon)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Memory (Addon)1": {
+      "main": [
+        [
+          {
+            "node": "Format Context (Addon)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Context (Addon)1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Intent (Addon)1": {
+      "main": [
+        [
+          {
+            "node": "Save Memory (Addon)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get BaseVideo": {
+      "main": [
+        [
+          {
+            "node": "Convert to File4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File4": {
+      "main": [
+        [
+          {
+            "node": "Analyze Video1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Video1": {
+      "main": [
+        [
+          {
+            "node": "Get Memory (Addon)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Africa/Cairo",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "ebcc5707-8fc2-4b4c-8e7d-775f4b2b1723",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "58c4c4c4971cac10477bd8d7b87e704871bf8fde3c0ca9a39663251039f2be13"
+  },
+  "id": "eNGRHdjB5BIs0WCu",
+  "tags": []
+}

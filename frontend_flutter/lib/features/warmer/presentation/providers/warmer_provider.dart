@@ -50,15 +50,13 @@ class WarmerState {
   }
 }
 
-/// Warmer StateNotifier
-class WarmerNotifier extends StateNotifier<WarmerState> {
-  final Ref ref;
-
-  WarmerNotifier(this.ref) : super(const WarmerState());
+/// Warmer Notifier (Riverpod 3)
+class WarmerNotifier extends Notifier<WarmerState> {
+  @override
+  WarmerState build() => const WarmerState();
 
   ApiClient get _api => ref.read(apiClientProvider);
 
-  /// Load available bots and current configuration
   Future<void> loadConfiguration() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -85,7 +83,6 @@ class WarmerNotifier extends StateNotifier<WarmerState> {
     }
   }
 
-  /// Save warmer configuration to backend
   Future<void> saveConfiguration() async {
     state = state.copyWith(isLoading: true, error: null, successMessage: null);
     try {
@@ -115,22 +112,18 @@ class WarmerNotifier extends StateNotifier<WarmerState> {
     }
   }
 
-  /// Toggle warmer active state
   void toggleActive() {
     state = state.copyWith(isActive: !state.isActive);
   }
 
-  /// Update daily limit
   void setDailyLimit(int limit) {
     state = state.copyWith(dailyLimit: limit);
   }
 
-  /// Update delay range
   void setDelayRange(int min, int max) {
     state = state.copyWith(delayMin: min, delayMax: max);
   }
 
-  /// Toggle bot selection
   void toggleBot(String botId) {
     final currentSelection = List<String>.from(state.selectedBots);
     if (currentSelection.contains(botId)) {
@@ -141,32 +134,26 @@ class WarmerNotifier extends StateNotifier<WarmerState> {
     state = state.copyWith(selectedBots: currentSelection);
   }
 
-  /// Select all bots
   void selectAllBots() {
     state = state.copyWith(
       selectedBots: List<String>.from(state.availableBots),
     );
   }
 
-  /// Deselect all bots
   void deselectAllBots() {
     state = state.copyWith(selectedBots: const []);
   }
 
-  /// Clear error message
   void clearError() {
     state = state.copyWith(error: null);
   }
 
-  /// Clear success message
   void clearSuccessMessage() {
     state = state.copyWith(successMessage: null);
   }
 }
 
 /// Warmer Provider
-final warmerProvider = StateNotifierProvider<WarmerNotifier, WarmerState>((
-  ref,
-) {
-  return WarmerNotifier(ref);
-});
+final warmerProvider = NotifierProvider<WarmerNotifier, WarmerState>(
+  WarmerNotifier.new,
+);

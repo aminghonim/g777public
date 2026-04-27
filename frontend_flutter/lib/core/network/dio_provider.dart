@@ -9,7 +9,7 @@ import '../../features/auth/providers/auth_provider.dart';
 part 'dio_provider.g.dart';
 
 @riverpod
-Future<Dio> dio(DioRef ref) async {
+Future<Dio> dio(Ref ref) async {
   final authState = await ref.watch(authProvider.future);
   final sessionState = ref.watch(sessionProvider);
 
@@ -49,10 +49,13 @@ Future<Dio> dio(DioRef ref) async {
     InterceptorsWrapper(
       onRequest: (options, handler) async {
         // SAAS-005: Inject JWT if authenticated or guest
-        if (authState is AuthAuthenticated) {
-          options.headers['Authorization'] = 'Bearer ${authState.token}';
-        } else if (authState is AuthGuest && authState.token != null) {
-          options.headers['Authorization'] = 'Bearer ${authState.token}';
+        switch (authState) {
+          case AuthAuthenticated(token: final token):
+            options.headers['Authorization'] = 'Bearer $token';
+          case AuthGuest(token: final token?) when token.isNotEmpty:
+            options.headers['Authorization'] = 'Bearer $token';
+          case _:
+            break;
         }
 
         // Inject Session Handshake Token
@@ -74,7 +77,10 @@ Future<Dio> dio(DioRef ref) async {
 
         // M5-SEC: 401 triggers full logout via Riverpod to update UI immediately
         if (statusCode == 401) {
-          await ref.read(authProvider.notifier).logout();
+          // Use Future.microtask to avoid calling ref.read during a provider transition
+          Future.microtask(() {
+  ref.invalidate(authProvider);
+});
         }
 
         // QUOTA-SEC: 403 — distinguish between quota exhaustion and permission denial

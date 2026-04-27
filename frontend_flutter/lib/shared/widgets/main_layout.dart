@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:g777_client/shared/widgets/hex_sidebar.dart';
 import 'package:g777_client/shared/widgets/global_navbar.dart';
-import 'package:g777_client/shared/widgets/logs_footer.dart';
+import 'package:g777_client/shared/widgets/global_logs_console.dart';
 
 class MainLayout extends StatelessWidget {
   final Widget child;
@@ -19,7 +19,7 @@ class MainLayout extends StatelessWidget {
           // 1. Permanent Sidebar
           const G777Sidebar(),
 
-          // 2. Main Content Area (Navbar + Body + Footer)
+          // 2. Main Content Area (Navbar + Body + Console)
           Expanded(
             child: Column(
               children: [
@@ -43,8 +43,8 @@ class MainLayout extends StatelessWidget {
                   ),
                 ),
 
-                // Sticky Logs Footer
-                const LogsFooter(),
+                // Interactive Global Logs Console
+                const GlobalLogsConsole(),
               ],
             ),
           ),

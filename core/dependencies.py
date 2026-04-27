@@ -37,15 +37,23 @@ async def get_current_user(
             user = await ClerkAuth.verify_token(credentials)
             return user
         except HTTPException as clerk_exc:
-            # WHY strict reject: Clerk is configured and explicitly rejected this token.
+            # If Clerk returns 401, it explicitly rejected the token — strict reject.
             # Falling through to SecurityEngine would allow an attacker to exploit the
             # legacy path after Clerk has already decided the token is invalid.
-            # SecurityEngine fallback is reserved for environments without Clerk only.
-            logger.warning(
-                "M5 Guard: Clerk rejected token and CLERK_SECRET_KEY is active. "
-                "Rejecting immediately — no SecurityEngine fallback allowed."
+            if clerk_exc.status_code == status.HTTP_401_UNAUTHORIZED:
+                logger.warning(
+                    "M5 Guard: Clerk rejected token and CLERK_SECRET_KEY is active. "
+                    "Rejecting immediately — no SecurityEngine fallback allowed."
+                )
+                raise clerk_exc
+            # If Clerk returns 500/503 (misconfiguration or unavailable), the token
+            # was never actually verified or rejected — fall through to SecurityEngine
+            # so locally-issued tokens (e.g. guest tokens) still work.
+            logger.info(
+                "Clerk returned %d (not 401). Falling back to SecurityEngine "
+                "for locally-issued token verification.",
+                clerk_exc.status_code,
             )
-            raise clerk_exc
 
     try:
         # Fallback: The legacy SecurityEngine — only reached when Clerk is NOT configured.

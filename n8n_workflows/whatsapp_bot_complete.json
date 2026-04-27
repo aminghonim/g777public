@@ -1,0 +1,175 @@
+{
+  "name": "WhatsApp Bot - Complete",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-webhook",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.body.data.key.fromMe }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "if-1",
+      "name": "Filter Me",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.data.message.conversation }}",
+        "hasOutputParser": false,
+        "options": {
+          "systemMessage": "أنت مساعد ذكي ومفيد للمستخدمين العرب. أجب على الأسئلة بوضوح وبأسلوب ودود باللغة العربية."
+        }
+      },
+      "id": "ai-agent-1",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.data.key.remoteJid }}",
+        "contextWindowLength": 10
+      },
+      "id": "memory-1",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [650, 450]
+    },
+    {
+      "parameters": {
+        "modelName": "gemini-2.0-flash",
+        "options": {}
+      },
+      "id": "gemini-1",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [650, 150],
+      "credentials": {
+        "googleGeminiOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8080/message/sendText/sender",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "antigravity_secret_key_2024"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.body.data.key.remoteJid.split('@')[0] }}\",\n  \"text\": \"{{ $('AI Agent').item.json.output }}\"\n}",
+        "options": {}
+      },
+      "id": "http-1",
+      "name": "Reply API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter Me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Me": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Reply API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "whatsapp-bot-complete",
+  "meta": {
+    "instanceId": "your-instance-id"
+  },
+  "tags": []
+}

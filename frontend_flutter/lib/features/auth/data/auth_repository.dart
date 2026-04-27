@@ -95,7 +95,7 @@ class AuthRepository {
 }
 
 @riverpod
-Future<AuthRepository> authRepository(AuthRepositoryRef ref) async {
+Future<AuthRepository> authRepository(Ref ref) async {
   final dio = await ref.watch(dioProvider.future);
   return AuthRepository(dio);
 }

@@ -69,6 +69,28 @@ class SandboxExecutor:
                 return False
         return True
 
+    def _check_allowed_commands(self, command: str) -> bool:
+        """
+        Validate that the command starts with an allowed prefix.
+        Returns True if the command is permitted, False otherwise.
+        """
+        if not self.allowed_commands:
+            return True  # No whitelist configured, allow all (after dangerous pattern check)
+
+        # Extract the base command (first word)
+        cmd_parts = command.strip().split()
+        if not cmd_parts:
+            return False
+
+        base_cmd = cmd_parts[0]
+
+        # Check if the base command matches any allowed prefix
+        for allowed in self.allowed_commands:
+            if base_cmd == allowed or base_cmd.startswith(allowed):
+                return True
+
+        return False
+
     def execute(
         self,
         command: str,
@@ -96,6 +118,20 @@ class SandboxExecutor:
         if not self.validate_command(command):
             return -1, "", "Command blocked by security policy."
 
+        if not self._check_allowed_commands(command):
+            return -1, "", (
+                f"Command blocked: '{command.split()[0]}' is not in the allowed list. "
+                f"Allowed: {self.allowed_commands}"
+            )
+
+        # Validate cwd is within allowed directories
+        if cwd:
+            import pathlib
+            safe_cwd = os.path.abspath(cwd)
+            allowed_roots = [os.getcwd(), os.path.expanduser("~")]
+            if not any(safe_cwd.startswith(root) for root in allowed_roots):
+                return -1, "", "Command blocked: cwd is outside allowed directories."
+
         try:
             import subprocess
 
@@ -110,7 +146,7 @@ class SandboxExecutor:
 
             result = subprocess.run(
                 command,
-                shell=True,
+                shell=False,
                 capture_output=True,
                 text=True,
                 timeout=timeout,

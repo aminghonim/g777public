@@ -6,6 +6,8 @@ Antigravity AI Client - Multi-Provider Support
 
 import os
 import logging
+import httpx
+import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -129,15 +131,70 @@ class AzureAIClient:
             return f"Error: {str(e)}"
 
 
-class UnifiedAIClient:
+class OllamaAIClient:
     """
-    Unified Client - يختار تلقائياً بين Gemini و Azure
+    Ollama AI Client - لتشغيل النماذج محلياً (مثل Qwen)
+    تستخدم واجهة OpenAI المتوافقة في Ollama
     """
 
-    def __init__(self, provider=None, api_key=None):
+    def __init__(self, api_base=None, model_name=None):
+        self.api_base = api_base or os.getenv("OLLAMA_API_BASE", "http://localhost:11434/v1")
+        self.model_name = model_name or os.getenv("OLLAMA_MODEL", "qwen:7b")
+        self.timeout = httpx.Timeout(60.0, connect=10.0)
+        logger.info(f"Ollama Client initialized: {self.model_name} at {self.api_base}")
+
+    async def generate_response(self, prompt: str, system_message: str = "") -> str:
+        """توليد رد باستخدام Ollama"""
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                messages = []
+                if system_message:
+                    messages.append({"role": "system", "content": system_message})
+                messages.append({"role": "user", "content": prompt})
+
+                response = await client.post(
+                    f"{self.api_base}/chat/completions",
+                    json={
+                        "model": self.model_name,
+                        "messages": messages,
+                        "temperature": 0.7,
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+                return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            logger.error(f"Ollama API Error: {e}")
+            return f"Error connecting to local Qwen (Ollama): {str(e)}"
+
+
+class UnifiedAIClient:
+    """
+    Unified Client - يختار تلقائياً بين Gemini و Azure و Ollama/Qwen
+    """
+
+    # Task-to-Model routing map — used by subsystems to resolve
+    # the correct model for a given task type without hardcoding.
+    TASK_MODEL_MAP = {
+        "CHAT": os.getenv("CHAT_MODEL", "gemini-2.5-flash"),
+        "INTENT_CLASSIFICATION": os.getenv("INTENT_MODEL", "gemini-2.5-flash"),
+        "WEB_OPERATION": os.getenv("BROWSER_USE_MODEL", "gemini-2.0-flash"),
+    }
+
+    def __init__(self, provider=None, model=None, api_key=None):
         self.gemini_client = None
         self.azure_client = None
+        self.ollama_client = None
         self.primary = None
+
+        # Determine provider from model name if not explicit
+        if not provider and model:
+            if "qwen" in model.lower() or "ollama" in model.lower():
+                provider = "ollama"
+            elif "gemini" in model.lower():
+                provider = "gemini"
+            elif "gpt" in model.lower():
+                provider = "azure"
 
         # If specific provider requested
         if provider == "gemini":
@@ -147,33 +204,48 @@ class UnifiedAIClient:
             except Exception:
                 pass
         elif provider == "azure":
-            # Azure client doesn't support direct key injection in this version yet,
-            # but we respect the provider flag
             try:
                 self.azure_client = AzureAIClient()
                 if self.azure_client.client:
                     self.primary = "azure"
             except Exception:
                 pass
-
-        # Auto-detection if no specific provider or init failed
-        if not self.primary:
+        elif provider == "ollama" or provider == "qwen":
             try:
-                self.gemini_client = GeminiAIClient()
-                logger.info("Gemini initialized successfully")
-            except Exception as e:
-                logger.warning(f"Gemini init failed: {e}")
-
-            try:
-                if not self.primary:
-                    self.azure_client = AzureAIClient()
-                    if self.azure_client.client:
-                        self.primary = "azure"
+                self.ollama_client = OllamaAIClient(model_name=model)
+                self.primary = "ollama"
             except Exception:
                 pass
 
+        # Auto-detection if no specific provider or init failed
         if not self.primary:
-            # Just a warning instead of crash to allow tests to mock later
+            # 1. Try Ollama if configured
+            if os.getenv("OLLAMA_API_BASE"):
+                try:
+                    self.ollama_client = OllamaAIClient()
+                    self.primary = "ollama"
+                except Exception:
+                    pass
+
+            # 2. Try Gemini
+            if not self.primary:
+                try:
+                    self.gemini_client = GeminiAIClient()
+                    self.primary = "gemini"
+                    logger.info("Gemini initialized as primary")
+                except Exception as e:
+                    logger.warning(f"Gemini init failed: {e}")
+
+            # 3. Try Azure
+            if not self.primary:
+                try:
+                    self.azure_client = AzureAIClient()
+                    if self.azure_client.client:
+                        self.primary = "azure"
+                except Exception:
+                    pass
+
+        if not self.primary:
             logger.warning("No AI provider available during init!")
 
         logger.info(f"Unified AI Client using: {self.primary}")
@@ -185,16 +257,18 @@ class UnifiedAIClient:
                 return await self.gemini_client.generate_response(
                     prompt, system_message
                 )
-            elif self.azure_client and self.azure_client.client:
+            elif self.primary == "azure" and self.azure_client:
                 return await self.azure_client.generate_response(prompt, system_message)
+            elif self.primary == "ollama" and self.ollama_client:
+                return await self.ollama_client.generate_response(prompt, system_message)
         except Exception as e:
-            logger.warning(f"Primary failed: {e}")
-            try:
-                if self.azure_client and self.azure_client.client:
-                    return await self.azure_client.generate_response(
-                        prompt, system_message
-                    )
-            except Exception as e2:
-                logger.warning(f"Fallback failed: {e2}")
+            logger.warning(f"Primary {self.primary} failed: {e}")
+            # Fallback chain: Gemini -> Azure -> Ollama
+            for client in [self.gemini_client, self.azure_client, self.ollama_client]:
+                if client and client != getattr(self, f"{self.primary}_client", None):
+                    try:
+                        return await client.generate_response(prompt, system_message)
+                    except Exception:
+                        continue
 
         return "Error: All AI providers failed."

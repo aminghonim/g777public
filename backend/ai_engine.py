@@ -33,6 +33,7 @@ from .db_service import (
 from .mcp_manager import mcp_manager
 from backend.agents.orchestrator import Orchestrator
 from backend.ai_agents.persona_agent import PersonaAgent
+from backend.ai_client import UnifiedAIClient
 
 load_dotenv()
 
@@ -52,11 +53,14 @@ class AIEngine:
                 )
             )
 
-        # Initialize Client (Still used for lightweight tasks like intent analysis)
-        self.client = genai.Client(api_key=self.api_key)
-
         # Initialize CNS Orchestrator
         self.orchestrator = Orchestrator()
+        
+        # Initialize Unified AI Client
+        self.ai_client = UnifiedAIClient(api_key=self.api_key)
+        
+        # Global client for lightweight tasks (maintained for legacy helper compatibility if needed)
+        self.client = getattr(self.ai_client.gemini_client, 'client', None) if self.ai_client.primary == "gemini" else None
 
         # Initialize ADK Persona Agent only when the SDK is available
         self.persona_agent = PersonaAgent() if ADK_AVAILABLE else None
@@ -131,18 +135,15 @@ Now analyze this message:"""
         prompt = f'{system_instruction}\n\nMESSAGE: "{message}"\n\nYOUR JSON RESPONSE:'
 
         try:
-            response = await self.client.aio.models.generate_content(
-                model=model_name,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.0,  # Deterministic for classification
-                ),
-            )
-
-            text = response.text.strip()
-            if text.startswith("```"):
+            # Use Unified AI Client
+            text = await self.ai_client.generate_response(prompt, system_instruction)
+            
+            # Clean JSON Response
+            text = text.strip()
+            if "```json" in text:
                 text = text.split("```json")[-1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[-1].split("```")[0].strip()
 
             return json.loads(text)
         except Exception as e:
@@ -183,17 +184,16 @@ Now analyze this message:"""
         model_name = settings.get("ai_model", "gemini-2.0-flash-exp")
 
         try:
-            response = await self.client.aio.models.generate_content(
-                model=model_name,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.0,  # Zero temp for deterministic extraction
-                ),
-            )
+            # Use Unified AI Client
+            text = await self.ai_client.generate_response(prompt)
+            
             # Clean possible markdown if model misbehaves
-            text = response.text.replace("```json", "").replace("```", "").strip()
-            data = json.loads(text)
+            if "```json" in text:
+                text = text.split("```json")[-1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[-1].split("```")[0].strip()
+            
+            data = json.loads(text.strip())
 
             if data and isinstance(data, dict):
                 from .db_service import mark_field_collected, update_customer
@@ -413,9 +413,9 @@ class GeminiPersonaEngine:
             logger.error("GEMINI_API_KEY not found in environment variables!")
             raise ValueError("GEMINI_API_KEY is required")
         
-        # Initialize the new google-genai client
-        self.client = genai.Client(api_key=self.api_key)
-        self.model_name = "gemini-2.0-flash"
+        # Initialize the Unified AI client
+        self.ai_client = UnifiedAIClient(api_key=self.api_key)
+        self.model_name = "gemini-2.0-flash"  # Default reference
         
         logger.info("GeminiPersonaEngine initialized successfully")
     
@@ -512,17 +512,8 @@ class GeminiPersonaEngine:
                 persona=persona
             )
             
-            # Generate response using google-genai SDK
-            response = await self.client.aio.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0.7,  # Balanced creativity and consistency
-                    max_output_tokens=500,  # Reasonable length for WhatsApp
-                )
-            )
-            
-            generated_text = response.text.strip()
+            # Use Unified AI Client
+            generated_text = await self.ai_client.generate_response(prompt)
             
             # Log successful generation
             logger.info(f"Generated response for tenant {tenant_id}: {len(generated_text)} chars")

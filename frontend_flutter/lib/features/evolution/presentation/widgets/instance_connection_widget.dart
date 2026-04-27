@@ -296,7 +296,7 @@ class InstanceConnectionWidget extends ConsumerWidget {
             onPressed: () =>
                 ref.read(evolutionControllerProvider.notifier).disconnect(),
             icon: const Icon(Icons.power_settings_new_rounded, size: 18),
-            label: SelectableText(
+            label: const SelectableText(
               'TERMINATE PORTAL',
               style: TextStyle(
                 fontFamily: 'Oxanium',

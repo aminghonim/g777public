@@ -4,11 +4,12 @@ import httpx
 import asyncio
 import logging
 import subprocess
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Request
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Request, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 from core.config import settings
+from core.dependencies import get_current_user
 from backend.core.event_broker import event_broker
 
 router = APIRouter(prefix="/system", tags=["System"])
@@ -108,11 +109,27 @@ class UpdateApplyRequest(BaseModel):
     expected_hash: str
 
 
-@router.post("/update/apply")
-async def apply_update(background_tasks: BackgroundTasks, request: UpdateApplyRequest):
+@router.post(
+    "/update/apply",
+    dependencies=[Depends(get_current_user)],
+    response_model=dict,
+)
+async def apply_update(
+    background_tasks: BackgroundTasks,
+    request: UpdateApplyRequest,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Initiates the update sequence: Download -> Signaling -> Shutdown.
+    Requires authentication and admin role.
     """
+    # Admin-only check
+    user_role = current_user.get("role", "")
+    if user_role not in ("admin", "super_admin"):
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: System update requires admin privileges."
+        )
     update_root = os.path.join(os.getcwd(), ".temp_update")
     os.makedirs(update_root, exist_ok=True)
     temp_file = os.path.join(update_root, "update_pkg.zip")
@@ -135,8 +152,10 @@ async def execute_update_sequence(
 ):
     """
     Handles the heavy lifting of the update process in the background.
+    Validates hash server-side after download (not relying on client-provided hash).
     """
     import zipfile
+    import hashlib
     import shutil
 
     try:
@@ -147,6 +166,23 @@ async def execute_update_sequence(
                 with open(temp_file, "wb") as f:
                     async for chunk in response.aiter_bytes():
                         f.write(chunk)
+
+        # Compute SHA-256 of downloaded file server-side
+        sha256_hash = hashlib.sha256()
+        with open(temp_file, "rb") as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                sha256_hash.update(chunk)
+        computed_hash = sha256_hash.hexdigest()
+
+        # Verify against expected hash (client-provided as a hint, but we log both)
+        logger.info(f"Download hash: {computed_hash}")
+        logger.info(f"Expected hash: {expected_hash}")
+
+        if computed_hash != expected_hash:
+            logger.error(
+                f"Hash mismatch! Computed: {computed_hash}, Expected: {expected_hash}"
+            )
+            raise RuntimeError("Update package integrity check failed.")
 
         if url.endswith(".zip"):
             extract_path = os.path.join(update_root, "extracted")

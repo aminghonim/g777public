@@ -1,0 +1,117 @@
+[
+  {
+    "id": "agent-001",
+    "name": "AI Agent (Yasmine)",
+    "type": "@n8n/n8n-nodes-langchain.agent",
+    "typeVersion": 1.7,
+    "position": [1080, -64],
+    "parameters": {
+      "promptType": "define",
+      "text": "={{ $json.query }}",
+      "systemMessage": "أنتِ ياسمين، خبيرة السفر الذكية في شركة (TripiGo) المتخصصة في راس سدر.\n\n## دورك:\n- مساعدة العملاء في اختيار الرحلات المناسبة.\n- تقديم معلومات دقيقة عن الأسعار والعروض باستخدام الأدوات المتاحة.\n- تذكر تفاصيل العميل السابقة لتقديم خدمة شخصية.\n\n## أدواتك (Tools):\n1. `search_offers`: استخدميها فورا عندما يسأل العميل عن الأسعار، العروض، أو تفاصيل الرحلات. لا تخترعي أسعاراً من عندك.\n2. `get_customer_history`: استخدميها في بداية المحادثة لمعرفة من هو العميل وماذا يحب، أو إذا أشار العميل لشيء سابق.\n\n## أسلوب الرد:\n- تحدثي باللهجة المصرية الودودة.\n- كوني مختصرة ومفيدة.\n- إذا لم تجدي المعلومة في الأدوات، قولي: \"هتأكد من الإدارة وأرجعلك\".",
+      "hasOutputParser": true
+    }
+  },
+  {
+    "id": "memory-001",
+    "name": "Window Buffer Memory",
+    "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+    "typeVersion": 1.3,
+    "position": [1080, 160],
+    "parameters": {
+      "contextWindowLength": 10,
+      "sessionIds": "={{ $('2. Message Parser').item.json.sessionId }}"
+    }
+  },
+  {
+    "id": "tool-offers-001",
+    "name": "search_offers",
+    "type": "@n8n/n8n-nodes-langchain.toolStructured",
+    "typeVersion": 1.1,
+    "position": [1280, 100],
+    "parameters": {
+      "name": "search_offers",
+      "description": "Call this tool to find current travel offers, prices, and availability in Ras Sudr.",
+      "jsonSchema": "{\"type\": \"object\", \"properties\": {\"category\": {\"type\": \"string\", \"description\": \"Optional category filter e.g. 'day_use', 'weekend'\"}}}"
+    }
+  },
+  {
+    "id": "supabase-offers-query",
+    "name": "Supabase Offers Query",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.2,
+    "position": [1480, 100],
+    "parameters": {
+      "method": "GET",
+      "url": "https://zbrpwteyldwpqlcxdpmf.supabase.co/rest/v1/business_offerings?select=name,price,description,category,is_available&is_available=eq.true",
+      "sendHeaders": true,
+      "headerParameters": {
+        "parameters": [
+          {
+            "name": "apikey",
+            "value": "YOUR_SUPABASE_ANON_KEY"
+          },
+          {
+            "name": "Authorization",
+            "value": "Bearer YOUR_SUPABASE_ANON_KEY"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "tool-history-001",
+    "name": "get_customer_history",
+    "type": "@n8n/n8n-nodes-langchain.toolStructured",
+    "typeVersion": 1.1,
+    "position": [1280, 300],
+    "parameters": {
+      "name": "get_customer_history",
+      "description": "Call this tool to retrieve the customer's past preferences and interactions.",
+      "jsonSchema": "{\"type\": \"object\", \"properties\": {\"phone\": {\"type\": \"string\", \"description\": \"The customer's phone number\"}}}"
+    }
+  },
+  {
+    "id": "supabase-history-query",
+    "name": "Supabase History Query",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.2,
+    "position": [1480, 300],
+    "parameters": {
+      "method": "GET",
+      "url": "https://zbrpwteyldwpqlcxdpmf.supabase.co/rest/v1/customer_memory?select=fact,intent,created_at&phone=eq.{{ $fromAI('phone') }}&order=created_at.desc&limit=5",
+      "sendHeaders": true,
+      "headerParameters": {
+        "parameters": [
+          {
+            "name": "apikey",
+            "value": "YOUR_SUPABASE_ANON_KEY"
+          },
+          {
+            "name": "Authorization",
+            "value": "Bearer YOUR_SUPABASE_ANON_KEY"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "chat-model-001",
+    "name": "Google Gemini Chat Model",
+    "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+    "typeVersion": 1,
+    "position": [900, 160],
+    "parameters": {
+      "modelName": "models/gemini-2.0-flash",
+      "options": {
+        "temperature": 0.7
+      }
+    },
+    "credentials": {
+      "googlePalmApi": {
+        "id": "YOUR_CREDENTIAL_ID",
+        "name": "Google Gemini(PaLM) Api account"
+      }
+    }
+  }
+]

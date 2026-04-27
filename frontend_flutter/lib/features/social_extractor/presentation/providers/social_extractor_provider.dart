@@ -2,7 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:g777_client/core/services/api_service.dart';
 
 /// Social Extractor Repository Provider
-final socialExtractorRepositoryProvider = Provider<SocialExtractorRepository>((ref) {
+final socialExtractorRepositoryProvider =
+    Provider<SocialExtractorRepository>((ref) {
   return SocialExtractorRepository(apiService: ApiService());
 });
 
@@ -47,62 +48,53 @@ class SocialExtractorState {
   }
 }
 
-/// Social Extractor Notifier
-class SocialExtractorNotifier extends StateNotifier<SocialExtractorState> {
-  final SocialExtractorRepository _repository;
+/// Social Extractor Notifier (Riverpod 3)
+class SocialExtractorNotifier extends Notifier<SocialExtractorState> {
+  @override
+  SocialExtractorState build() {
+    return const SocialExtractorState();
+  }
 
-  SocialExtractorNotifier(this._repository) : super(const SocialExtractorState());
+  SocialExtractorRepository get _repository =>
+      ref.read(socialExtractorRepositoryProvider);
 
-  /// Load existing social results
   Future<void> loadResults() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final results = await _repository.getSocialResults();
-      state = state.copyWith(
-        isLoading: false,
-        results: results,
-      );
+      state = state.copyWith(isLoading: false, results: results);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  /// Trigger a new social scan
   Future<void> triggerScan(String keyword, {int scrollingDepth = 2}) async {
-    state = state.copyWith(isScanning: true, error: null, logs: []);
+    state = state.copyWith(isScanning: true, error: null, logs: const []);
     _addLog('Starting social media scan for: $keyword');
-    
+
     try {
       final response = await _repository.triggerSocialScan(
         keyword: keyword,
         scrollingDepth: scrollingDepth,
       );
-      
+
       _addLog('Scan queued: ${response['message']}');
       _addLog('ETA: ${response['eta']}');
-      
+
       state = state.copyWith(
         isScanning: false,
         scanMessage: response['message'] as String?,
       );
-      
-      // Simulate progressive log updates
+
       await _simulateProgressiveLogs();
-      
-      // Reload results after a delay
+
       await Future.delayed(const Duration(seconds: 3));
       _addLog('Reloading results...');
       await loadResults();
       _addLog('Scan complete. Found ${state.results.length} results.');
     } catch (e) {
       _addLog('Error: $e', isError: true);
-      state = state.copyWith(
-        isScanning: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isScanning: false, error: e.toString());
     }
   }
 
@@ -110,7 +102,7 @@ class SocialExtractorNotifier extends StateNotifier<SocialExtractorState> {
     final prefix = isError ? '[ERROR]' : '[INFO]';
     final timestamp = DateTime.now().toString().split('.').first;
     final logEntry = '[$timestamp] $prefix $message';
-    
+
     state = state.copyWith(
       logs: [logEntry, ...state.logs].take(100).toList(),
     );
@@ -145,10 +137,10 @@ class SocialExtractorNotifier extends StateNotifier<SocialExtractorState> {
 }
 
 /// Social Extractor Notifier Provider
-final socialExtractorProvider = StateNotifierProvider<SocialExtractorNotifier, SocialExtractorState>((ref) {
-  final repository = ref.watch(socialExtractorRepositoryProvider);
-  return SocialExtractorNotifier(repository);
-});
+final socialExtractorProvider =
+    NotifierProvider<SocialExtractorNotifier, SocialExtractorState>(
+  SocialExtractorNotifier.new,
+);
 
 /// Social Extractor Repository
 class SocialExtractorRepository {
@@ -157,14 +149,12 @@ class SocialExtractorRepository {
   SocialExtractorRepository({required ApiService apiService})
       : _apiService = apiService;
 
-  /// Get existing social results
   Future<List<Map<String, dynamic>>> getSocialResults() async {
     final response = await _apiService.getOpportunities(source: 'social');
     final results = response['results'] as List<dynamic>?;
     return results?.cast<Map<String, dynamic>>() ?? [];
   }
 
-  /// Trigger a new social scan
   Future<Map<String, dynamic>> triggerSocialScan({
     required String keyword,
     int scrollingDepth = 2,

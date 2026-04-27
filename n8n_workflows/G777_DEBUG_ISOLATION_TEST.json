@@ -1,0 +1,143 @@
+{
+  "name": "G777 Travel Agency - [DEBUG ISOLATION TEST]",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-debug",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-debug",
+      "name": "1. Debug Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [208, -64],
+      "webhookId": "g777-travel-debug"
+    },
+    {
+      "parameters": {
+        "jsCode": "const incoming = $input.first().json;\nconst body = incoming.body || incoming.data || incoming;\n\nlet phone = '';\nif (body.key && body.key.remoteJid) {\n  phone = body.key.remoteJid;\n} else if (body.from) {\n  phone = body.from;\n}\nphone = phone.replace('@c.us', '').replace('@s.whatsapp.net', '');\n\nlet message = '';\nif (body.message && body.message.conversation) {\n  message = body.message.conversation;\n} else if (body.message && body.message.extendedTextMessage) {\n  message = body.message.extendedTextMessage.text;\n} else if (body.body) {\n  message = body.body;\n} else if (body.text) {\n  message = body.text;\n}\n\nlet customerName = 'عميل تجريبي';\nif (body.pushName) {\n  customerName = body.pushName;\n} else if (body.notifyName) {\n  customerName = body.notifyName;\n}\n\nconst chatId = phone + '@s.whatsapp.net';\n\nreturn {\n  json: {\n    phone: phone,\n    message: message,\n    customerName: customerName,\n    chatId: chatId,\n    intent: 'inquiry',\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "parser-debug",
+      "name": "2. Message Parser",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [416, -64]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "memoryContext",
+              "stringValue": "• العميل: السلام عليكم\n• ياسمين: وعليكم السلام، نورت شركة TripiGo. معاك ياسمين."
+            },
+            {
+              "name": "customerName",
+              "stringValue": "Test User (Isolation Test)"
+            },
+            {
+              "name": "phone",
+              "stringValue": "201000000000"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "mock-memory",
+      "name": "3. [MOCK] Memory Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [640, -64]
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsedMessage = $('2. Message Parser').first().json;\nconst mockData = $('3. [MOCK] Memory Data').first().json;\n\nconst sessionContext = {\n  phone: parsedMessage.phone,\n  customerName: mockData.customerName || parsedMessage.customerName,\n  currentMessage: parsedMessage.message,\n  intent: 'inquiry',\n  chatId: parsedMessage.chatId,\n  timestamp: parsedMessage.timestamp,\n  memoryContext: mockData.memoryContext,\n  memoryCount: 1,\n  sessionId: `debug_session_${parsedMessage.phone}`\n};\n\nreturn { json: sessionContext };"
+      },
+      "id": "session-manager-debug",
+      "name": "4. Session Memory Manager",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [864, -64]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyDBrn8vJ3k1Xu86VhdNHSse9ybbJyxDG2g",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"role\": \"user\",\n    \"parts\": [{\"text\": \"أنتِ ياسمين، خبيرة السفر في شركة TripiGo للسياحة (تخصص راس سدر فقط).\\n\\n## التعليمات الصارمة:\\n1. تخصصنا هو (راس سدر) فقط.\\n2. قاعة الأولويات: الرسالة الحالية أهم من أي شيء.\\n\\n## بيانات العميل (تجربة):\\n{{ $json.memoryContext }}\\n\\n## رسالة العميل الآن:\\n{{ $json.currentMessage }}\\n\\nردي بصفتك ياسمين:\"}]\n  }],\n  \"generationConfig\": {\n    \"temperature\": 0.7\n  }\n}",
+        "options": {}
+      },
+      "id": "gemini-debug",
+      "name": "5. Debug Gemini Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1088, -64]
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiResponse = $input.first().json;\nlet aiResponse = geminiResponse.candidates[0].content.parts[0].text;\n\nreturn {\n  json: {\n    phone: $('2. Message Parser').first().json.phone,\n    aiResponse: aiResponse\n  }\n};"
+      },
+      "id": "processor-debug",
+      "name": "6. Response Processor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1296, -64]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://51.12.91.34:8080/message/sendText/SENDER",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "antigravity_secret_key_2024"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.phone }}\",\n  \"text\": {{ JSON.stringify($json.aiResponse) }}\n}",
+        "options": {}
+      },
+      "id": "outbound-debug",
+      "name": "9. Debug WhatsApp Outbound",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1520, -64]
+    }
+  ],
+  "connections": {
+    "1. Debug Webhook": {
+      "main": [[{"node": "2. Message Parser", "type": "main", "index": 0}]]
+    },
+    "2. Message Parser": {
+      "main": [[{"node": "3. [MOCK] Memory Data", "type": "main", "index": 0}]]
+    },
+    "3. [MOCK] Memory Data": {
+      "main": [[{"node": "4. Session Memory Manager", "type": "main", "index": 0}]]
+    },
+    "4. Session Memory Manager": {
+      "main": [[{"node": "5. Debug Gemini Agent", "type": "main", "index": 0}]]
+    },
+    "5. Debug Gemini Agent": {
+      "main": [[{"node": "6. Response Processor", "type": "main", "index": 0}]]
+    },
+    "6. Response Processor": {
+      "main": [[{"node": "9. Debug WhatsApp Outbound", "type": "main", "index": 0}]]
+    }
+  }
+}

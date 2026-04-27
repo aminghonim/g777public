@@ -78,7 +78,7 @@ class EvolutionService {
 }
 
 @riverpod
-Future<EvolutionService> evolutionService(EvolutionServiceRef ref) async {
+Future<EvolutionService> evolutionService(Ref ref) async {
   final dio = await ref.watch(dioProvider.future);
   return EvolutionService(dio);
 }

@@ -43,7 +43,7 @@ class _NumberFilterPageState extends ConsumerState<NumberFilterPage>
     final picker =
         widget.pickFileCallback ??
         () async {
-          FilePickerResult? result = await FilePicker.platform.pickFiles(
+          FilePickerResult? result = await FilePicker.pickFiles(
             type: FileType.custom,
             allowedExtensions: ['xlsx', 'csv'],
           );

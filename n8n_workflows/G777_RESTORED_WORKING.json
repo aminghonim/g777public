@@ -1,0 +1,263 @@
+{
+    "name": "G777 Travel Agency - AI Assistant [PRODUCTION - FIXED]",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "72361c74-3748-4ef7-8ab3-b568fc51f151",
+            "name": "1. WhatsApp Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                208,
+                -64
+            ],
+            "webhookId": "g777-travel-prod",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "jsCode": "const incoming = $input.first().json;\nconst data = incoming.body?.data || incoming.body || incoming;\nconst key = data.key || data;\n\n// استخراج الرقم بذكاء (بننظف أي زيادات)\nlet rawId = key.remoteJid || key.participant || key.from || '';\nlet phone = rawId.replace('@s.whatsapp.net', '').replace('@c.us', '');\n\n// استخراج الاسم والنص\nconst messageContent = data.message || {};\nconst messageText = messageContent.conversation || messageContent.extendedTextMessage?.text || data.body || '';\n\nreturn { \n  json: { \n    phone: phone, \n    rawJid: rawId, \n    message: messageText, \n    customerName: data.pushName || 'عميل',\n    timestamp: new Date().toISOString(),\n    isValid: !!(phone && messageText)\n  } \n};"
+            },
+            "id": "70e854be-ffd7-4375-9837-7f5357d3b952",
+            "name": "2. Message Parser",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                416,
+                -64
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "tableId": "customer_memory",
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "phone",
+                            "condition": "eq",
+                            "keyValue": "={{ $json.phone }}"
+                        }
+                    ]
+                }
+            },
+            "id": "8b39e643-a2e1-4084-9dc9-1398170d0a9f",
+            "name": "3. Get Memory",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                640,
+                -64
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "xrc4h7myVDqGPN6d",
+                    "name": "Supabase account"
+                }
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "jsCode": "const memoryItems = $input.all().map(item => item.json);\nconst parsedMessage = $('2. Message Parser').first().json;\n\nlet memoryContext = '';\nif (memoryItems.length > 0 && memoryItems[0].phone) {\n  memoryContext = memoryItems.map((m) => {\n    return `â€¢ ${m.fact || m.summary || m.intent || 'N/A'}`;\n  }).join('\\n');\n} else {\n  memoryContext = 'لا توجد سجلات سابقة لهذا العميل.';\n}\n\nreturn { \n  json: {\n    ...parsedMessage,\n    memoryContext: memoryContext,\n    sessionId: `session_${parsedMessage.phone}_${Date.now()}`\n  } \n};"
+            },
+            "id": "7bfe1fe6-8d10-43e9-a5ac-d6eab065a8e4",
+            "name": "4. Session Manager",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                864,
+                -64
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyDBrn8vJ3k1Xu86VhdNHSse9ybbJyxDG2g",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"contents\": [{\n    \"role\": \"user\",\n    \"parts\": [{\"text\": \"أنتِ ياسمين، مساعدة ذكية لشركة TripiGo للسياحة متخصصين راس سدر.\\n\\nالتعليمات:\\n1. ردي بلهجة مصرية.\\n2. العميل اسمه {{ $json.customerName }}.\\n3. الذاكرة السابقة: {{ $json.memoryContext }}\\n4. الرسالة الآن: {{ $json.message }}\\n\\nردي بصورة ودودة:\"}]\n  }]\n}",
+                "options": {}
+            },
+            "id": "gemini-ai",
+            "name": "5. Gemini AI",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1088,
+                -64
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const gemini = $input.first().json;\nconst session = $('4. Session Manager').first().json;\n\nlet response = '';\ntry {\n  response = gemini.candidates[0].content.parts[0].text;\n} catch (e) {\n  response = 'عذراً، حدث خطأ تقني. يرجى المحاولة لاحقاً.';\n}\n\nreturn {\n  json: {\n    phone: session.phone,\n    aiResponse: response,\n    intent: 'inquiry',\n    newFact: `سأل عن: ${session.message}`\n  }\n};"
+            },
+            "id": "e53b18ec-4373-4c24-8bcc-144ff2f2f2a9",
+            "name": "6. Response Processor",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1296,
+                -64
+            ]
+        },
+        {
+            "parameters": {
+                "amount": 2
+            },
+            "id": "eff0da75-4da7-4c39-8137-d5a98595ecef",
+            "name": "8. Human Delay",
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1.1,
+            "position": [
+                1520,
+                -64
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://172.17.0.1:8080/message/sendText/G777",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "antigravity_secret_key_2024"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json; charset=utf-8"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"number\": \"{{ $json.phone }}\",\n  \"text\": {{ JSON.stringify($json.aiResponse) }}\n}",
+                "options": {}
+            },
+            "id": "0deef86c-19c5-49bf-8666-fafe4e74e528",
+            "name": "9. WhatsApp Outbound",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1744,
+                -64
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\"status\": \"received\"}",
+                "options": {}
+            },
+            "id": "83eebc1d-d9bd-4e69-9dd9-b9ab9f106f80",
+            "name": "Webhook 200 OK",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                416,
+                -256
+            ]
+        }
+    ],
+    "connections": {
+        "1. WhatsApp Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Webhook 200 OK",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "2. Message Parser",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "2. Message Parser": {
+            "main": [
+                [
+                    {
+                        "node": "3. Get Memory",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "3. Get Memory": {
+            "main": [
+                [
+                    {
+                        "node": "4. Session Manager",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "4. Session Manager": {
+            "main": [
+                [
+                    {
+                        "node": "5. Gemini AI",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "5. Gemini AI": {
+            "main": [
+                [
+                    {
+                        "node": "6. Response Processor",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "6. Response Processor": {
+            "main": [
+                [
+                    {
+                        "node": "8. Human Delay",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "8. Human Delay": {
+            "main": [
+                [
+                    {
+                        "node": "9. WhatsApp Outbound",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true
+}

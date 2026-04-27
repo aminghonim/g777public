@@ -39,7 +39,7 @@ class ApiService {
     _initialized = true;
   }
 
-  String get baseUrl => 'http://127.0.0.1:${_port ?? 8000}';
+  String get baseUrl => 'http://127.0.0.1:${_port ?? 8081}';
 
   Map<String, String> get _headers {
     final headers = {'Content-Type': 'application/json'};

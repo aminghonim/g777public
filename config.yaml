@@ -31,7 +31,7 @@ working_hours:
   end: 22
 
 security:
-  temp_dir: ".antigravity_dev"
+  temp_dir: ".antigravity"
   # Toggle for Strictly Enforced Authentication
   auth_required: true
   # Allow "Direct Access" mode via a Guest Link/Button
@@ -130,6 +130,14 @@ scraper_settings:
     enabled: false
     rotation: "cyclic"
     list: []
+
+  # AI Self-Healing Browser Agent (browser-use integration)
+  # Model name loaded from BROWSER_USE_MODEL env var at runtime
+  browser_use:
+    enabled: true
+    max_steps: 15
+    fallback_engine: "scrapling"
+    headless: true
   
   targets:
     whatsapp_groups:

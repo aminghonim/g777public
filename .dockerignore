@@ -1,0 +1,138 @@
+# =============================================================================
+# G777 SAAF Backend - Docker Build Shield (.dockerignore)
+# WHY: Without this file, COPY . . sends 2.3GB+ of irrelevant data into the
+#      image and risks leaking secrets embedded in .env.docker.local.
+#      Measured savings: .venv=518MB, .git=502MB, frontend_flutter=1.3GB
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# CRITICAL: Secrets & Environment Files
+# WHY: .env.docker.local contains production API keys and DB passwords.
+#      It must NEVER be baked into the image layer.
+# -----------------------------------------------------------------------------
+.env
+.env.*
+*.local
+
+# -----------------------------------------------------------------------------
+# Version Control
+# WHY: .git adds 502MB and exposes full commit history and any historical
+#      secrets that may have been committed and then removed.
+# -----------------------------------------------------------------------------
+.git
+.gitignore
+.github
+
+# -----------------------------------------------------------------------------
+# Python Virtual Environment (518MB)
+# WHY: .venv is built for the host OS (Linux Mint/Ubuntu). Shared libraries
+#      compiled against the host glibc will Segfault inside python:3.12-slim
+#      (Debian Bookworm). The container builds its own clean venv via pip.
+# -----------------------------------------------------------------------------
+.venv
+venv
+ENV
+env
+env.bak
+venv.bak
+
+# -----------------------------------------------------------------------------
+# Python Bytecode & Cache
+# WHY: Platform-specific bytecode from the host will cause ImportErrors or
+#      silent misbehavior on the container's Python version.
+# -----------------------------------------------------------------------------
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+dist
+build
+eggs
+.eggs
+*.egg
+.installed.cfg
+
+# -----------------------------------------------------------------------------
+# Flutter Frontend (1.3GB)
+# WHY: The backend container is a FastAPI server. It has zero use for Flutter
+#      Dart code, compiled APKs, or iOS/Android build artifacts.
+# -----------------------------------------------------------------------------
+frontend_flutter
+
+# -----------------------------------------------------------------------------
+# Testing & QA Artifacts
+# WHY: Test configs and coverage reports have no place in a production image.
+# -----------------------------------------------------------------------------
+.pytest_cache
+.coverage
+htmlcov
+coverage.xml
+*.cover
+.hypothesis
+tests/__pycache__
+
+# -----------------------------------------------------------------------------
+# Docker Files (Avoid recursive confusion)
+# WHY: Including docker-compose.yml inside the image has no runtime value
+#      and may expose internal service architecture to container inspection.
+# -----------------------------------------------------------------------------
+docker-compose.yml
+docker-compose*.yml
+
+# -----------------------------------------------------------------------------
+# Persistent Volume Directories
+# WHY: These directories hold runtime state (WhatsApp QR sessions, scraped
+#      data) that is managed by Docker named volumes — not baked into the image.
+#      Baking them in would make the image non-reproducible.
+# -----------------------------------------------------------------------------
+chrome_profile
+auth_info
+data
+evolution
+
+# -----------------------------------------------------------------------------
+# Logs & Temporary Files
+# WHY: Log files from the dev environment are irrelevant and bloat the image.
+# -----------------------------------------------------------------------------
+*.log
+logs
+*.tmp
+
+# -----------------------------------------------------------------------------
+# IDE & OS Metadata
+# -----------------------------------------------------------------------------
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# -----------------------------------------------------------------------------
+# Agent & Brain Cache (Antigravity-specific)
+# WHY: AI agent memory, skill files, and conversation logs are dev tools only.
+# -----------------------------------------------------------------------------
+.agent
+.antigravity
+.antigravity_dev
+.antigravity_root_backup
+.gemini
+.impeccable
+.qwen
+.safety
+.mcp
+.g777
+
+# -----------------------------------------------------------------------------
+# Project Documents & Scratch Files
+# WHY: Word docs and session state files are not application code.
+# -----------------------------------------------------------------------------
+*.docx
+*.xlsx
+session_resume_point.txt
+session_state_*.txt
+project_structure.txt
+Artifacts

@@ -2,12 +2,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:g777_client/core/services/api_client.dart';
 
-final waStatusProvider = StateNotifierProvider<WAStatusNotifier, WAStatus>((
-  ref,
-) {
-  final apiClient = ref.watch(apiClientProvider);
-  return WAStatusNotifier(apiClient);
-});
+final waStatusProvider = NotifierProvider<WAStatusNotifier, WAStatus>(
+  WAStatusNotifier.new,
+);
 
 class WAStatus {
   final bool isConnected;
@@ -37,21 +34,28 @@ class WAStatus {
   }
 }
 
-class WAStatusNotifier extends StateNotifier<WAStatus> {
-  final ApiClient _apiClient;
+class WAStatusNotifier extends Notifier<WAStatus> {
   Timer? _timer;
 
-  WAStatusNotifier(this._apiClient) : super(const WAStatus()) {
-    refreshStatus();
+  @override
+  WAStatus build() {
+    final apiClient = ref.watch(apiClientProvider);
+    ref.onDispose(() => _timer?.cancel());
+
+    Future.microtask(() => _refreshStatus(apiClient));
     _timer = Timer.periodic(
       const Duration(seconds: 10),
-      (_) => refreshStatus(),
+      (_) => _refreshStatus(apiClient),
     );
+
+    return const WAStatus();
   }
 
-  Future<void> refreshStatus() async {
+  ApiClient get _apiClient => ref.read(apiClientProvider);
+
+  Future<void> _refreshStatus(ApiClient apiClient) async {
     try {
-      final response = await _apiClient.get('/api/wa-hub/status');
+      final response = await apiClient.get('/api/wa-hub/status');
       if (response.isSuccess) {
         state = state.copyWith(
           isConnected: response.data['is_connected'] ?? false,
@@ -71,6 +75,10 @@ class WAStatusNotifier extends StateNotifier<WAStatus> {
     }
   }
 
+  Future<void> refreshStatus() async {
+    return _refreshStatus(_apiClient);
+  }
+
   Future<void> logout() async {
     state = state.copyWith(isLoading: true);
     try {
@@ -79,11 +87,5 @@ class WAStatusNotifier extends StateNotifier<WAStatus> {
     } catch (e) {
       state = state.copyWith(isLoading: false, isConnected: false);
     }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
   }
 }

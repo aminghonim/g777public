@@ -102,6 +102,33 @@ class EventBroker:
         """Dispatch live campaign progress updates."""
         await self.publish("CAMPAIGN", campaign_data, user_id)
 
+    async def publish_agent_step(
+        self,
+        step_type: str,
+        reasoning: str,
+        action: str,
+        user_id: str = "global",
+    ):
+        """
+        Dispatch AI Agent reasoning steps for real-time UI visibility.
+
+        Args:
+            step_type: Classification of the step
+                       ('thinking', 'clicking', 'extracting', 'healing').
+            reasoning: The agent's internal reasoning for this step.
+            action: The concrete action performed (e.g. 'click button X').
+            user_id: Tenant identifier for multi-tenant routing.
+        """
+        await self.publish(
+            "AGENT_STEP",
+            {
+                "step_type": step_type,
+                "reasoning": reasoning,
+                "action": action,
+            },
+            user_id,
+        )
+
 
 # Global Singleton Instance
 event_broker = EventBroker()

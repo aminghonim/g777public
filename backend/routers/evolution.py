@@ -125,3 +125,30 @@ async def delete_instance(current_user: Dict[str, Any] = Depends(get_current_use
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete instance.",
         )
+@router.get("/pairing-code", response_model=Dict[str, Any])
+async def get_pairing_code(
+    phone: str, current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    SAAS-011: Generate a pairing code for a specific phone number.
+    """
+    user_id = current_user.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token state."
+        )
+
+    try:
+        response = await evolution_manager.get_pairing_code(
+            user_id=user_id, phone_number=phone
+        )
+        return response
+    except EvolutionIsolationError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except EvolutionAPIError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve pairing code: {str(e)}",
+        )

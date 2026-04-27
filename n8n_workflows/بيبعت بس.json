@@ -1,0 +1,493 @@
+{
+  "name": "G777 Travel Agency - AI Assistant [PRODUCTION]",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "72361c74-3748-4ef7-8ab3-b568fc51f151",
+      "name": "1. WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        -192
+      ],
+      "webhookId": "g777-travel-prod"
+    },
+    {
+      "parameters": {
+        "jsCode": "const incoming = $input.first().json;\n\n// ده السطر السحري اللي بيجيب البيانات من جوه الصندوق المقفول\nconst data = incoming.body?.data || incoming.body || incoming;\nconst key = data.key || data;\n\n// هنا بنطلع رقم التليفون وننظفه من أي زيادات\nlet phone = (key.remoteJid || key.from || '').replace('@c.us', '').replace('@s.whatsapp.net', '');\n\n// وهنا بنجيب نص الرسالة\nconst messageContent = data.message || {};\nconst messageText = messageContent.conversation || messageContent.extendedTextMessage?.text || data.body || '';\n\nreturn { \n  json: { \n    phone: phone, \n    message: messageText, \n    customerName: data.pushName || 'عميل' \n  } \n};"
+      },
+      "id": "70e854be-ffd7-4375-9837-7f5357d3b952",
+      "name": "2. Message Parser",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "id": "eff0da75-4da7-4c39-8137-d5a98595ecef",
+      "name": "8. Human Delay",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2480,
+        -240
+      ],
+      "webhookId": "g777-delay-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://51.12.91.34:8080/message/sendText/G777",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "antigravity_secret_key_2024"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.phone }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.aiResponse }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0deef86c-19c5-49bf-8666-fafe4e74e528",
+      "name": "9. WhatsApp Outbound",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2672,
+        -240
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://zbrpwteyldwpqlcxdpmf.supabase.co/rest/v1/customer_memory",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicnB3dGV5bGR3cHFsY3hkcG1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNzYyMDUsImV4cCI6MjA4NDc1MjIwNX0.6Syczj_yN-GNfg2r_8U8xeiT67Z7hzyjJUBFTRjb0AQ"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicnB3dGV5bGR3cHFsY3hkcG1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNzYyMDUsImV4cCI6MjA4NDc1MjIwNX0.6Syczj_yN-GNfg2r_8U8xeiT67Z7hzyjJUBFTRjb0AQ"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"phone\": \"{{ $('2. Message Parser').first().json.phone }}\",\n  \"customer_name\": \"{{ $('2. Message Parser').first().json.customerName }}\",\n  \"fact\": \"{{ $('6.Response Processor').item.json.newFact }}\",\n  \"intent\": \"{{ $('6.Response Processor').item.json.intent }}\"\n}",
+        "options": {}
+      },
+      "id": "0137588d-a13e-4f5b-bec9-5f1080fe94a3",
+      "name": "10. Supabase Upsert Memory",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2848,
+        -304
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const errorData = $input.first().json;\n// Get phone from the initial parser to be safe\nconst phone = $('2. Message Parser').first().json.phone || 'Unknown';\n\nlet errorType = 'UNKNOWN';\nlet errorMessage = 'Unknown error';\nlet statusCode = errorData.statusCode || 0;\n\n// Try to extract useful error message\nif (typeof errorData.error === 'object') {\n    if (errorData.error.message) errorMessage = errorData.error.message;\n    if (errorData.error.status) statusCode = errorData.error.status;\n} else if (errorData.message) {\n    errorMessage = errorData.message;\n}\n\nif (statusCode === 404) {\n  errorType = 'INSTANCE_NOT_FOUND';\n  errorMessage = 'Evolution Instance Name incorrect';\n} else if (statusCode === 401) {\n  errorType = 'AUTH_FAILED';\n}\n\nreturn {\n  json: {\n    status: 'ERROR',\n    errorType: errorType,\n    errorMessage: errorMessage,\n    statusCode: statusCode,\n    phone: phone,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "c59a7a6e-56fe-4830-9a5c-254b8e2137b8",
+      "name": "11. Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2864,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "/* Fixed Final Log Node (Smart Reference) */\n\n// 1. Get Phone & Name (Guaranteed to exist from Message Parser)\nconst inputData = $('2. Message Parser').first().json;\n\n// 2. Get Agent Response (Try both name variations)\nlet responseText = \"No response\";\nlet intent = \"unknown\";\n\ntry {\n  // Try finding the node with Space\n  const processorNode = $('6. Response Processor').first().json; \n  responseText = processorNode.aiResponse;\n  intent = processorNode.intent;\n} catch(e1) {\n  try {\n     // Try finding the node WITHOUT Space\n     const processorNode2 = $('6.Response Processor').first().json;\n     responseText = processorNode2.aiResponse;\n     intent = processorNode2.intent;\n  } catch(e2) {\n     responseText = \"Address/Node not found\";\n  }\n}\n\n// 3. Construct Final Report\nconst log = {\n  status: 'SUCCESS',\n  timestamp: new Date().toISOString(),\n  phone: inputData.phone,\n  name: inputData.customerName,\n  intent: intent,\n  response_preview: responseText ? responseText.substring(0, 50) + \"...\" : \"Empty\", \n  sent: true\n};\n\nreturn { json: log };"
+      },
+      "id": "ca996632-9cf4-43a9-91dc-b1febb9fc75a",
+      "name": "12. Final Production Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3040,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\": \"received\", \"timestamp\": \"{{ $now.toISO() }}\"}",
+        "options": {}
+      },
+      "id": "83eebc1d-d9bd-4e69-9dd9-b9ab9f106f80",
+      "name": "Webhook 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1280,
+        -384
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "id": "ce2862ec-38c4-422e-ac20-550e5133bd68",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        -80
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "lXtYzqhvHZMwupU0",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "90cd27bd-082c-4b88-bb76-91df2e9b294a",
+              "leftValue": "={{ $json.intent }}",
+              "rightValue": "=booking",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2272,
+        -224
+      ],
+      "id": "4b51432f-79ad-4aea-b265-f22c3c9d3150",
+      "name": "7. Intent Router"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "customer_memory",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone",
+              "condition": "eq",
+              "keyValue": "={{ $json.phone }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        -224
+      ],
+      "id": "8b39e643-a2e1-4084-9dc9-1398170d0a9f",
+      "name": "3.Get many rows",
+      "credentials": {
+        "supabaseApi": {
+          "id": "xrc4h7myVDqGPN6d",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// جلب كل الذكريات اللي رجعت من Supabase\nconst memoryItems = $input.all().map(item => item.json);\n// جلب الرسالة الأصلية من العقدة الثانية\nconst parsedMessage = $('2. Message Parser').first().json;\n// تجميع الذكريات في نص واحد\nlet memoryContext = '';\nif (memoryItems.length > 0 && memoryItems[0].phone) {\n  memoryContext = memoryItems.map((m) => {\n    return `• ${m.fact || m.summary || m.intent || 'N/A'} (${m.create_at || ''})`;\n  }).join('\\n');\n} else {\n  memoryContext = 'لا توجد سجلات سابقة لهذا العميل.';\n}\n// تجهيز \"الطبق النهائي\" للذكاء الاصطناعي\nconst sessionContext = {\n  phone: parsedMessage.phone,\n  customerName: parsedMessage.customerName,\n  currentMessage: parsedMessage.message,\n  intent: parsedMessage.intent,\n  timestamp: parsedMessage.timestamp,\n  memoryContext: memoryContext, // هنا تاريخ العميل كله\n  sessionId: `session_${parsedMessage.phone}_${Date.now()}`\n};\nreturn { json: sessionContext };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        -256
+      ],
+      "id": "7bfe1fe6-8d10-43e9-a5ac-d6eab065a8e4",
+      "name": "4.Session Memory Manager"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=أنتِ ياسمين، مساعدة ذكية لشركة TripiGo للسياحة.\nلهجتك: مصرية ودودة ومحترفة.\nالمهمة: مساعدة العملاء في حجز رحلات لراس سدر فقط.\n\nبيانات العميل:\nالاسم: {{ $('4.Session Memory Manager').first().json.customerName }}\nرقم الهاتف: {{ $('4.Session Memory Manager').first().json.phone }}\n\nسياق الذاكرة السابقة:\n{{ $('4.Session Memory Manager').first().json.memoryContext }}\n\nرسالة العميل الحالية:\n{{ $('4.Session Memory Manager').first().json.currentMessage }}\n\nردي عليه بناءً على السياق والذاكرة.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1728,
+        -256
+      ],
+      "id": "1c1dd766-e483-4d5d-868d-9617db3ff3c0",
+      "name": "5.Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "jsCode": "// تعديل مهم: قراءة النص من json.text\nconst agentResponse = $input.first().json.text; \n\n// قراءة الذاكرة من العقدة باسمها الصحيح (بدون رقم 4)\nconst memoryData = $('4.Session Memory Manager').first().json;\n\n// تحديد النية (بسيط جداً)\nlet intent = 'inquiry';\nif (/حجز|بوكينج|تفاصيل الحجز|سعر/i.test(memoryData.currentMessage)) {\n  intent = 'booking';\n}\n\nreturn {\n  json: {\n    phone: memoryData.phone,\n    aiResponse: agentResponse,\n    intent: intent,\n    newFact: `العميل سأل: ${memoryData.currentMessage.substring(0, 50)}...`, \n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2112,
+        -240
+      ],
+      "id": "e53b18ec-4373-4c24-8bcc-144ff2f2f2a9",
+      "name": "6.Response Processor"
+    }
+  ],
+  "pinData": {
+    "1. WhatsApp Webhook": [
+      {
+        "json": {
+          "headers": {
+            "content-type": "application/json",
+            "user-agent": "PostmanRuntime/7.51.0",
+            "accept": "*/*",
+            "postman-token": "7bd54948-cc1b-47a1-87e0-9f7db87a02f8",
+            "host": "51.12.91.34:5678",
+            "accept-encoding": "gzip, deflate, br",
+            "connection": "keep-alive",
+            "content-length": "230"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "event": "messages.upsert",
+            "instance": "SENDER",
+            "data": {
+              "key": {
+                "remoteJid": "201097752711@s.whatsapp.net",
+                "fromMe": false,
+                "id": "TEST-001"
+              },
+              "message": {
+                "conversation": "مرحبا"
+              },
+              "messageTimestamp": 1737565200,
+              "pushName": "Test User"
+            }
+          },
+          "webhookUrl": "http://51.12.91.34:5678/webhook/whatsapp",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "1. WhatsApp Webhook": {
+      "main": [
+        [
+          {
+            "node": "Webhook 200 OK",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "2. Message Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Message Parser": {
+      "main": [
+        [
+          {
+            "node": "3.Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "5.Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Human Delay": {
+      "main": [
+        [
+          {
+            "node": "9. WhatsApp Outbound",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. WhatsApp Outbound": {
+      "main": [
+        [
+          {
+            "node": "10. Supabase Upsert Memory",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "11. Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10. Supabase Upsert Memory": {
+      "main": [
+        [
+          {
+            "node": "12. Final Production Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. Intent Router": {
+      "main": [
+        [
+          {
+            "node": "8. Human Delay",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "8. Human Delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3.Get many rows": {
+      "main": [
+        [
+          {
+            "node": "4.Session Memory Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4.Session Memory Manager": {
+      "main": [
+        [
+          {
+            "node": "5.Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5.Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "6.Response Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6.Response Processor": {
+      "main": [
+        [
+          {
+            "node": "7. Intent Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "35a77934-c531-4bfe-985e-8dde2f945fac",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c5ed9c83a9b8a28a4e08b719e43e0c8a491b4e4a23d4f680a122a7f8bf2a8a25"
+  },
+  "id": "KxnX_SX_-mYH6YYTh0HTJ",
+  "tags": []
+}

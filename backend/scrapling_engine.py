@@ -9,9 +9,15 @@ Architecture:
     ScraplingEngine reads settings from config.yaml (scraper_settings block)
     and exposes fetch/extract/stealth_fetch methods that the grabber,
     group_finder, and maps_extractor modules consume.
+
+    Extended with browser-use AI Self-Healing layer:
+    When the Adaptive Parser fails repeatedly (failure_threshold), the
+    engine automatically triggers an AI-driven browser agent to
+    "see" the page and extract data without hardcoded selectors.
 """
 
 import logging
+import os
 from typing import Any, Dict, List, Optional
 
 import yaml
@@ -23,6 +29,18 @@ from tenacity import (
 )
 
 logger = logging.getLogger(__name__)
+
+# browser-use imports are guarded for graceful degradation.
+try:
+    from browser_use import Agent, Browser, BrowserProfile
+
+    BROWSER_USE_AVAILABLE = True
+except ImportError:
+    BROWSER_USE_AVAILABLE = False
+    logger.warning(
+        "browser-use not installed. AI Self-Healing disabled. "
+        "Install with: pip install browser-use"
+    )
 
 # Scrapling imports are guarded so the module can be imported
 # even when Scrapling is not yet installed (graceful degradation).
@@ -88,6 +106,17 @@ class ScraplingEngine:
         self.session_config = self.config.get("identity", {})
         self.validation_config = self.config.get("validation", {})
 
+        # AI Self-Healing Configuration (browser-use)
+        self.browser_use_config: Dict[str, Any] = self.config.get(
+            "browser_use", {}
+        )
+        self.ai_enabled: bool = (
+            self.browser_use_config.get("enabled", False)
+            and BROWSER_USE_AVAILABLE
+        )
+        self.ai_max_steps: int = self.browser_use_config.get("max_steps", 15)
+        self._ai_browser: Optional[Any] = None  # Lazy init
+
         # State Tracking
         self._consecutive_failures: Dict[str, int] = {}
 
@@ -95,10 +124,12 @@ class ScraplingEngine:
             logger.warning("Scrapling requested but not available.")
 
         logger.info(
-            "ScraplingEngine initialized: engine=%s, stealth=%s, adaptive=%s",
+            "ScraplingEngine initialized: engine=%s, stealth=%s, "
+            "adaptive=%s, ai_healing=%s",
             self.engine_type,
             self.stealth,
             self.adaptive,
+            self.ai_enabled,
         )
 
     @property
@@ -358,6 +389,8 @@ class ScraplingEngine:
         return {
             "engine": self.engine_type,
             "scrapling_available": SCRAPLING_AVAILABLE,
+            "browser_use_available": BROWSER_USE_AVAILABLE,
+            "ai_enabled": self.ai_enabled,
             "is_active": self.is_available,
             "headless": self.headless,
             "stealth": self.stealth,
@@ -365,3 +398,167 @@ class ScraplingEngine:
             "timeout": self.timeout,
             "configured_targets": list(self.targets.keys()),
         }
+
+    # ------------------------------------------------------------------ #
+    #  AI Self-Healing Layer (browser-use integration)
+    # ------------------------------------------------------------------ #
+
+    def _get_llm(self) -> Any:
+        """
+        Resolve the LLM instance for browser-use from TASK_MODEL_MAP.
+
+        The model name is NEVER hardcoded; it is read from the
+        UnifiedAIClient.TASK_MODEL_MAP['WEB_OPERATION'] which itself
+        reads from the BROWSER_USE_MODEL env var.
+        """
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        from backend.ai_client import UnifiedAIClient
+
+        model_name = UnifiedAIClient.TASK_MODEL_MAP.get(
+            "WEB_OPERATION",
+            os.getenv("BROWSER_USE_MODEL", "gemini-2.0-flash"),
+        )
+        api_key = os.getenv("GEMINI_API_KEY")
+        return ChatGoogleGenerativeAI(
+            model=model_name,
+            google_api_key=api_key,
+        )
+
+    def _should_trigger_ai(self, selector: Optional[str]) -> bool:
+        """
+        Determine whether the AI Self-Healing layer should activate.
+
+        Conditions:
+            1. ai_enabled is True (config + library present)
+            2. selector has failed >= failure_threshold consecutive times
+        """
+        if not self.ai_enabled:
+            return False
+        if selector is None:
+            return True  # No selector means we need AI from the start
+        failures = self._consecutive_failures.get(selector, 0)
+        threshold = self.telemetry_config.get("failure_threshold", 3)
+        return failures >= threshold
+
+    async def ai_fetch(
+        self, url: str, task: str, **kwargs: Any
+    ) -> Any:
+        """
+        AI-driven fetch using browser-use Agent.
+
+        Falls back to stealth_fetch if browser-use is unavailable.
+
+        Args:
+            url: Target URL to navigate to.
+            task: Natural language description of what to do.
+            **kwargs: Additional parameters.
+
+        Returns:
+            AgentHistoryList with results from the AI agent.
+        """
+        if not self.ai_enabled:
+            logger.warning(
+                "AI Self-Healing not available, falling back to stealth_fetch"
+            )
+            return self.stealth_fetch(url, **kwargs)
+
+        from backend.core.event_broker import event_broker
+
+        await event_broker.publish_agent_step(
+            step_type="healing",
+            reasoning=f"Selector-based extraction failed. "
+                      f"Switching to AI agent for: {url}",
+            action=f"ai_fetch: {task[:80]}",
+        )
+
+        llm = self._get_llm()
+
+        # Reuse session path for Playwright profile
+        session_kwargs = self._inject_session("browser_use")
+
+        browser_config = BrowserProfile(
+            headless=self.browser_use_config.get("headless", True),
+        )
+        browser = Browser(config=browser_config)
+
+        agent = Agent(
+            task=task,
+            llm=llm,
+            browser=browser,
+            max_steps=self.ai_max_steps,
+        )
+
+        try:
+            result = await agent.run()
+            await event_broker.publish_agent_step(
+                step_type="extracting",
+                reasoning="AI agent completed task successfully.",
+                action=f"ai_fetch complete for: {url}",
+            )
+            return result
+        except Exception as agent_error:
+            logger.error(
+                "AI agent failed for %s: %s", url, agent_error
+            )
+            await event_broker.publish_agent_step(
+                step_type="healing",
+                reasoning=f"AI agent error: {agent_error}",
+                action="Falling back to stealth_fetch",
+            )
+            return self.stealth_fetch(url, **kwargs)
+        finally:
+            await browser.close()
+
+    async def execute_smart_action(
+        self,
+        url: str,
+        action: str,
+        selector: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Self-Healing Hybrid: Try Scrapling first, AI fallback on failure.
+
+        This is the primary interface for implementation files.
+        It maintains the same return signature regardless of which
+        engine handles the request.
+
+        Args:
+            url: Target URL.
+            action: Natural language description (used by AI fallback).
+            selector: CSS selector to try first with Scrapling.
+            **kwargs: Additional fetch parameters.
+
+        Returns:
+            List of extracted elements or AI agent results.
+        """
+        from backend.core.event_broker import event_broker
+
+        # Layer 1: Fast/Free path via Scrapling adaptive parser
+        if selector and self.is_available:
+            try:
+                page = self.stealth_fetch(url, **kwargs)
+                results = self.extract(page, selector, adaptive=True)
+                if results:
+                    self._track_telemetry(selector, success=True)
+                    return results
+                # Empty results count as failure
+                self._track_telemetry(selector, success=False)
+            except Exception as scrapling_error:
+                logger.warning(
+                    "Scrapling failed for selector '%s': %s",
+                    selector,
+                    scrapling_error,
+                )
+                self._track_telemetry(selector, success=False)
+
+        # Layer 2: AI Self-Healing via browser-use
+        if self._should_trigger_ai(selector):
+            await event_broker.publish_log(
+                f"Selector '{selector}' failed. "
+                f"Triggering AI Self-Healing...",
+                level="WARNING",
+            )
+            return await self.ai_fetch(url, action, **kwargs)
+
+        return []

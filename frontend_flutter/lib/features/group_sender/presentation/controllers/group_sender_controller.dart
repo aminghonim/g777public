@@ -8,7 +8,7 @@ import 'dart:convert';
 class GroupSenderState {
   final String? uploadedFileName;
   final String? uploadedFilePath;
-  final String? directContacts; // JSON string of contacts
+  final String? directContacts;
   final bool isLoading;
   final bool isCampaignRunning;
   final double progress;
@@ -41,10 +41,9 @@ class GroupSenderState {
   }
 }
 
-class GroupSenderNotifier extends StateNotifier<GroupSenderState> {
-  final Ref ref;
-
-  GroupSenderNotifier(this.ref) : super(GroupSenderState());
+class GroupSenderNotifier extends Notifier<GroupSenderState> {
+  @override
+  GroupSenderState build() => GroupSenderState();
 
   ApiClient get _api => ref.read(apiClientProvider);
 
@@ -52,7 +51,6 @@ class GroupSenderNotifier extends StateNotifier<GroupSenderState> {
     final contacts = [
       {'phone': phone, 'name': name},
     ];
-    // Reset state for single send
     state = state.copyWith(
       directContacts: jsonEncode(contacts),
       uploadedFileName: null,
@@ -67,7 +65,7 @@ class GroupSenderNotifier extends StateNotifier<GroupSenderState> {
   Future<void> pickAndUploadExcel() async {
     state = state.copyWith(isLoading: true, directContacts: null);
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['xlsx', 'xls'],
       );
@@ -145,7 +143,7 @@ class GroupSenderNotifier extends StateNotifier<GroupSenderState> {
           'delay_max': delayMax.toString(),
           'group_link': groupLink ?? '',
         },
-        filePath: '', // No media for now
+        filePath: '',
         fileField: 'media_file',
       );
 
@@ -153,8 +151,6 @@ class GroupSenderNotifier extends StateNotifier<GroupSenderState> {
         ref
             .read(logsProvider.notifier)
             .addLog('Campaign successfully initiated.', type: LogType.success);
-        // No need to call _listenToProgress() here,
-        // the UI or a global listener already handles campaignStreamProvider.
       } else {
         throw Exception(resMultipart.data?['error'] ?? 'Launch failed');
       }
@@ -166,7 +162,6 @@ class GroupSenderNotifier extends StateNotifier<GroupSenderState> {
     }
   }
 
-  /// NEW: Internal method to sync state with the unified SSE data
   void updateFromStream(Map<String, dynamic> campaignData) {
     if (campaignData.containsKey('total')) {
       final total = campaignData['total'] as int;
@@ -178,13 +173,6 @@ class GroupSenderNotifier extends StateNotifier<GroupSenderState> {
         isCampaignRunning: campaignData['is_running'] ?? false,
         progress: progress,
       );
-    }
-
-    if (campaignData.containsKey('logs')) {
-      final logs = campaignData['logs'] as List;
-      if (logs.isNotEmpty) {
-        // Log handled via logsStreamProvider globally
-      }
     }
   }
 }
@@ -203,7 +191,6 @@ final campaignStreamListenerProvider = Provider<void>((ref) {
   });
 });
 
-final groupSenderProvider =
-    StateNotifierProvider<GroupSenderNotifier, GroupSenderState>((ref) {
-      return GroupSenderNotifier(ref);
-    });
+final groupSenderProvider = NotifierProvider<GroupSenderNotifier, GroupSenderState>(
+  GroupSenderNotifier.new,
+);

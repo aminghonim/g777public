@@ -2,7 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:g777_client/core/services/api_service.dart';
 
 /// Maps Extractor Repository Provider
-final mapsExtractorRepositoryProvider = Provider<MapsExtractorRepository>((ref) {
+final mapsExtractorRepositoryProvider =
+    Provider<MapsExtractorRepository>((ref) {
   return MapsExtractorRepository(apiService: ApiService());
 });
 
@@ -39,31 +40,29 @@ class MapsExtractorState {
   }
 }
 
-/// Maps Extractor Notifier
-class MapsExtractorNotifier extends StateNotifier<MapsExtractorState> {
-  final MapsExtractorRepository _repository;
+/// Maps Extractor Notifier (Riverpod 3)
+class MapsExtractorNotifier extends Notifier<MapsExtractorState> {
+  @override
+  MapsExtractorState build() => const MapsExtractorState();
 
-  MapsExtractorNotifier(this._repository) : super(const MapsExtractorState());
+  MapsExtractorRepository get _repository =>
+      ref.read(mapsExtractorRepositoryProvider);
 
-  /// Load existing maps results
   Future<void> loadResults() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final results = await _repository.getMapsResults();
-      state = state.copyWith(
-        isLoading: false,
-        results: results,
-      );
+      state = state.copyWith(isLoading: false, results: results);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  /// Trigger a new maps scan
-  Future<void> triggerScan(String query, String location, {int scrollingDepth = 2}) async {
+  Future<void> triggerScan(
+    String query,
+    String location, {
+    int scrollingDepth = 2,
+  }) async {
     state = state.copyWith(isScanning: true, error: null);
     try {
       final keyword = '$query in $location';
@@ -75,14 +74,10 @@ class MapsExtractorNotifier extends StateNotifier<MapsExtractorState> {
         isScanning: false,
         scanMessage: response['message'] as String?,
       );
-      // Reload results after a delay to get new data
       await Future.delayed(const Duration(seconds: 3));
       await loadResults();
     } catch (e) {
-      state = state.copyWith(
-        isScanning: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isScanning: false, error: e.toString());
     }
   }
 
@@ -96,10 +91,10 @@ class MapsExtractorNotifier extends StateNotifier<MapsExtractorState> {
 }
 
 /// Maps Extractor Notifier Provider
-final mapsExtractorProvider = StateNotifierProvider<MapsExtractorNotifier, MapsExtractorState>((ref) {
-  final repository = ref.watch(mapsExtractorRepositoryProvider);
-  return MapsExtractorNotifier(repository);
-});
+final mapsExtractorProvider =
+    NotifierProvider<MapsExtractorNotifier, MapsExtractorState>(
+  MapsExtractorNotifier.new,
+);
 
 /// Maps Extractor Repository
 class MapsExtractorRepository {
@@ -108,14 +103,12 @@ class MapsExtractorRepository {
   MapsExtractorRepository({required ApiService apiService})
       : _apiService = apiService;
 
-  /// Get existing maps results
   Future<List<Map<String, dynamic>>> getMapsResults() async {
     final response = await _apiService.getOpportunities(source: 'maps');
     final results = response['results'] as List<dynamic>?;
     return results?.cast<Map<String, dynamic>>() ?? [];
   }
 
-  /// Trigger a new maps scan
   Future<Map<String, dynamic>> triggerMapsScan({
     required String keyword,
     int scrollingDepth = 2,

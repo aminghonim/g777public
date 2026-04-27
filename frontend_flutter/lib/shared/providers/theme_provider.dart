@@ -7,17 +7,16 @@ import 'package:g777_client/core/providers/shared_prefs_provider.dart';
 enum ThemeModeType { dark, light, system }
 
 final themeModeProvider =
-    StateNotifierProvider<ThemeModeNotifier, ThemeModeType>((ref) {
-      final prefs = ref.watch(sharedPreferencesProvider);
-      return ThemeModeNotifier(prefs);
-    });
+    NotifierProvider<ThemeModeNotifier, ThemeModeType>(ThemeModeNotifier.new);
 
-class ThemeModeNotifier extends StateNotifier<ThemeModeType> {
-  final SharedPreferences prefs;
-
-  ThemeModeNotifier(this.prefs) : super(_getInitialTheme(prefs));
-
+class ThemeModeNotifier extends Notifier<ThemeModeType> {
   static const String _key = 'app_theme_mode';
+
+  @override
+  ThemeModeType build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return _getInitialTheme(prefs);
+  }
 
   static ThemeModeType _getInitialTheme(SharedPreferences prefs) {
     final index = prefs.getInt(_key) ?? 0;
@@ -27,9 +26,11 @@ class ThemeModeNotifier extends StateNotifier<ThemeModeType> {
     return ThemeModeType.dark;
   }
 
+  SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
+
   Future<void> setThemeMode(ThemeModeType mode) async {
     state = mode;
-    await prefs.setInt(_key, mode.index);
+    await _prefs.setInt(_key, mode.index);
   }
 
   Future<void> toggleTheme() async {

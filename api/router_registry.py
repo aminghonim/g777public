@@ -10,8 +10,11 @@ from backend.routers import (
     system,
     users,
     warmer,
-    web_ui
+    web_ui,
+    group_sender,
+    sentry
 )
+from backend import webhook_handler
 
 def register_all_routers(app: FastAPI):
     """
@@ -21,7 +24,7 @@ def register_all_routers(app: FastAPI):
     # System & Core
     app.include_router(system.router, tags=["System"])
     app.include_router(users.router, tags=["Users"])
-    app.include_router(license.router, tags=["License"])
+    app.include_router(license.router, prefix="/auth/license", tags=["License"])
     
     # Business Modules
     app.include_router(crm.router, prefix="/api/crm", tags=["CRM"])
@@ -31,6 +34,13 @@ def register_all_routers(app: FastAPI):
     app.include_router(evolution.router, prefix="/api/evolution", tags=["Evolution"])
     app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
     app.include_router(warmer.router, prefix="/api/warmer", tags=["Warmer"])
+    app.include_router(group_sender.router, prefix="/api", tags=["Group Sender"])
     
     # UI Endpoints
     app.include_router(web_ui.router, tags=["Web UI"])
+    
+    # Webhooks
+    app.include_router(webhook_handler.router, prefix="/webhook", tags=["Webhooks"])
+
+    # Monitoring & AI Sentinel
+    app.include_router(sentry.router, tags=["Monitoring"])

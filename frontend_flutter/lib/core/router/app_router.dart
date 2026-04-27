@@ -20,7 +20,7 @@ import '../../shared/layouts/main_layout.dart';
 part 'app_router.g.dart';
 
 @riverpod
-GoRouter router(RouterRef ref) {
+GoRouter router(Ref ref) {
   // DEV MODE: No auth guards, all features unlocked for development.
   return GoRouter(
     initialLocation: '/dashboard',

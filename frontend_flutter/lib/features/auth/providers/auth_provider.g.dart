@@ -6,19 +6,48 @@ part of 'auth_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$authHash() => r'5ed5eb6a6e01d01e46858c7c06cff02c3c9f6872';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [Auth].
 @ProviderFor(Auth)
-final authProvider = AutoDisposeAsyncNotifierProvider<Auth, AuthState>.internal(
-  Auth.new,
-  name: r'authProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$authHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final authProvider = AuthProvider._();
 
-typedef _$Auth = AutoDisposeAsyncNotifier<AuthState>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+final class AuthProvider extends $AsyncNotifierProvider<Auth, AuthState> {
+  AuthProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'authProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$authHash();
+
+  @$internal
+  @override
+  Auth create() => Auth();
+}
+
+String _$authHash() => r'f5a61ccd4aa8b0bc29b4b927d76f4546dff91829';
+
+abstract class _$Auth extends $AsyncNotifier<AuthState> {
+  FutureOr<AuthState> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<AuthState>, AuthState>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<AuthState>, AuthState>,
+              AsyncValue<AuthState>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

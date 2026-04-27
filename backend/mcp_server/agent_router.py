@@ -6,6 +6,10 @@ import urllib.request
 import urllib.error
 import json
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from dotenv import load_dotenv
+
+# Load environment variables from the project root .env file
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'))
 
 # Silence all loggers to prevent protocol interference (CNS Rule 8)
 logging.getLogger().handlers.clear()

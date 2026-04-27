@@ -8,13 +8,15 @@ import 'package:g777_client/core/providers/shared_prefs_provider.dart';
 /// Theme Style Enum
 enum ThemeStyle { neon, professional, industrial, modernGlass }
 
-/// Theme Style State Notifier (Neon/Professional/Industrial/ModernGlass)
-class ThemeStyleNotifier extends StateNotifier<ThemeStyle> {
-  final SharedPreferences prefs;
-
-  ThemeStyleNotifier(this.prefs) : super(_getInitialStyle(prefs));
-
+/// Theme Style Notifier (Riverpod 3 - Notifier)
+class ThemeStyleNotifier extends Notifier<ThemeStyle> {
   static const String _key = 'app_theme_style';
+
+  @override
+  ThemeStyle build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return _getInitialStyle(prefs);
+  }
 
   static ThemeStyle _getInitialStyle(SharedPreferences prefs) {
     final index = prefs.getInt(_key) ?? 0;
@@ -26,16 +28,15 @@ class ThemeStyleNotifier extends StateNotifier<ThemeStyle> {
 
   Future<void> setThemeStyle(ThemeStyle style) async {
     state = style;
+    final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setInt(_key, style.index);
   }
 }
 
 /// Theme Style Provider
-final themeStyleProvider =
-    StateNotifierProvider<ThemeStyleNotifier, ThemeStyle>((ref) {
-      final prefs = ref.watch(sharedPreferencesProvider);
-      return ThemeStyleNotifier(prefs);
-    });
+final themeStyleProvider = NotifierProvider<ThemeStyleNotifier, ThemeStyle>(
+  ThemeStyleNotifier.new,
+);
 
 /// Computed Theme Provider (Light)
 final lightThemeProvider = Provider<ThemeData>((ref) {

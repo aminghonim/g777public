@@ -201,7 +201,7 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               count.toString(),
-              style: TextStyle(color: AppColors.neonCyan, fontSize: 24, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: AppColors.neonCyan, fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ],
         ),

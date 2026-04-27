@@ -6,6 +6,19 @@ Mandate: Modular & Transparent Orchestration
 
 # 🛡️ CNS SQUAD MANDATE: Zero-Regression & Full Quality Audit (Activated)
 
+# =====================================================================
+# RTK Enforcement Guard - Runtime Blocker (CRITICAL - Must be first)
+# =====================================================================
+from backend.core.rtk_enforcement import setup_rtk_enforcement
+
+setup_rtk_enforcement()
+
+import os
+from dotenv import load_dotenv
+
+# Load .env BEFORE any other imports to fix SECRET_KEY and ENV issues
+load_dotenv()
+
 import sys
 import os
 import uvicorn
@@ -16,7 +29,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from core.security import SecurityEngine
 from core.lifespan import lifespan
-from core.middleware import secure_handshake_middleware
+from core.middleware import secure_handshake_middleware, license_expiry_middleware
 from api.router_registry import register_all_routers
 from backend.core.monitoring import init_monitoring
 from _version import __version__
@@ -32,8 +45,9 @@ app = FastAPI(
     docs_url="/api/docs" if "--dev" in sys.argv else None,
 )
 
-# 3. Apply Middlewares
+# 3. Apply Middlewares (order matters: handshake first, then license check)
 app.middleware("http")(secure_handshake_middleware)
+app.middleware("http")(license_expiry_middleware)
 
 app.add_middleware(
     CORSMiddleware,

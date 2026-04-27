@@ -7,12 +7,13 @@ import logging
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.mcp import MCPIntegration
 
 logger = logging.getLogger(__name__)
 
 
 def init_monitoring():
-    """Initialize Sentry SDK with FastAPI integration."""
+    """Initialize Sentry SDK with FastAPI and MCP integration."""
     sentry_dsn = os.getenv("SENTRY_DSN")
 
     if not sentry_dsn:
@@ -28,17 +29,17 @@ def init_monitoring():
     try:
         sentry_sdk.init(
             dsn=sentry_dsn,
-            integrations=[FastApiIntegration(), sentry_logging],
+            integrations=[FastApiIntegration(), sentry_logging, MCPIntegration()],
             # Set traces_sample_rate to 1.0 to capture 100%
             # of transactions for performance monitoring.
-            traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2")),
+            traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "1.0")),
             # Set profiles_sample_rate to 1.0 to profile 100%
             # of transactions.
             profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.2")),
             environment=os.getenv("SENTRY_ENVIRONMENT", "production"),
             send_default_pii=True,
         )
-        logger.info("[MONITORING] Sentry initialized successfully.")
+        logger.info("[MONITORING] Sentry initialized successfully with MCP Integration.")
     except Exception as e:
         logger.error(f"[MONITORING] Failed to initialize Sentry: {e}")
 

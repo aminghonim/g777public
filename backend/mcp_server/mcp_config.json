@@ -1,15 +1,16 @@
 {
   "mcpServers": {
-    "antigravity-core": {
+    "agent-router": {
       "command": "/home/g777/MYCOMPUTER/work/2/.venv/bin/python3",
-      "args": ["/home/g777/MYCOMPUTER/work/2/backend/mcp_server/mcp_core.py"],
+      "args": ["/home/g777/MYCOMPUTER/work/2/backend/mcp_server/agent_router.py"],
       "env": {
-        "PYTHONPATH": "/home/g777/MYCOMPUTER/work/2"
+        "PYTHONPATH": "/home/g777/MYCOMPUTER/work/2",
+        "SKILLS_DIR": "/home/g777/MYCOMPUTER/work/2/.agent/skills"
       }
     },
-    "chrome-devtools": {
+    "impeccable-protocol": {
       "command": "/home/g777/MYCOMPUTER/work/2/.venv/bin/python3",
-      "args": ["/home/g777/MYCOMPUTER/work/2/backend/mcp_server/browser.py"],
+      "args": ["/home/g777/MYCOMPUTER/work/2/backend/mcp_server/server.py"],
       "env": {
         "PYTHONPATH": "/home/g777/MYCOMPUTER/work/2"
       }
@@ -21,31 +22,18 @@
         "PYTHONPATH": "/home/g777/MYCOMPUTER/work/2"
       }
     },
-    "GitKraken": {
+    "browser": {
       "command": "/home/g777/MYCOMPUTER/work/2/.venv/bin/python3",
-      "args": ["/home/g777/MYCOMPUTER/work/2/backend/mcp_server/git_tools.py"],
+      "args": ["/home/g777/MYCOMPUTER/work/2/backend/mcp_server/browser.py"],
       "env": {
         "PYTHONPATH": "/home/g777/MYCOMPUTER/work/2"
       }
     },
-    "postgres": {
-      "command": "/home/g777/.nvm/versions/node/v24.14.0/bin/node",
-      "args": [
-        "/home/g777/.nvm/versions/node/v24.14.0/lib/node_modules/@modelcontextprotocol/server-postgres/dist/index.js"
-      ],
+    "git-tools": {
+      "command": "/home/g777/MYCOMPUTER/work/2/.venv/bin/python3",
+      "args": ["/home/g777/MYCOMPUTER/work/2/backend/mcp_server/git_tools.py"],
       "env": {
-        "PATH": "/home/g777/.nvm/versions/node/v24.14.0/bin:/usr/local/bin:/usr/bin:/bin",
-        "NODE_PATH": "/home/g777/.nvm/versions/node/v24.14.0/lib/node_modules"
-      }
-    },
-    "everything": {
-      "command": "/home/g777/.nvm/versions/node/v24.14.0/bin/node",
-      "args": [
-        "/home/g777/.nvm/versions/node/v24.14.0/lib/node_modules/@modelcontextprotocol/server-everything/dist/index.js"
-      ],
-      "env": {
-        "PATH": "/home/g777/.nvm/versions/node/v24.14.0/bin:/usr/local/bin:/usr/bin:/bin",
-        "NODE_PATH": "/home/g777/.nvm/versions/node/v24.14.0/lib/node_modules"
+        "PYTHONPATH": "/home/g777/MYCOMPUTER/work/2"
       }
     }
   }

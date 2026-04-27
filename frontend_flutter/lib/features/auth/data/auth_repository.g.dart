@@ -6,21 +6,44 @@ part of 'auth_repository.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$authRepositoryHash() => r'56f867f83d31a5ca3fbd6602266486df5af165fc';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [authRepository].
 @ProviderFor(authRepository)
-final authRepositoryProvider =
-    AutoDisposeFutureProvider<AuthRepository>.internal(
-  authRepository,
-  name: r'authRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$authRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final authRepositoryProvider = AuthRepositoryProvider._();
 
-typedef AuthRepositoryRef = AutoDisposeFutureProviderRef<AuthRepository>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+final class AuthRepositoryProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<AuthRepository>,
+          AuthRepository,
+          FutureOr<AuthRepository>
+        >
+    with $FutureModifier<AuthRepository>, $FutureProvider<AuthRepository> {
+  AuthRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'authRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$authRepositoryHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<AuthRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<AuthRepository> create(Ref ref) {
+    return authRepository(ref);
+  }
+}
+
+String _$authRepositoryHash() => r'438f1e4ee2a7aebced4dc2cf3b1852ff7a25ab5a';

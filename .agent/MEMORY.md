@@ -74,6 +74,41 @@
   - Verified MCP tool discovery across all configured servers (GitKraken, postgres, chrome-devtools, etc.).
   - Cleaned up `backend/verify_mcp.py` and confirmed successful discovery test.
 
+- **2026-04-26**: **LICENSE SYSTEM COMPLETION (P0 + P1)**:
+  - Fixed port mismatch (Flutter 8001 → 8081).
+  - Fixed 401 "Session expired" error: restored `.env.docker.local`, added `/auth/license` prefix to router, added exempt paths.
+  - P0: Added Admin Guard on `/auth/license/generate` endpoint.
+  - P0: Inserted tier data (Starter, Pro, Enterprise) into DB.
+  - P1: Built **License Expiry Middleware (LicenseGuard)** — checks license expiration on every API request.
+    - Files modified: `core/middleware.py`, `core/config.py`, `backend/database_manager.py`, `main.py`.
+    - `check_license_status()` method in `DatabaseManager` queries `licenses` table.
+    - Returns 403 `LICENSE_EXPIRED` with reason + days_expired for expired/deactivated licenses.
+    - Bypasses: guest/admin roles, exempt paths (auth, webhooks, health), no-Bearer requests.
+    - Fail-open on DB error to avoid blocking all users.
+  - Activated real **Upstash Redis** (response time: 30s timeout → 0.55s).
+  - Created `customers`, `interactions`, `analytics` tables in Docker Postgres + auto-migration (`_ensure_crm_tables`).
+  - Unit tests: 13/13 pass. Live integration tests: 7/7 pass.
+  - Test script: `scripts/live_license_guard_test.sh`.
+
+- **2026-04-27**: **SUBSCRIPTION EXPIRY NOTIFICATION (P2)**:
+  - Backend: Added `GET /auth/license/status` endpoint in `backend/routers/license.py`.
+    - Returns `is_valid`, `reason`, `role`, `expires_at`, `days_remaining`, `days_expired`.
+    - Guest users get `guest_access` with no expiry info.
+    - Added to `license_exempt_paths` in `core/config.py`.
+  - Flutter Provider: `license_status_provider.dart` — `@riverpod` code-gen pattern.
+    - `LicenseStatus` model with `isExpiringSoon` (≤7 days), `isExpired`, `isGuest`, `remainingText`.
+    - `LicenseStatusNotifier` fetches from `/auth/license/status` via `ApiClient`.
+    - Generated `.g.dart` via `build_runner`.
+  - Flutter Widget: `license_expiry_banner.dart` — premium-styled `ConsumerWidget`.
+    - Warning banner (≤7 days): pulsing icon, progress bar, RENEW button, URGENT label (≤3 days).
+    - Expired banner: lock icon, ACTIVATE button, force redirect to `/login` via `addPostFrameCallback`.
+    - Hidden for guest/unknown/valid states.
+    - Uses `colorScheme.statusWarning` and `colorScheme.statusError` semantic colors.
+  - Dashboard integration: `LicenseExpiryBanner()` added to `dashboard_page.dart`.
+  - Unit tests: 25/25 pass (`test/unit/license_status_test.dart`).
+  - Widget tests: 14/14 pass (`test/widget/license_expiry_banner_test.dart`).
+  - Backend rebuilt and endpoint verified live: `{"is_valid":true,"reason":"no_license_bound","role":"admin"}`.
+
 ## ⚠️ Known Blockers/Issues
 
 - Evolution API may need `sudo docker restart evolution-api` if webhooks stop arriving.
@@ -129,61 +164,60 @@
   - Established logic for **SAAF ENFORCEMENT - HALT** to prevent AI hallucinations and unverified code execution.
 
 - **2026-04-14**: **SAAF MODELS REFACTOR**:
-    - Performed surgical refactor of `backend/models/group_sender.py` for full CNS Squad compliance.
-    - Injected mandatory docstrings and strict type hints (SAAF Rule 8).
-    - Enforced **Tenant Isolation** by adding `instance_name` to all persistent models (SAAF Rule 12).
-    - Hardened type safety by converting status strings to `BroadcastStatusEnum`.
-    - Integrated Pydantic field validation (`ge=0`) for broadcasting delay parameters.
-    - Verified logic with an automated TDD-based scratch suite.
+  - Performed surgical refactor of `backend/models/group_sender.py` for full CNS Squad compliance.
+  - Injected mandatory docstrings and strict type hints (SAAF Rule 8).
+  - Enforced **Tenant Isolation** by adding `instance_name` to all persistent models (SAAF Rule 12).
+  - Hardened type safety by converting status strings to `BroadcastStatusEnum`.
+  - Integrated Pydantic field validation (`ge=0`) for broadcasting delay parameters.
+  - Verified logic with an automated TDD-based scratch suite.
 
 - **2026-04-14**: **VULNERABILITY M8 (MCP AUTH) FIXED**:
-    - Implemented `backend/core/mcp_auth.py` with `MCPAuthenticator` singleton.
-    - Added `X-MCP-Token` header validation using `hmac.compare_digest` for timing-attack protection.
-    - Integrated authentication into `MCPManager.call_tool` and `MCPManager.get_tools_definitions`.
-    - Enforced mandatory API key check for all MCP tool invocations.
-    - Achieved **GREEN** status on security TDD suite `tests/security/test_mcp_auth.py`.
+  - Implemented `backend/core/mcp_auth.py` with `MCPAuthenticator` singleton.
+  - Added `X-MCP-Token` header validation using `hmac.compare_digest` for timing-attack protection.
+  - Integrated authentication into `MCPManager.call_tool` and `MCPManager.get_tools_definitions`.
+  - Enforced mandatory API key check for all MCP tool invocations.
+  - Achieved **GREEN** status on security TDD suite `tests/security/test_mcp_auth.py`.
 
 - **2026-04-19**: **VULNERABILITY M7 (UNAUTHENTICATED WEBHOOKS) FIXED**:
-    - Implemented `verify_evolution_signature()` as a FastAPI `Depends()` in `backend/webhook_handler.py`.
-    - Algorithm: **HMAC-SHA256** over raw request body, verified via `hmac.compare_digest()` (CWE-208 timing-attack protection).
-    - Protected endpoints: `POST /webhook/whatsapp` and `POST /api/webhook/evolution`.
-    - Fail-closed behavior: missing `EVOLUTION_WEBHOOK_SECRET` env var → HTTP 500; signature mismatch → HTTP 403 + WARNING log with client IP.
-    - Unprotected by design: `/webhook/health` (monitoring) and `/webhook/test` (dev-only).
-    - New secret required in env: `EVOLUTION_WEBHOOK_SECRET` — generate with `python -c "import secrets; print(secrets.token_hex(32))"`.
-    - Achieved **GREEN** status: 5/5 TDD tests passing, 34 pre-existing tests unbroken.
-    - Branch `fix/m7-webhook-auth` merged into `cleansed-history` via `--no-ff`.
+  - Implemented `verify_evolution_signature()` as a FastAPI `Depends()` in `backend/webhook_handler.py`.
+  - Algorithm: **HMAC-SHA256** over raw request body, verified via `hmac.compare_digest()` (CWE-208 timing-attack protection).
+  - Protected endpoints: `POST /webhook/whatsapp` and `POST /api/webhook/evolution`.
+  - Fail-closed behavior: missing `EVOLUTION_WEBHOOK_SECRET` env var → HTTP 500; signature mismatch → HTTP 403 + WARNING log with client IP.
+  - Unprotected by design: `/webhook/health` (monitoring) and `/webhook/test` (dev-only).
+  - New secret required in env: `EVOLUTION_WEBHOOK_SECRET` — generate with `python -c "import secrets; print(secrets.token_hex(32))"`.
+  - Achieved **GREEN** status: 5/5 TDD tests passing, 34 pre-existing tests unbroken.
+  - Branch `fix/m7-webhook-auth` merged into `cleansed-history` via `--no-ff`.
 
 - **2026-04-19**: **VULNERABILITY M5 (QUOTAGUARD GUEST FALLBACK BYPASS) FIXED**:
-    - Root cause: `_get_effective_user_id()` used Python's `or` chain → `user_id or sub or GUEST_USER_ID`, so any falsy value (empty string, None) silently resolved to the guest UUID.
-    - **File 1:** `backend/core/quota_guard.py` — replaced silent `or` fallback with an explicit guard: if `user_id` and `sub` are both falsy, raise `HTTPException(401)`.
-    - **File 2:** `core/dependencies.py` — eliminated silent `pass` after Clerk rejection; when `CLERK_SECRET_KEY` is configured, a Clerk rejection now immediately re-raises (`raise clerk_exc`). SecurityEngine fallback is only reached when Clerk is NOT configured.
-    - Attack vector closed: Attacker can no longer craft a valid-signature JWT with `user_id=""` to bypass per-tenant quota tracking.
-    - Real guest path preserved: `/auth/guest` issues tokens with `user_id=GUEST_USER_ID` (non-empty), which passes the guard correctly.
-    - Achieved **GREEN** status: 5/5 new TDD tests + 23/23 full security suite passing.
-    - Branch `fix/m5-quotaguard-bypass` merged into `cleansed-history` via `--no-ff`.
+  - Root cause: `_get_effective_user_id()` used Python's `or` chain → `user_id or sub or GUEST_USER_ID`, so any falsy value (empty string, None) silently resolved to the guest UUID.
+  - **File 1:** `backend/core/quota_guard.py` — replaced silent `or` fallback with an explicit guard: if `user_id` and `sub` are both falsy, raise `HTTPException(401)`.
+  - **File 2:** `core/dependencies.py` — eliminated silent `pass` after Clerk rejection; when `CLERK_SECRET_KEY` is configured, a Clerk rejection now immediately re-raises (`raise clerk_exc`). SecurityEngine fallback is only reached when Clerk is NOT configured.
+  - Attack vector closed: Attacker can no longer craft a valid-signature JWT with `user_id=""` to bypass per-tenant quota tracking.
+  - Real guest path preserved: `/auth/guest` issues tokens with `user_id=GUEST_USER_ID` (non-empty), which passes the guard correctly.
+  - Achieved **GREEN** status: 5/5 new TDD tests + 23/23 full security suite passing.
+  - Branch `fix/m5-quotaguard-bypass` merged into `cleansed-history` via `--no-ff`.
 
 - **2026-04-19**: **VULNERABILITY M10 (SAFETYPROTOCOL BYPASS) FIXED**:
-    - Root cause: `validate_code_safety()` defaulted to `True` for unknown/non-Python languages. Orchestrator passed `shell` identifier which was silently approved and ignored.
-    - Agent Router Issue fixed: `agent_router.py` was causing `context canceled` due to a 14s retry loop on missing `PINECONE_HOST`. Fixed tenacity import and logic.
-    - **File 1:** `backend/core/safety.py` — Strictly enforced `Fail-closed` behavior. Added `SUPPORTED_LANGUAGES = {"python"}` and rejected anything else with `HTTPException(401)`/False.
-    - **File 2:** `backend/agents/orchestrator.py` — Replaced the silent `pass` with actual execution blocking if shell command is rejected by `SafetyProtocol`.
-    - Achieved **GREEN** status: 5/5 new TDD tests + 28/28 full security suite passing.
-    - Branch `fix/m10-safety-protocol-bypass` merged into `cleansed-history`.
+  - Root cause: `validate_code_safety()` defaulted to `True` for unknown/non-Python languages. Orchestrator passed `shell` identifier which was silently approved and ignored.
+  - Agent Router Issue fixed: `agent_router.py` was causing `context canceled` due to a 14s retry loop on missing `PINECONE_HOST`. Fixed tenacity import and logic.
+  - **File 1:** `backend/core/safety.py` — Strictly enforced `Fail-closed` behavior. Added `SUPPORTED_LANGUAGES = {"python"}` and rejected anything else with `HTTPException(401)`/False.
+  - **File 2:** `backend/agents/orchestrator.py` — Replaced the silent `pass` with actual execution blocking if shell command is rejected by `SafetyProtocol`.
+  - Achieved **GREEN** status: 5/5 new TDD tests + 28/28 full security suite passing.
+  - Branch `fix/m10-safety-protocol-bypass` merged into `cleansed-history`.
 
 - **2026-04-19**: **VULNERABILITY M11 & M12 (IN-MEMORY STATE) FIXED**:
-    - Root cause: Token blocklist and Guest rate limiting were stored in local python variables `set()` and `dict()`, which do not persist across workers or server restarts.
-    - **File 1:** `core/security.py` — Migrated `revoke_token` and `decode_token` blocklist logic to use `CacheManager` with Upstash Redis, keeping local memory as a fallback.
-    - **File 2:** `backend/routers/license.py` — Removed `_guest_requests` dict and migrated `_check_guest_rate_limit` to use `CacheManager.check_rate_limit`.
-    - Achieved **GREEN** status: 2/2 new TDD tests (Redis mocked and asserted) + 30/30 full security suite passing.
-    - Branch `fix/m11-distributed-state` merged into `cleansed-history`.
+  - Root cause: Token blocklist and Guest rate limiting were stored in local python variables `set()` and `dict()`, which do not persist across workers or server restarts.
+  - **File 1:** `core/security.py` — Migrated `revoke_token` and `decode_token` blocklist logic to use `CacheManager` with Upstash Redis, keeping local memory as a fallback.
+  - **File 2:** `backend/routers/license.py` — Removed `_guest_requests` dict and migrated `_check_guest_rate_limit` to use `CacheManager.check_rate_limit`.
+  - Achieved **GREEN** status: 2/2 new TDD tests (Redis mocked and asserted) + 30/30 full security suite passing.
+  - Branch `fix/m11-distributed-state` merged into `cleansed-history`.
 
 ## 🔑 Known Secrets & Required Environment Variables
 
-| Variable | Purpose | Where Used |
-|---|---|---|
+| Variable                   | Purpose                            | Where Used                   |
+| -------------------------- | ---------------------------------- | ---------------------------- |
 | `EVOLUTION_WEBHOOK_SECRET` | HMAC-SHA256 webhook signature (M7) | `backend/webhook_handler.py` |
-| `MCP_API_KEY` | MCP tool invocation auth (M8) | `backend/core/mcp_auth.py` |
-| `EVOLUTION_API_KEY` | Evolution API bridge auth | `backend/evolution/` |
-| `G777_HANDSHAKE_TOKEN` | Internal service handshake | `backend/routers/` |
-| `BRIDGE_API_KEY` | Internal bridge authentication | `backend/` |
-
+| `MCP_API_KEY`              | MCP tool invocation auth (M8)      | `backend/core/mcp_auth.py`   |
+| `EVOLUTION_API_KEY`        | Evolution API bridge auth          | `backend/evolution/`         |
+| `G777_HANDSHAKE_TOKEN`     | Internal service handshake         | `backend/routers/`           |
+| `BRIDGE_API_KEY`           | Internal bridge authentication     | `backend/`                   |

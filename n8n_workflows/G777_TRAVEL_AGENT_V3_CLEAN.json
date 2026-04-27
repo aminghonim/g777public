@@ -1,0 +1,454 @@
+{
+  "name": "G777 Travel Agency - AI Assistant [PRODUCTION]",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-001",
+      "name": "1. WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        208,
+        -64
+      ],
+      "webhookId": "g777-travel-prod"
+    },
+    {
+      "parameters": {
+        "jsCode": "const incoming = $input.first().json;\nconst body = incoming.body || incoming.data || incoming;\n\nlet phone = '';\nif (body.key && body.key.remoteJid) {\n  phone = body.key.remoteJid;\n} else if (body.from) {\n  phone = body.from;\n}\nphone = phone.replace('@c.us', '').replace('@s.whatsapp.net', '');\n\nlet message = '';\nif (body.message && body.message.conversation) {\n  message = body.message.conversation;\n} else if (body.message && body.message.extendedTextMessage) {\n  message = body.message.extendedTextMessage.text;\n} else if (body.body) {\n  message = body.body;\n} else if (body.text) {\n  message = body.text;\n}\n\nlet customerName = 'عميل';\nif (body.pushName) {\n  customerName = body.pushName;\n} else if (body.notifyName) {\n  customerName = body.notifyName;\n}\n\nconst chatId = phone + '@s.whatsapp.net';\n\nlet intent = 'inquiry';\nif (/حجز|برنامج|رحلة|سفر|عمرة|حج|سياحة|booking|trip|travel/i.test(message)) {\n  intent = 'booking';\n}\n\nreturn {\n  json: {\n    phone: phone,\n    message: message,\n    customerName: customerName,\n    chatId: chatId,\n    intent: intent,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "parser-001",
+      "name": "2. Message Parser",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "id": "human-delay-001",
+      "name": "8. Human Delay",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1744,
+        -64
+      ],
+      "webhookId": "g777-delay-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://51.12.91.34:8080/message/sendText/G777",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "antigravity_secret_key_2024"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $('2. Message Parser').first().json.phone }}\",\n  \"text\": {{ JSON.stringify($('AI Agent (Yasmine)').first().json.output) }}\n}",
+        "options": {}
+      },
+      "id": "whatsapp-outbound-001",
+      "name": "9. WhatsApp Outbound",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1968,
+        -64
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://zbrpwteyldwpqlcxdpmf.supabase.co/rest/v1/customer_memory",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicnB3dGV5bGR3cHFsY3hkcG1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNzYyMDUsImV4cCI6MjA4NDc1MjIwNX0.6Syczj_yN-GNfg2r_8U8xeiT67Z7hzyjJUBFTRjb0AQ"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicnB3dGV5bGR3cHFsY3hkcG1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNzYyMDUsImV4cCI6MjA4NDc1MjIwNX0.6Syczj_yN-GNfg2r_8U8xeiT67Z7hzyjJUBFTRjb0AQ"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"phone\": \"{{ $('6. Response Processor').first().json.phone }}\",\n  \"fact\": \"{{ $('6. Response Processor').first().json.newInsight || 'محادثة عامة' }}\",\n  \"customer_name\": \"{{ $('6. Response Processor').first().json.customerName }}\",\n  \"intent\": \"{{ $('6. Response Processor').first().json.intent }}\",\n  \"created_at\": \"{{ $('6. Response Processor').first().json.timestamp }}\"\n}",
+        "options": {}
+      },
+      "id": "memory-upsert-001",
+      "name": "10. Supabase Upsert Memory",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2176,
+        -64
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const errorData = $input.first().json;\nconst responseProcessor = $('6. Response Processor').first().json;\n\nlet errorType = 'UNKNOWN';\nlet errorMessage = 'Unknown error';\nlet statusCode = errorData.statusCode || 0;\n\nif (statusCode === 401) {\n  errorType = 'AUTH_FAILED_401';\n  errorMessage = 'Evolution API Key rejected';\n} else if (statusCode === 500) {\n  errorType = 'SERVER_ERROR_500';\n  errorMessage = 'Evolution API Server Error';\n} else if (statusCode === 404) {\n  errorType = 'ENDPOINT_404';\n  errorMessage = 'Evolution API endpoint not found';\n} else if (statusCode === 0 || !statusCode) {\n  errorType = 'CONNECTION_FAILED';\n  errorMessage = 'Cannot connect to Evolution API';\n}\n\nconsole.error(`❌ [ERROR] ${errorType}: ${errorMessage}`);\n\nreturn {\n  json: {\n    status: 'ERROR',\n    errorType: errorType,\n    errorMessage: errorMessage,\n    statusCode: statusCode,\n    phone: responseProcessor.phone,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "error-handler-001",
+      "name": "11. Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2176,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const responseProcessor = $('6. Response Processor').first().json;\nconst whatsappResult = $input.first().json;\n\nconst log = {\n  status: 'SUCCESS',\n  timestamp: new Date().toISOString(),\n  phone: responseProcessor.phone,\n  name: responseProcessor.customerName,\n  intent: responseProcessor.intent,\n  sent: true\n};\n\nconsole.log('✅ [SUCCESS] Workflow Complete');\nconsole.log(JSON.stringify(log, null, 2));\n\nreturn { json: log };"
+      },
+      "id": "final-log-001",
+      "name": "12. Final Production Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\": \"received\", \"timestamp\": \"{{ $now.toISO() }}\"}",
+        "options": {}
+      },
+      "id": "webhook-response-001",
+      "name": "Webhook 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        -256
+      ]
+    },
+    {
+      "id": "agent-001",
+      "name": "AI Agent (Yasmine)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        680,
+        -64
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('2. Message Parser').item.json.message }}",
+        "systemMessage": "أنتِ ياسمين، خبيرة السفر الذكية في شركة (TripiGo) المتخصصة في راس سدر.\n\n## القواعد الصارمة:\n1. **استخدام الأدوات**: \n   - إذا سأل العميل عن أسعار أو عروض، استدعِ أداة `search_offers` فوراً. \n   - إذا أشار العميل لشيء سابق أو بدأت محادثة، استدعِ أداة `get_customer_history`.\n2. **الرد المباشر**: \n   - لا تفكري بصوت عالٍ.\n   - ردي باللهجة المصرية الودودة.\n   - اجعلي ردودك قصيرة ومفيدة.\n3. **عدم التأليف**: لا تخترعي أسعاراً أو معلومات غير موجودة في الأدوات.\n\n## المخرجات:\n- الرد النهائي للعميل فقط.",
+        "hasOutputParser": true
+      }
+    },
+    {
+      "id": "chat-model-001",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        620,
+        200
+      ],
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "id": "memory-001",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        780,
+        200
+      ],
+      "parameters": {
+        "contextWindowLength": 10,
+        "sessionIds": "={{ $('2. Message Parser').item.json.sessionId }}"
+      }
+    },
+    {
+      "id": "tool-offers-001",
+      "name": "search_offers",
+      "type": "@n8n/n8n-nodes-langchain.toolStructured",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        100
+      ],
+      "parameters": {
+        "name": "search_offers",
+        "description": "Call this to find current prices, offers, and travel details for Ras Sudr.",
+        "jsonSchema": "{\"type\": \"object\", \"properties\": {\"category\": {\"type\": \"string\", \"description\": \"Filter: 'day_use', 'weekend', 'private_boat'\"}}}"
+      }
+    },
+    {
+      "id": "tool-history-001",
+      "name": "get_customer_history",
+      "type": "@n8n/n8n-nodes-langchain.toolStructured",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "name": "get_customer_history",
+        "description": "Call this to get the customer's past preferences and conversation summary.",
+        "jsonSchema": "{\"type\": \"object\", \"properties\": {\"phone\": {\"type\": \"string\", \"description\": \"Customer Phone Number\"}}}"
+      }
+    },
+    {
+      "id": "supabase-offers-query",
+      "name": "Supabase Offers Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1160,
+        100
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://zbrpwteyldwpqlcxdpmf.supabase.co/rest/v1/business_offerings?select=name,price,description,category&is_available=eq.true",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicnB3dGV5bGR3cHFsY3hkcG1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNzYyMDUsImV4cCI6MjA4NDc1MjIwNX0.6Syczj_yN-GNfg2r_8U8xeiT67Z7hzyjJUBFTRjb0AQ"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicnB3dGV5bGR3cHFsY3hkcG1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNzYyMDUsImV4cCI6MjA4NDc1MjIwNX0.6Syczj_yN-GNfg2r_8U8xeiT67Z7hzyjJUBFTRjb0AQ"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "supabase-history-query",
+      "name": "Supabase History Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1160,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://zbrpwteyldwpqlcxdpmf.supabase.co/rest/v1/customer_memory?select=fact,intent&phone=eq.{{ $fromAI('phone') }}&limit=5",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicnB3dGV5bGR3cHFsY3hkcG1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNzYyMDUsImV4cCI6MjA4NDc1MjIwNX0.6Syczj_yN-GNfg2r_8U8xeiT67Z7hzyjJUBFTRjb0AQ"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicnB3dGV5bGR3cHFsY3hkcG1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNzYyMDUsImV4cCI6MjA4NDc1MjIwNX0.6Syczj_yN-GNfg2r_8U8xeiT67Z7hzyjJUBFTRjb0AQ"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "1. WhatsApp Webhook": {
+      "main": [
+        [
+          {
+            "node": "2. Message Parser",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Webhook 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Message Parser": {
+      "main": [
+        [
+          {
+            "node": "AI Agent (Yasmine)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent (Yasmine)": {
+      "main": [
+        [
+          {
+            "node": "8. Human Delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent (Yasmine)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent (Yasmine)",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_offers": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent (Yasmine)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ],
+      "main": [
+        [
+          {
+            "node": "Supabase Offers Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_customer_history": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent (Yasmine)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ],
+      "main": [
+        [
+          {
+            "node": "Supabase History Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Human Delay": {
+      "main": [
+        [
+          {
+            "node": "9. WhatsApp Outbound",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. WhatsApp Outbound": {
+      "main": [
+        [
+          {
+            "node": "10. Supabase Upsert Memory",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "11. Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10. Supabase Upsert Memory": {
+      "main": [
+        [
+          {
+            "node": "12. Final Production Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "g777-travel-v1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "g777-travel-production"
+  },
+  "id": "G777TravelBot",
+  "tags": []
+}

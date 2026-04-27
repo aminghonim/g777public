@@ -21,10 +21,14 @@ class SystemConfig(BaseModel):
         "/auth/config",
         "/auth/guest-login",
         "/auth/license/activate",
-        "/auth/license/generate",
-        "/system/update/check",
-        "/system/update/apply",
-        "/system/stream/events",
+        "/auth/license/guest",
+        "/webhook/whatsapp",
+        "/webhook/health",
+        "/api/webhook/evolution",
+        "/monitoring/sentry-webhook",
+        # REMOVED: /auth/license/generate — admin-only, must be authenticated
+        # REMOVED: /system/update/apply — admin-only, must be authenticated
+        # REMOVED: /system/stream/events — SSE, can use handshake token
     ]
 
 
@@ -37,10 +41,27 @@ class SecurityConfig(BaseModel):
     max_msg_per_hour: int = 200
     auth_required: bool = True
     allow_guest_access: bool = True
-    guest_secret: str = "G777_GUEST_ACCESS"
+    # No default — must be set via env or config
+    guest_secret: str = ""
     guest_username: str = "guest_admin"
     guest_instance_name: str = "G777_Guest"
     guest_email: str = "guest@localhost"
+    # SAAS-018: Paths exempt from license expiry checks (auth + public routes)
+    license_exempt_paths: List[str] = [
+        "/health",
+        "/docs",
+        "/openapi.json",
+        "/auth/login",
+        "/auth/register",
+        "/auth/config",
+        "/auth/guest-login",
+        "/auth/license/activate",
+        "/auth/license/guest",
+        "/auth/license/status",
+        "/webhook/whatsapp",
+        "/webhook/health",
+        "/api/webhook/evolution",
+    ]
 
 
 class EvolutionApiConfig(BaseModel):
@@ -79,7 +100,8 @@ class NetworkConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
     host: str = "127.0.0.1"
     default_port: int = 0
-    cors_origins: list[str] = ["*"]
+    # No wildcard — must be explicitly configured via env or config.yaml
+    cors_origins: list[str] = []
 
 
 class UpdateConfig(BaseModel):

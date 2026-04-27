@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//home/g777/MYCOMPUTER/work/2/backend/**)"
+    ]
+  }
+}

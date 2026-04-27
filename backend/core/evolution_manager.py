@@ -67,6 +67,8 @@ class EvolutionManager:
         """
         if not user_id:
             raise EvolutionIsolationError("Cannot generate instance without user_id.")
+        if getattr(db_manager, "is_sqlite", False):
+            return f"tenant_{user_id}_inst_default"
         short_uuid = uuid.uuid4().hex[:8]
         return f"tenant_{user_id}_inst_{short_uuid}"
 
@@ -75,10 +77,15 @@ class EvolutionManager:
         Retrieves the exact instance bound to the user from the database.
         Enforces Tenant Isolation by preventing access to arbitrary instances.
         """
-        if db_manager is None or db_manager.pool is None:
+        if db_manager is None or (db_manager.pool is None and not getattr(db_manager, "is_sqlite", False)):
             raise EvolutionIsolationError(
                 "Database connection unavailable. Cannot fetch instance allocation safely."
             )
+
+        if getattr(db_manager, "is_sqlite", False):
+            # In SQLite/Standalone mode, we use a predictable instance name tied to the user
+            # to allow operation without a persistent DB record if necessary.
+            return f"tenant_{user_id}_inst_default"
 
         conn = db_manager.get_connection()
         try:
@@ -96,10 +103,14 @@ class EvolutionManager:
         """
         Persists the allocated instance name to the user's tenant record.
         """
-        if db_manager is None or db_manager.pool is None:
+        if db_manager is None or (db_manager.pool is None and not getattr(db_manager, "is_sqlite", False)):
             raise EvolutionIsolationError(
                 "Database connection unavailable. Cannot save instance allocation safely."
             )
+
+        if getattr(db_manager, "is_sqlite", False):
+            # SQLite mode persists in memory or simple file - skip PostgreSQL update
+            return
 
         conn = db_manager.get_connection()
         try:
@@ -340,6 +351,46 @@ class EvolutionManager:
                 event_broker.publish_status("WHATSAPP", "DELETED", user_id=user_id)
             )
             return True
+
+
+    async def get_pairing_code(self, user_id: str, phone_number: str) -> Dict[str, Any]:
+        """
+        Retrieves a pairing code for the user's isolated instance.
+        """
+        self._validate_config()
+
+        instance_name = self._get_user_instance(user_id)
+        if not instance_name:
+            raise EvolutionIsolationError(f"No instance bound to user {user_id}.")
+
+        # Sanitize phone number (remove +, spaces, etc.)
+        sanitized_number = "".join(filter(str.isdigit, phone_number))
+
+        async with httpx.AsyncClient() as client:
+            # Correct Evolution API v1.8.x endpoint for pairing code is GET /instance/connect/name?number=phone
+            response = await client.get(
+                f"{self.base_url}/instance/connect/{instance_name}",
+                headers=self.headers,
+                params={"number": sanitized_number},
+                timeout=15.0,
+            )
+
+            if response.status_code != 200:
+                raise EvolutionAPIError(f"Failed to get pairing code: {response.text}")
+
+            data = response.json()
+            # The API returns qrcode object with pairingCode nested inside
+            pairing_code = (
+                data.get("qrcode", {}).get("pairingCode") 
+                or data.get("pairingCode") 
+                or data.get("code")
+            )
+            
+            return {
+                "instance_name": instance_name,
+                "pairing_code": pairing_code,
+                "status": "SUCCESS"
+            }
 
 
 # Singleton initialization

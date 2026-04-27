@@ -198,21 +198,41 @@ rtk discover                # Find missed opportunities
 
 ---
 
-## General Project Rules
+---
 
-### Code Standards
-- Python: PEP 8, type hints mandatory, `logging` module only (no `print()`)
-- Dart: camelCase, `debugPrint()` only
-- Line length: 100 characters maximum
-- All functions require docstrings
+## SAAF Governance Protocol
 
-### Architecture
-- Backend logic: `backend/` directory only
-- Frontend UI: `frontend_flutter/` directory only
-- Database: `database_manager.py` is the single source of truth
-- Config: `.env` or `config.yaml` only (no hardcoded values)
+هذا القسم يحدد بروتوكولات التشغيل الإجبارية لمنظومة SAAF (Super AI Agency Framework). الالتزام بهذه القواعد شرط أساسي لأي عملية تعديل في الكود.
 
-### Testing
-- All changes require corresponding tests
-- Zero-regression: existing tests must continue passing
-- Sandbox testing only: never test against production databases
+### ⚙️ 1. كود أوامر الباك-إند (Backend SAAF Directive)
+
+**[SAAF-BACKEND DIRECTIVE]**
+**المهمة**: [ تنفيذ أي طلب متعلق بالباك-إند ]
+
+**قاعدة صارمة غير قابلة للكسر**:
+- استخدم أداة `agent-router/find_best_agent` كـ MCP tool حصراً للبحث عن الوكيل المناسب واستدعائه.
+- إذا لم تظهر "MCP Tool: agent-router/find_best_agent" في بداية ردك الداخلي ← **توقف فوراً ولا تكمل**.
+- ممنوع استخدام الـ Terminal، ممنوع كتابة Python scripts بديلة، ممنوع الهلوسة.
+- بعد قراءة تعليمات الوكيل (بما فيها بروتوكول الرقابة SAAF المدمج)، اعرض لي خطة تنفيذ تعتمد على TDD.
+- اختم ردك حرفياً بـ: "أنا في وضع الاستعداد. لن أقوم بلمس أي ملف حتى تعطيني الأمر: [APPROVE SQUAD]"
+
+### 🎨 2. كود أوامر الفرونت-إند (Frontend Impeccable Directive)
+
+**[SAAF-FRONTEND DIRECTIVE]**
+**استدعاء**: خادم @impeccable-protocol
+**المهمة**: [ تنفيذ أي طلب متعلق بالفرونت-إند ]
+
+**قاعدة صارمة غير قابلة للكسر**:
+- لا تقم بطباعة الكود الطويل في الدردشة.
+- لتطبيق الكود، استخدم أداة `save_and_verify_ui_code` حصراً.
+- هذه الأداة تحتوي على فحص `flutter analyze`. لا تعُد إليّ بنجاح المهمة إلا إذا أعطتك الأداة إشارة النجاح (✅) وخلا الكود من أي Syntax Error. إذا أعطتك (❌)، صلح أخطاءك بصمت وأعد المحاولة.
+- اختم ردك حرفياً بـ: "أنا في وضع الاستعداد. الكود جاهز ومطابق للديزاين. لن أقوم بالحفظ النهائي حتى تعطيني الأمر: [APPROVE SQUAD]"
+
+### 🚨 3. كود الطوارئ والتقويم (Emergency Halt)
+
+في حال الحياد عن المسار أو الهلوسة، يتم تفعيل التصفير الصلب (Hard Reset) عبر:
+
+**🚨 [SAAF ENFORCEMENT - HALT] 🚨**
+لقد قمت بخرق بروتوكول SAAF! لقد ولّدت كوداً من عقلك دون استخدام خوادم MCP المحددة أو تجاهلت بوابات الجودة.
+توقف فوراً، تراجع عن أي استنتاج هلوسة، ونفذ المطلوب حصراً عبر الأدوات:
+Enforce all SAAF Checkpoints immediately!

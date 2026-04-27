@@ -15,7 +15,7 @@ async def start_telemetry_monitoring(interval_seconds: int = 10):
     while True:
         try:
             # interval=0.1 means psutil will wait for 0.1s to calculate % diff
-            cpu = psutil.cpu_percentage(interval=0.1)
+            cpu = psutil.cpu_percent(interval=0.1)
             ram = psutil.virtual_memory().percent
 
             await event_broker.publish_telemetry(cpu=cpu, ram=ram)

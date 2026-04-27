@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//home/g777/MYCOMPUTER/work/2/backend/**)",
+      "Read(//home/g777/MYCOMPUTER/work/2/**)",
+      "Bash(.venv/bin/pip *)",
+      "Bash(.venv/bin/python *)",
+      "Bash(sudo *)"
+    ]
+  },
+  "$version": 3
+}

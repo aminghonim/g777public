@@ -390,7 +390,7 @@ class _LicenseActivationPageState extends ConsumerState<LicenseActivationPage>
     WidgetRef ref,
     ThemeColors colors,
   ) {
-    final authState = ref.watch(authProvider).valueOrNull;
+    final authState = ref.watch(authProvider).asData?.value;
     int trialDays = 0;
     if (authState is AuthUnauthenticated) {
       trialDays = authState.trialDaysRemaining;

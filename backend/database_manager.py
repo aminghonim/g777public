@@ -29,12 +29,27 @@ class DatabaseManager:
             raise ValueError("DATABASE_URL not found in environment variables!")
 
         # Check for Mock/Testing Mode
-        if self.database_url.startswith("sqlite") or self.database_url.startswith(
-            "mock"
-        ):
-            logger.info("Running in DATABASE MOCK MODE (No actual DB connection)")
+        is_mock_or_sqlite = self.database_url.startswith(
+            "sqlite"
+        ) or self.database_url.startswith("mock")
+
+        if is_mock_or_sqlite:
+            if os.getenv("ENV") == "PROD":
+                logger.critical(
+                    "CRITICAL: Attempted to use SQLITE or MOCK DB in PRODUCTION environment!"
+                )
+                raise ValueError(
+                    "SQLITE and MOCK databases are FORBIDDEN in Production. Set a valid DATABASE_URL."
+                )
+
+            logger.info(
+                "Running in DATABASE MOCK/SQLITE MODE (No actual PostgreSQL connection)"
+            )
             self.pool = None
+            self.is_sqlite = True
             return
+
+        self.is_sqlite = False
 
         # Connection Pool for efficiency (Thread-Safe for asyncio.to_thread)
         try:
@@ -160,13 +175,13 @@ class DatabaseManager:
         """
         if self.pool is None or not groups:
             return 0
-            
+
         # Transform into tuples for execute_values
         data_list = [
-            (g["id"], instance_name, g["name"], g.get("member_count", 0)) 
+            (g["id"], instance_name, g["name"], g.get("member_count", 0))
             for g in groups
         ]
-        
+
         conn = self.get_connection()
         try:
             with conn.cursor() as cursor:
@@ -502,6 +517,7 @@ class DatabaseManager:
         self._ensure_tiers_and_quotas_tables()
         self._ensure_licenses_and_devices_tables()
         self._ensure_groups_table()
+        self._ensure_crm_tables()
         self._ensure_multitenancy_columns()
 
     def _ensure_users_table(self):
@@ -688,6 +704,57 @@ class DatabaseManager:
         finally:
             self.release_connection(conn)
 
+    def _ensure_crm_tables(self):
+        """SAAS-008: Create customers, interactions, and analytics tables if they do not exist."""
+        conn = self.get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS customers (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        phone TEXT NOT NULL,
+                        name TEXT,
+                        metadata JSONB DEFAULT '{}',
+                        user_id TEXT NOT NULL,
+                        last_interaction TIMESTAMPTZ,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW(),
+                        UNIQUE(phone, user_id)
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_customers_user_id ON customers(user_id);
+                    CREATE INDEX IF NOT EXISTS idx_customers_phone_user ON customers(phone, user_id);
+
+                    CREATE TABLE IF NOT EXISTS interactions (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+                        role TEXT NOT NULL,
+                        message TEXT NOT NULL,
+                        user_id TEXT NOT NULL,
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_interactions_customer_id ON interactions(customer_id);
+                    CREATE INDEX IF NOT EXISTS idx_interactions_user_id ON interactions(user_id);
+
+                    CREATE TABLE IF NOT EXISTS analytics (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+                        detected_intent TEXT,
+                        confidence_score FLOAT,
+                        extracted_data JSONB DEFAULT '{}',
+                        user_id TEXT NOT NULL,
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_analytics_customer_id ON analytics(customer_id);
+                    CREATE INDEX IF NOT EXISTS idx_analytics_user_id ON analytics(user_id);
+                    """
+                )
+                conn.commit()
+        except Exception as e:
+            logger.warning(f"CRM tables migration failed: {e}")
+        finally:
+            self.release_connection(conn)
+
     def get_user_by_username(self, username: str) -> Optional[Dict[str, Any]]:
         if self.pool is None:
             return None
@@ -791,6 +858,92 @@ class DatabaseManager:
         except Exception as e:
             conn.rollback()
             raise e
+        finally:
+            self.release_connection(conn)
+
+    def check_license_status(self, username: str) -> dict:
+        """
+        SAAS-018: Check if the license associated with this user is still valid.
+        Used by LicenseGuard middleware to enforce subscription expiry.
+
+        Args:
+            username: The username from JWT (equals license_key for synthetic users).
+
+        Returns:
+            dict with keys:
+                - is_valid (bool): Whether the license is still active and not expired.
+                - reason (str): Why the license is invalid, or "active" if valid.
+                - expires_at (str|None): ISO format expiry date.
+                - days_remaining (int|None): Days until expiry (None if no expiry).
+        """
+        if self.pool is None:
+            return {
+                "is_valid": True,
+                "reason": "no_database",
+                "expires_at": None,
+                "days_remaining": None,
+            }
+
+        conn = self.get_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(
+                    "SELECT expires_at, is_active FROM licenses WHERE license_key = %s",
+                    (username,),
+                )
+                license_data = cursor.fetchone()
+
+                if not license_data:
+                    # No license bound to this user — could be a direct DB user
+                    return {
+                        "is_valid": True,
+                        "reason": "no_license_bound",
+                        "expires_at": None,
+                        "days_remaining": None,
+                    }
+
+                if not license_data["is_active"]:
+                    return {
+                        "is_valid": False,
+                        "reason": "license_deactivated",
+                        "expires_at": (
+                            license_data["expires_at"].isoformat()
+                            if license_data["expires_at"]
+                            else None
+                        ),
+                        "days_remaining": 0,
+                    }
+
+                if license_data["expires_at"] and license_data[
+                    "expires_at"
+                ] < datetime.now(timezone.utc):
+                    days_expired = (
+                        datetime.now(timezone.utc) - license_data["expires_at"]
+                    ).days
+                    return {
+                        "is_valid": False,
+                        "reason": "license_expired",
+                        "expires_at": license_data["expires_at"].isoformat(),
+                        "days_expired": days_expired,
+                        "days_remaining": 0,
+                    }
+
+                days_remaining = None
+                if license_data["expires_at"]:
+                    days_remaining = (
+                        license_data["expires_at"] - datetime.now(timezone.utc)
+                    ).days
+
+                return {
+                    "is_valid": True,
+                    "reason": "active",
+                    "expires_at": (
+                        license_data["expires_at"].isoformat()
+                        if license_data["expires_at"]
+                        else None
+                    ),
+                    "days_remaining": days_remaining,
+                }
         finally:
             self.release_connection(conn)
 

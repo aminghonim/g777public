@@ -6,20 +6,20 @@ part of 'analytics_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$DailyActivityImpl _$$DailyActivityImplFromJson(Map<String, dynamic> json) =>
-    _$DailyActivityImpl(
+_DailyActivity _$DailyActivityFromJson(Map<String, dynamic> json) =>
+    _DailyActivity(
       usageDate: json['usage_date'] as String,
       messageCount: (json['message_count'] as num).toInt(),
     );
 
-Map<String, dynamic> _$$DailyActivityImplToJson(_$DailyActivityImpl instance) =>
+Map<String, dynamic> _$DailyActivityToJson(_DailyActivity instance) =>
     <String, dynamic>{
       'usage_date': instance.usageDate,
       'message_count': instance.messageCount,
     };
 
-_$AnalyticsModelImpl _$$AnalyticsModelImplFromJson(Map<String, dynamic> json) =>
-    _$AnalyticsModelImpl(
+_AnalyticsModel _$AnalyticsModelFromJson(Map<String, dynamic> json) =>
+    _AnalyticsModel(
       totalMessagesSent: (json['total_messages_sent'] as num).toInt(),
       dailyUsage: (json['daily_usage'] as num).toInt(),
       dailyLimit: (json['daily_limit'] as num).toInt(),
@@ -31,8 +31,7 @@ _$AnalyticsModelImpl _$$AnalyticsModelImplFromJson(Map<String, dynamic> json) =>
           .toList(),
     );
 
-Map<String, dynamic> _$$AnalyticsModelImplToJson(
-        _$AnalyticsModelImpl instance) =>
+Map<String, dynamic> _$AnalyticsModelToJson(_AnalyticsModel instance) =>
     <String, dynamic>{
       'total_messages_sent': instance.totalMessagesSent,
       'daily_usage': instance.dailyUsage,

@@ -1,0 +1,188 @@
+{
+  "name": "G777 WhatsApp Bot - FIXED",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-001",
+      "name": "1. Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "whatsapp"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================\n// G777 Message Parser - Universal Format Handler\n// =====================================================\n// Handles data from: Evolution API, Baileys, Postman Tests\n// =====================================================\n\nconst inputData = items[0]?.json;\nconsole.log('📥 Raw Input:', JSON.stringify(inputData).substring(0, 500));\n\n// Try multiple data paths (Evolution API sends in different formats)\nlet body = null;\n\n// Path 1: Evolution API v2 format\nif (inputData?.body?.data) {\n  body = inputData.body.data;\n  console.log('📍 Found data at: body.data');\n}\n// Path 2: Direct data object\nelse if (inputData?.data?.key) {\n  body = inputData.data;\n  console.log('📍 Found data at: data');\n}\n// Path 3: Body is the data itself\nelse if (inputData?.body?.key) {\n  body = inputData.body;\n  console.log('📍 Found data at: body');\n}\n// Path 4: Root level (Postman direct test)\nelse if (inputData?.key) {\n  body = inputData;\n  console.log('📍 Found data at: root');\n}\n// Path 5: Baileys format\nelse if (inputData?.body?.message) {\n  body = inputData.body;\n  console.log('📍 Found data at: body (Baileys)');\n}\n\nif (!body) {\n  console.log('❌ No valid data structure found');\n  console.log('Available keys:', Object.keys(inputData || {}));\n  return [];\n}\n\n// Extract message text\nlet message = '';\nif (body.message) {\n  message = body.message.conversation || \n            body.message.extendedTextMessage?.text || \n            body.message.imageMessage?.caption ||\n            body.message.text ||\n            '';\n}\n\n// Extract phone from remoteJid\nlet phone = '';\nlet remoteJid = '';\nif (body.key && body.key.remoteJid) {\n  remoteJid = body.key.remoteJid;\n  phone = remoteJid.replace('@s.whatsapp.net', '').replace('@c.us', '');\n}\n\n// Check if from bot\nconst fromMe = body.key?.fromMe || false;\n\n// Get customer name\nconst customerName = body.pushName || body.notifyName || 'عميل';\n\nconsole.log('📊 Extracted Data:');\nconsole.log('   Phone:', phone);\nconsole.log('   Message:', message.substring(0, 50));\nconsole.log('   FromMe:', fromMe);\nconsole.log('   CustomerName:', customerName);\n\n// Validation - Skip if:\n// 1. No phone number\n// 2. No message\n// 3. From bot itself\nif (!phone || !message || fromMe) {\n  console.log('⏭️ Skipping: phone=' + phone + ', message=' + (message ? 'exists' : 'empty') + ', fromMe=' + fromMe);\n  return [];\n}\n\n// Return clean data\nreturn [{\n  json: {\n    phone: phone,\n    message: message,\n    sessionId: phone,\n    chatId: remoteJid,\n    customerName: customerName,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parser-002",
+      "name": "2. Message Parser",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "أنت مساعد مبيعات محترف لشركة G777 للسياحة والسفر.\n\nالتعليمات:\n- رد دائماً باللغة العربية\n- كن مختصراً ومفيداً (لا تزيد عن 3 أسطر)\n- ساعد العميل في الاستفسارات عن الرحلات والحجوزات\n- إذا كان السؤال شخصي، اعتذر بلطف\n- لا تذكر أنك ذكاء اصطناعي\n\nمعلومات الشركة:\n- الاسم: G777 للسياحة والسفر\n- التخصص: رحلات العمرة والحج والسياحة\n- ساعات العمل: 9 صباحاً - 9 مساءً"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [440, 0],
+      "id": "agent-003",
+      "name": "3. AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [340, 200],
+      "id": "gemini-004",
+      "name": "Gemini Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.phone }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [540, 200],
+      "id": "memory-005",
+      "name": "Memory"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8080/message/sendText/SENDER",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "antigravity_secret_key_2024"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $('2. Message Parser').item.json.phone }}@s.whatsapp.net\",\n  \"text\": \"{{ $('3. AI Agent').item.json.output }}\"\n}",
+        "options": {}
+      },
+      "id": "reply-006",
+      "name": "4. Reply API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\": \"success\", \"phone\": \"{{ $('2. Message Parser').item.json.phone }}\", \"message\": \"processed\"}"
+      },
+      "id": "respond-007",
+      "name": "5. Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [880, 0]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "1. Webhook": {
+      "main": [
+        [
+          {
+            "node": "2. Message Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Message Parser": {
+      "main": [
+        [
+          {
+            "node": "3. AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. AI Agent": {
+      "main": [
+        [
+          {
+            "node": "4. Reply API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Reply API": {
+      "main": [
+        [
+          {
+            "node": "5. Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "3. AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "3. AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

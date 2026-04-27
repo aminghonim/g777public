@@ -1,12 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:g777_client/core/providers/system_stream_provider.dart';
 
-/// Global Logs Provider
-/// Manages platform-wide system logs in a unified singleton pipeline.
-final logsProvider = StateNotifierProvider<LogsNotifier, List<LogEntry>>((ref) {
-  return LogsNotifier();
-});
+/// Log Levels
+enum LogType { info, success, error, warning }
 
+/// Single Log Entry
 class LogEntry {
   final DateTime timestamp;
   final String message;
@@ -19,13 +17,12 @@ class LogEntry {
   });
 }
 
-enum LogType { info, success, error, warning }
-
-class LogsNotifier extends StateNotifier<List<LogEntry>> {
-  LogsNotifier() : super([]);
+/// Global Logs Buffer (Unified singleton pipeline)
+class LogsNotifier extends Notifier<List<LogEntry>> {
+  @override
+  List<LogEntry> build() => [];
 
   void addLog(String message, {LogType type = LogType.info}) {
-    // Basic deduplication for immediate successive logs
     if (state.isNotEmpty && state.first.message == message) return;
 
     state = [
@@ -33,22 +30,99 @@ class LogsNotifier extends StateNotifier<List<LogEntry>> {
       ...state,
     ];
 
-    // Maintain buffer of last 100 entries
-    if (state.length > 100) {
-      state = state.sublist(0, 100);
+    if (state.length > 500) {
+      state = state.sublist(0, 500);
     }
   }
 
-  void clearLogs() {
-    state = [];
+  void clearLogs() => state = [];
+}
+
+final logsProvider = NotifierProvider<LogsNotifier, List<LogEntry>>(
+  LogsNotifier.new,
+);
+
+/// --- Filter Logic ---
+
+class LogsFilter {
+  final String query;
+  final Set<LogType> activeTypes;
+  final bool isPaused;
+
+  LogsFilter({
+    this.query = '',
+    this.activeTypes = const {
+      LogType.info,
+      LogType.success,
+      LogType.error,
+      LogType.warning,
+    },
+    this.isPaused = false,
+  });
+
+  LogsFilter copyWith({
+    String? query,
+    Set<LogType>? activeTypes,
+    bool? isPaused,
+  }) {
+    return LogsFilter(
+      query: query ?? this.query,
+      activeTypes: activeTypes ?? this.activeTypes,
+      isPaused: isPaused ?? this.isPaused,
+    );
   }
 }
 
-/// Unified Log Listener (Gap 2 Compliance).
-/// Attaches to the global SSE pipeline to capture and record logs from
-/// all system modules (Campaigns, API, System Checks).
+final logsFilterProvider = NotifierProvider<LogsFilterNotifier, LogsFilter>(
+  LogsFilterNotifier.new,
+);
+
+class LogsFilterNotifier extends Notifier<LogsFilter> {
+  @override
+  LogsFilter build() => LogsFilter();
+
+  void update(LogsFilter Function(LogsFilter) updater) {
+    state = updater(state);
+  }
+}
+
+final filteredLogsProvider = Provider<List<LogEntry>>((ref) {
+  final logs = ref.watch(logsProvider);
+  final filter = ref.watch(logsFilterProvider);
+
+  if (filter.isPaused) return [];
+
+  return logs.where((log) {
+    final matchesQuery = log.message.toLowerCase().contains(
+      filter.query.toLowerCase(),
+    );
+    final matchesType = filter.activeTypes.contains(log.type);
+    return matchesQuery && matchesType;
+  }).toList();
+});
+
+/// --- UI State Providers ---
+
+enum ConsoleState { minimized, normal, expanded, full }
+
+final consoleStateProvider = NotifierProvider<ConsoleStateNotifier, ConsoleState>(
+  ConsoleStateNotifier.new,
+);
+
+class ConsoleStateNotifier extends Notifier<ConsoleState> {
+  @override
+  ConsoleState build() => ConsoleState.normal;
+
+  void set(ConsoleState value) => state = value;
+}
+
+/// Unified Log Listener (Gap 2 Compliance)
 final logsStreamListenerProvider = Provider<void>((ref) {
+  final filter = ref.watch(logsFilterProvider);
+
   ref.listen(logsStreamProvider, (prev, next) {
+    if (filter.isPaused) return;
+
     next.whenData((event) {
       if (event['type'] == 'LOG') {
         final data = event['data'];
@@ -64,7 +138,6 @@ final logsStreamListenerProvider = Provider<void>((ref) {
               .addLog(data['message'].toString(), type: type);
         }
       } else if (event['type'] == 'CAMPAIGN') {
-        // Also capture legacy campaign logs if present
         final data = event['data'];
         if (data != null && data['logs'] != null) {
           final List<dynamic> logs = data['logs'];

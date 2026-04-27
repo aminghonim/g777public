@@ -14,6 +14,7 @@ import 'package:g777_client/features/group_sender/presentation/controllers/group
 import 'package:g777_client/features/analytics/presentation/widgets/campaign_analytics_widget.dart';
 import 'package:g777_client/features/evolution/presentation/widgets/instance_connection_widget.dart';
 import 'package:g777_client/features/settings/presentation/widgets/quota_dashboard_widget.dart';
+import 'package:g777_client/shared/widgets/license_expiry_banner.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -51,6 +52,9 @@ class DashboardPage extends ConsumerWidget {
                   l10n,
                 ),
                 const SizedBox(height: 32),
+
+                // SAAS-019: License Expiry Warning Banner
+                const LicenseExpiryBanner(),
 
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,19 +1,25 @@
 """
-WhatsApp Group Finder - FACEBOOK HUNTER EDITION (Selenium Based)
-Method: Real Browser Automation (Undetected Chrome)
+WhatsApp Group Finder - FACEBOOK HUNTER EDITION (Hybrid)
+
+Method:
+    Layer 1 (Fast/Free): ScraplingEngine.execute_smart_action() with
+    adaptive CSS selectors and AI Self-Healing via browser-use.
+    Layer 2 (Legacy): Real Browser Automation (Undetected Chrome)
+    for environments where ScraplingEngine is unavailable.
+
 Target: Facebook Public Posts & Groups via Google Cache
 Features: Deep Hunt + Live Verification + Anti-Ban Delays + Auto-Healing
 """
 
-import time
-import re
-import random
-import requests
-import os
-import sys
+import asyncio
 import json
 import logging
-from typing import List, Set, Dict, Any, Optional
+import os
+import random
+import re
+import sys
+import time
+from typing import Any, Dict, List, Optional, Set
 from urllib.parse import unquote
 from pathlib import Path
 
@@ -23,6 +29,14 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import WebDriverException
 from .core.i18n import t
+
+try:
+    from .core.event_broker import event_broker
+except (ImportError, ValueError):
+    try:
+        from backend.core.event_broker import event_broker
+    except ImportError:
+        event_broker = None
 
 try:
     from .scrapling_engine import ScraplingEngine
@@ -45,10 +59,15 @@ class GroupFinder:
 
     Features:
     - ScraplingEngine StealthyFetcher for anti-bot bypass
+    - AI Self-Healing via browser-use (execute_smart_action)
     - Session Injector for persistent session management
     - Config-driven search parameters
     - Smart Retry with exponential backoff
     - Zero hardcoding compliance
+
+    Execution Strategy:
+        1. Try ScraplingEngine hybrid path (fast, free, AI fallback)
+        2. Fall back to legacy Selenium browser automation
     """
 
     def __init__(
@@ -396,41 +415,175 @@ class GroupFinder:
         )
         return valid
 
+    async def search_via_engine(
+        self, keyword: str, country: str = ""
+    ) -> List[str]:
+        """
+        AI-driven group link extraction via ScraplingEngine.
+
+        Uses execute_smart_action which internally handles:
+            - Adaptive CSS selectors (Layer 1)
+            - AI Self-Healing via browser-use (Layer 2)
+
+        Args:
+            keyword: Search term (e.g. 'ملابس جملة').
+            country: Country filter.
+
+        Returns:
+            List of WhatsApp group links found.
+        """
+        if not self.scrapling_engine or not self.scrapling_engine.is_available:
+            return []
+
+        search_query = f'{keyword} {country}'.strip()
+        url = (
+            f"https://www.google.com/search?q="
+            f"site:facebook.com+%22chat.whatsapp.com%22+{search_query}"
+        )
+        ai_task = (
+            f"Search Google for Facebook posts containing WhatsApp "
+            f"group links about '{search_query}'. Extract all "
+            f"chat.whatsapp.com links from the search results and "
+            f"from linked Facebook pages."
+        )
+
+        if event_broker:
+            await event_broker.publish_agent_step(
+                step_type="thinking",
+                reasoning=f"Engine path: searching for WhatsApp groups "
+                          f"about '{keyword}'",
+                action=f"search_via_engine: {keyword}",
+            )
+
+        try:
+            raw_results = await self.scrapling_engine.execute_smart_action(
+                url=url,
+                action=ai_task,
+                selector="a[href*='chat.whatsapp.com']",
+            )
+
+            new_links: List[str] = []
+            if raw_results:
+                for item in raw_results:
+                    text = ""
+                    if hasattr(item, "text"):
+                        text = item.text or ""
+                    elif hasattr(item, "get_text"):
+                        text = item.get_text(strip=True) or ""
+                    elif isinstance(item, str):
+                        text = item
+                    elif isinstance(item, dict):
+                        text = str(item)
+
+                    extracted = self.extract_links_from_text(text)
+                    for link in extracted:
+                        if link not in self.found_links:
+                            self.found_links.add(link)
+                            new_links.append(link)
+
+            if event_broker and new_links:
+                await event_broker.publish_agent_step(
+                    step_type="extracting",
+                    reasoning=f"Engine found {len(new_links)} new links "
+                              f"for '{keyword}'",
+                    action=f"engine_extraction_complete",
+                )
+
+            return new_links
+
+        except Exception as engine_err:
+            self.logger.warning(
+                "Engine search failed for '%s', will use browser: %s",
+                keyword,
+                engine_err,
+            )
+            if event_broker:
+                await event_broker.publish_agent_step(
+                    step_type="healing",
+                    reasoning=f"Engine error: {engine_err}",
+                    action="Falling back to Selenium browser",
+                )
+            return []
+
     def find_groups(
         self, keywords: List[str], country: str = "", max_links: int = 10
     ) -> List[str]:
-        """Main Entry Point"""
+        """Main Entry Point — Synchronous wrapper for backward compatibility."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            # Already inside an async context — schedule coroutine
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                return pool.submit(
+                    asyncio.run,
+                    self._find_groups_async(keywords, country, max_links),
+                ).result()
+        else:
+            return asyncio.run(
+                self._find_groups_async(keywords, country, max_links)
+            )
+
+    async def _find_groups_async(
+        self, keywords: List[str], country: str = "", max_links: int = 10
+    ) -> List[str]:
+        """
+        Async implementation of find_groups with hybrid strategy.
+
+        Strategy:
+            1. Try ScraplingEngine path first (fast, free, AI fallback)
+            2. If engine returns insufficient results, supplement
+               with legacy Selenium browser path
+        """
         if isinstance(keywords, str):
             keywords = [keywords]
 
         self.logger.info("\n" + "=" * 60)
-        self.logger.info(" FACEBOOK GROUP HUNTER (Auto-Healing)")
+        self.logger.info(" FACEBOOK GROUP HUNTER (Hybrid Auto-Healing)")
         self.logger.info("=" * 60)
-        self.logger.info(f" Target: {max_links} groups maximum")
+        self.logger.info(" Target: %d groups maximum", max_links)
 
-        all_results = []
+        all_results: List[str] = []
 
-        for kw in keywords:
-            res = self.search_via_browser(kw, country)
-            all_results.extend(res)
-            # Stop early if we have enough
-            if len(all_results) >= max_links:
-                break
-            time.sleep(2)
+        # Layer 1: ScraplingEngine + AI Self-Healing
+        if self.scrapling_engine and self.scrapling_engine.ai_enabled:
+            self.logger.info(" Layer 1: ScraplingEngine + AI path")
+            for kw in keywords:
+                engine_links = await self.search_via_engine(kw, country)
+                all_results.extend(engine_links)
+                if len(all_results) >= max_links:
+                    break
+
+        # Layer 2: Legacy Selenium (only if engine didn't find enough)
+        if len(all_results) < max_links:
+            remaining = max_links - len(all_results)
+            self.logger.info(
+                " Layer 2: Selenium browser (need %d more)", remaining
+            )
+            for kw in keywords:
+                browser_links = self.search_via_browser(kw, country)
+                for link in browser_links:
+                    if link not in self.found_links:
+                        all_results.append(link)
+                if len(all_results) >= max_links:
+                    break
+                time.sleep(2)
 
         unique_links = list(set(all_results))
         self.logger.info(
-            t("hunter.logs.total_raw", "\n🎯 Total Raw Links: {count}").format(
-                count=len(unique_links)
-            )
+            t(
+                "hunter.logs.total_raw",
+                "\n Total Raw Links: {count}",
+            ).format(count=len(unique_links))
         )
 
-        # Limit to requested count before validation
         unique_links = unique_links[:max_links]
-
         final_links = self.filter_valid_links(unique_links)
 
-        return final_links[:max_links]  # Ensure we don't exceed max
+        return final_links[:max_links]
 
     # --- Session Injector Methods ---
     def save_session(self, session_name: str, session_data: Dict[str, Any]) -> bool:
