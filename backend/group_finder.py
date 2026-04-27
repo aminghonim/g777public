@@ -23,6 +23,8 @@ from typing import Any, Dict, List, Optional, Set
 from urllib.parse import unquote
 from pathlib import Path
 
+import requests
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait

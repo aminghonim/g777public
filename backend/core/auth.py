@@ -43,6 +43,7 @@ async def _get_jwks() -> Dict[str, Any]:
     Fetches and caches Clerk's JWKS (JSON Web Key Set) for token verification.
     Cache has a TTL of 1 hour to allow key rotation.
     """
+    global _jwks_cache_time
     now = time.time()
     # Check if cache is still valid
     if _jwks_cache and (now - _jwks_cache_time) < JWKS_CACHE_TTL:
@@ -61,7 +62,11 @@ async def _get_jwks() -> Dict[str, Any]:
             _jwks_cache.clear()
             _jwks_cache.update(response.json())
             _jwks_cache_time = now
-            logger.info("Clerk JWKS loaded from %s (cached for %ds)", CLERK_JWKS_URL, JWKS_CACHE_TTL)
+            logger.info(
+                "Clerk JWKS loaded from %s (cached for %ds)",
+                CLERK_JWKS_URL,
+                JWKS_CACHE_TTL,
+            )
     except httpx.RequestError as exc:
         logger.error("Failed to fetch Clerk JWKS: %s", exc)
         raise HTTPException(

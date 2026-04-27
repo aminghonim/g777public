@@ -105,13 +105,19 @@ class G777Sidebar extends ConsumerWidget {
                     label: l10n.lblGoogleMaps,
                     imagePath: 'assets/icons/hex/maps_extractor.png',
                     color: colorScheme.navDataTools,
-                    onTap: () => context.go('/opportunity-hunter'),
+                    onTap: () => context.go('/maps-extractor'),
                   ),
                   _NavItemData(
                     label: l10n.lblSocialMedia,
                     imagePath: 'assets/icons/hex/opportunity_hunter.png',
                     color: colorScheme.navDataTools,
                     onTap: () => context.go('/opportunity-hunter'),
+                  ),
+                  _NavItemData(
+                    label: 'Group Finder',
+                    imagePath: 'assets/icons/hex/maps_extractor.png',
+                    color: colorScheme.navDataTools,
+                    onTap: () => context.go('/group-finder'),
                   ),
                 ]),
 

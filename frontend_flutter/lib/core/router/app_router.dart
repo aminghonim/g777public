@@ -11,6 +11,8 @@ import '../../features/opportunity_hunter/presentation/pages/opportunity_hunter_
 import '../../features/account_warmer/presentation/pages/account_warmer_page.dart';
 import '../../features/poll_sender/presentation/pages/poll_sender_page.dart';
 import '../../features/links_grabber/presentation/pages/links_grabber_page.dart';
+import '../../features/maps_extractor/presentation/pages/maps_extractor_page.dart';
+import '../../features/group_finder/presentation/pages/group_finder_page.dart';
 import '../../features/theme_settings/presentation/pages/theme_settings_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/crm/presentation/pages/crm_page.dart';
@@ -80,6 +82,16 @@ GoRouter router(Ref ref) {
             path: '/links-grabber',
             name: 'links-grabber',
             builder: (context, state) => const LinksGrabberPage(),
+          ),
+          GoRoute(
+            path: '/maps-extractor',
+            name: 'maps-extractor',
+            builder: (context, state) => const MapsExtractorPage(),
+          ),
+          GoRoute(
+            path: '/group-finder',
+            name: 'group-finder',
+            builder: (context, state) => const GroupFinderPage(),
           ),
           GoRoute(
             path: '/theme-settings',

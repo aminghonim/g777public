@@ -357,20 +357,25 @@ class ApiService {
 
   // --- MARKET INTELLIGENCE (Track 1 & 3) ---
 
-  /// Opportunity Hunter - Trigger
+  /// Opportunity Hunter / Maps / Group Finder - Trigger
   Future<Map<String, dynamic>> triggerScan({
     required String type,
     required String keyword,
+    String country = '',
     int scrollingDepth = 2,
   }) async {
     await init();
-    final uri = Uri.parse('$baseUrl/intelligence/trigger_scan').replace(
-      queryParameters: {
-        'type': type,
-        'keyword': keyword,
-        'scrolling_depth': scrollingDepth.toString(),
-      },
-    );
+    final queryParams = {
+      'type': type,
+      'keyword': keyword,
+      'scrolling_depth': scrollingDepth.toString(),
+    };
+    if (country.isNotEmpty) {
+      queryParams['country'] = country;
+    }
+    final uri = Uri.parse(
+      '$baseUrl/intelligence/trigger_scan',
+    ).replace(queryParameters: queryParams);
     final response = await http.post(uri, headers: _headers);
     if (response.statusCode == 200) {
       return json.decode(response.body);

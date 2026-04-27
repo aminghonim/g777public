@@ -94,8 +94,9 @@ async def get_opportunities(
 @router.post("/trigger_scan")
 async def trigger_scan(
     background_tasks: BackgroundTasks,
-    type: str = Query(..., pattern="^(maps|social)$"),
+    type: str = Query(..., pattern="^(maps|social|group)$"),
     keyword: str = Query(...),
+    country: str = Query(""),
     scrolling_depth: int = Query(2),
     user: Dict[str, Any] = Depends(get_current_user),
 ):
@@ -111,6 +112,11 @@ async def trigger_scan(
             elif type == "social":
                 scraper = SocialScraper()
                 await scraper.scrape(keyword, limit=20, scrolling_depth=scrolling_depth)
+            elif type == "group":
+                from backend.group_finder import GroupFinder
+
+                finder = GroupFinder()
+                finder.find_groups(keyword, country=country)
             logger.info(f"Scraping job finished: {type} for {keyword}")
         except Exception as e:
             logger.error(f"Scraping job failed: {e}")

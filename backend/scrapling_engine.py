@@ -107,12 +107,9 @@ class ScraplingEngine:
         self.validation_config = self.config.get("validation", {})
 
         # AI Self-Healing Configuration (browser-use)
-        self.browser_use_config: Dict[str, Any] = self.config.get(
-            "browser_use", {}
-        )
+        self.browser_use_config: Dict[str, Any] = self.config.get("browser_use", {})
         self.ai_enabled: bool = (
-            self.browser_use_config.get("enabled", False)
-            and BROWSER_USE_AVAILABLE
+            self.browser_use_config.get("enabled", False) and BROWSER_USE_AVAILABLE
         )
         self.ai_max_steps: int = self.browser_use_config.get("max_steps", 15)
         self._ai_browser: Optional[Any] = None  # Lazy init
@@ -440,9 +437,7 @@ class ScraplingEngine:
         threshold = self.telemetry_config.get("failure_threshold", 3)
         return failures >= threshold
 
-    async def ai_fetch(
-        self, url: str, task: str, **kwargs: Any
-    ) -> Any:
+    async def ai_fetch(self, url: str, task: str, **kwargs: Any) -> Any:
         """
         AI-driven fetch using browser-use Agent.
 
@@ -467,7 +462,7 @@ class ScraplingEngine:
         await event_broker.publish_agent_step(
             step_type="healing",
             reasoning=f"Selector-based extraction failed. "
-                      f"Switching to AI agent for: {url}",
+            f"Switching to AI agent for: {url}",
             action=f"ai_fetch: {task[:80]}",
         )
 
@@ -497,15 +492,18 @@ class ScraplingEngine:
             )
             return result
         except Exception as agent_error:
-            logger.error(
-                "AI agent failed for %s: %s", url, agent_error
-            )
+            logger.error("AI agent failed for %s: %s", url, agent_error)
             await event_broker.publish_agent_step(
                 step_type="healing",
                 reasoning=f"AI agent error: {agent_error}",
                 action="Falling back to stealth_fetch",
             )
-            return self.stealth_fetch(url, **kwargs)
+            import asyncio
+
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(
+                None, lambda: self.stealth_fetch(url, **kwargs)
+            )
         finally:
             await browser.close()
 
@@ -537,8 +535,17 @@ class ScraplingEngine:
         # Layer 1: Fast/Free path via Scrapling adaptive parser
         if selector and self.is_available:
             try:
-                page = self.stealth_fetch(url, **kwargs)
-                results = self.extract(page, selector, adaptive=True)
+                import asyncio
+
+                loop = asyncio.get_running_loop()
+                # Run sync Playwright calls in a thread to avoid
+                # "Sync API inside asyncio loop" errors
+                page = await loop.run_in_executor(
+                    None, lambda: self.stealth_fetch(url, **kwargs)
+                )
+                results = await loop.run_in_executor(
+                    None, lambda: self.extract(page, selector, adaptive=True)
+                )
                 if results:
                     self._track_telemetry(selector, success=True)
                     return results
@@ -555,8 +562,7 @@ class ScraplingEngine:
         # Layer 2: AI Self-Healing via browser-use
         if self._should_trigger_ai(selector):
             await event_broker.publish_log(
-                f"Selector '{selector}' failed. "
-                f"Triggering AI Self-Healing...",
+                f"Selector '{selector}' failed. " f"Triggering AI Self-Healing...",
                 level="WARNING",
             )
             return await self.ai_fetch(url, action, **kwargs)

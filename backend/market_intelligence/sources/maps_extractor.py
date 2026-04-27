@@ -311,10 +311,16 @@ class MapsExtractor:
         """
         try:
             text_content = ""
-            if hasattr(item, "text"):
-                text_content = item.text or ""
+            # Scrapling Selector elements have get_all_text() which
+            # recursively extracts text from all children — essential
+            # for nested elements like Google Maps article divs where
+            # .text only returns direct (often empty) text.
+            if hasattr(item, "get_all_text"):
+                text_content = item.get_all_text(separator="\n", strip=True) or ""
             elif hasattr(item, "get_text"):
                 text_content = item.get_text(strip=True) or ""
+            elif hasattr(item, "text"):
+                text_content = item.text or ""
             elif isinstance(item, str):
                 text_content = item
             elif isinstance(item, dict):
